@@ -56,7 +56,7 @@ interface OrderStats {
 const fmt = (amount: number, currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
 
-const BASE_URL = 'https://qrunto-api-demo.loca.lt/api';
+const BASE_URL = 'https://backend-steel-seven-97.vercel.app/api';
 
 export const OrderManagement: React.FC = () => {
   const token = useAuthStore((state) => state.accessToken);

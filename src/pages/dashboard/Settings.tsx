@@ -56,7 +56,7 @@ const defaultBusinessHours = (): BusinessHours => {
   return hours as BusinessHours;
 };
 
-const BASE_URL = 'https://qrunto-api-demo.loca.lt/api';
+const BASE_URL = 'https://backend-steel-seven-97.vercel.app/api';
 
 export const Settings: React.FC = () => {
   const token = useAuthStore((state) => state.accessToken);
