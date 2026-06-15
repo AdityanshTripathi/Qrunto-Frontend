@@ -24,6 +24,32 @@ export const SubscriptionManagement: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  
+  // Code Redemption States
+  const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
+  const [redeemCode, setRedeemCode] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
+
+  const handleRedeemCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!redeemCode) return;
+    setRedeeming(true);
+    try {
+      const res = await api.post('/subscriptions/redeem', { code: redeemCode });
+      toast.success(res.message);
+      setIsRedeemModalOpen(false);
+      setRedeemCode('');
+      
+      // Reload subscription
+      const subRes = await api.get('/subscriptions/current');
+      setSubscription(subRes.subscription || null);
+    } catch (err: any) {
+      toast.error(err.message || 'Redemption failed. Please check your license code.');
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -174,6 +200,12 @@ export const SubscriptionManagement: React.FC = () => {
                   Change / Upgrade Plan
                   <ArrowRight className="w-4 h-4" />
                 </button>
+                <button
+                  onClick={() => setIsRedeemModalOpen(true)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-[#374151] hover:bg-[#4b5563] border border-[#4b5563]/40 font-semibold text-sm text-white rounded-xl transition-all"
+                >
+                  Redeem License Code
+                </button>
               </div>
             </div>
 
@@ -203,6 +235,12 @@ export const SubscriptionManagement: React.FC = () => {
               Select pricing plan
               <ArrowRight className="w-4 h-4" />
             </button>
+            <button
+              onClick={() => setIsRedeemModalOpen(true)}
+              className="mt-3 inline-flex items-center gap-2 px-5 py-3 bg-[#374151] hover:bg-[#4b5563] border border-[#4b5563]/40 font-semibold text-sm text-white rounded-xl transition-all"
+            >
+              Redeem License Code
+            </button>
           </div>
         )}
 
@@ -224,6 +262,48 @@ export const SubscriptionManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* REDEEM CODE POPUP MODAL */}
+      {isRedeemModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div onClick={() => setIsRedeemModalOpen(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm bg-[#1f2937] border border-[#374151]/75 rounded-[24px] shadow-2xl p-6 z-10 animate-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-bold text-white mb-2">Redeem License Code</h2>
+            <p className="text-xs text-[#9ca3af] mb-4">Enter your Qrunto activation key or promo code to activate subscription plan.</p>
+            
+            <form onSubmit={handleRedeemCode} className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. QR1M-ABCD1234"
+                  value={redeemCode}
+                  onChange={(e) => setRedeemCode(e.target.value)}
+                  className="w-full bg-[#111827] border border-[#374151] rounded-xl p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[#FF6B35] uppercase tracking-wider font-mono text-center"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsRedeemModalOpen(false)}
+                  className="flex-1 py-3 bg-[#374151] hover:bg-[#4b5563] text-white font-semibold rounded-xl text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={redeeming || !redeemCode}
+                  className="flex-1 py-3 bg-[#FF6B35] hover:bg-orange-600 text-white font-bold rounded-xl text-sm disabled:opacity-60 flex items-center justify-center gap-1.5"
+                >
+                  {redeeming && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {redeeming ? 'Redeeming...' : 'Redeem'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

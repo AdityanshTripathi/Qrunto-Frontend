@@ -20,7 +20,7 @@ import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/api';
 
 export const DashboardLayout: React.FC = () => {
-  const { user, clearAuth } = useAuthStore();
+  const { user, clearAuth, setAuth } = useAuthStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -86,9 +86,37 @@ export const DashboardLayout: React.FC = () => {
   const currentPath = location.pathname;
   const currentRoute = navLinks.find(link => link.path === currentPath)?.name || 'Overview';
 
+  const handleReturnToAdmin = () => {
+    const adminUser = localStorage.getItem('admin_user');
+    const adminToken = localStorage.getItem('admin_access_token');
+    const adminRefresh = localStorage.getItem('admin_refresh_token');
+
+    if (adminUser && adminToken && adminRefresh) {
+      localStorage.removeItem('admin_user');
+      localStorage.removeItem('admin_access_token');
+      localStorage.removeItem('admin_refresh_token');
+
+      setAuth(JSON.parse(adminUser), adminToken, adminRefresh);
+      window.location.href = '/dashboard';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#111827] text-white flex flex-col lg:flex-row">
-      {/* 1. Desktop Sidebar Container */}
+    <div className="min-h-screen bg-[#111827] text-white flex flex-col">
+      {/* ⚠️ Admin Bypass Banner */}
+      {localStorage.getItem('admin_access_token') && (
+        <div className="w-full bg-amber-500 text-black py-2 px-4 text-center text-xs font-black flex items-center justify-center gap-2 z-50 shrink-0">
+          <span>⚠️ You are logged in as Owner of {user?.restaurants[0]?.name || 'this restaurant'} (Support Session).</span>
+          <button
+            onClick={handleReturnToAdmin}
+            className="underline hover:text-red-900 transition-colors ml-1 font-extrabold uppercase tracking-wide border border-black/20 rounded px-2 py-0.5 bg-black/5 hover:bg-black/10"
+          >
+            Return to Admin Panel
+          </button>
+        </div>
+      )}
+      <div className="flex-1 flex flex-col lg:flex-row">
+        {/* 1. Desktop Sidebar Container */}
       <aside 
         className={`hidden lg:flex flex-col justify-between border-r border-[#374151]/50 bg-[#1f2937]/35 backdrop-blur-xl transition-all duration-300 relative ${
           sidebarCollapsed ? 'w-20' : 'w-64'
@@ -291,6 +319,7 @@ export const DashboardLayout: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-6 md:p-8 relative z-10">
           <Outlet />
         </main>
+      </div>
       </div>
     </div>
   );

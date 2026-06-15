@@ -12,12 +12,14 @@ import { TableManagement } from './pages/dashboard/TableManagement';
 import { OrderManagement } from './pages/dashboard/OrderManagement';
 import { Analytics } from './pages/dashboard/Analytics';
 import { SubscriptionManagement } from './pages/dashboard/SubscriptionManagement';
+import { SuperAdminDashboard } from './pages/dashboard/SuperAdminDashboard';
 import { Settings } from './pages/dashboard/Settings';
-import { useAuthStore } from './store/authStore';
 import { CustomerMenu } from './pages/CustomerMenu';
+import { useAuthStore } from './store/authStore';
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
 
   return (
     <BrowserRouter>
@@ -39,7 +41,10 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/subscription" element={<Subscription />} />
           
-          <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route 
+            path="/dashboard" 
+            element={user?.role === 'SUPER_ADMIN' ? <SuperAdminDashboard /> : <DashboardLayout />}
+          >
             <Route index element={<DashboardOverview />} />
             <Route path="menu" element={<MenuManagement />} />
             <Route path="categories" element={<CategoryManagement />} />
