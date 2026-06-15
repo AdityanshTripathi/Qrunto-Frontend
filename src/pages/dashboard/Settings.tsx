@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import type { SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -14,7 +14,9 @@ import {
   Save,
   Loader2,
   Clock,
+  Camera,
 } from 'lucide-react';
+
 import { useAuthStore } from '../../store/authStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -26,7 +28,9 @@ interface SettingsInputs {
   gstNumber: string;
   currency: string;
   taxPercentage: number;
+  logoUrl?: string | null;
 }
+
 
 type DayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
@@ -56,7 +60,34 @@ const defaultBusinessHours = (): BusinessHours => {
   return hours as BusinessHours;
 };
 
+// ─── Logo Compression Helper ──────────────────────────────────────────────────
+const compressLogo = (file: File, maxSize = 300, quality = 0.85): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxSize) { height = Math.round((height * maxSize) / width); width = maxSize; }
+        } else {
+          if (height > maxSize) { width = Math.round((width * maxSize) / height); height = maxSize; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
 const BASE_URL = 'https://backend-steel-seven-97.vercel.app/api';
+
 
 export const Settings: React.FC = () => {
   const token = useAuthStore((state) => state.accessToken);
@@ -64,6 +95,9 @@ export const Settings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [businessHours, setBusinessHours] = useState<BusinessHours>(defaultBusinessHours());
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isCompressingLogo, setIsCompressingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -79,8 +113,10 @@ export const Settings: React.FC = () => {
       gstNumber: '',
       currency: 'INR',
       taxPercentage: 0,
+      logoUrl: '',
     },
   });
+
 
   // Load Settings
   useEffect(() => {
@@ -102,6 +138,7 @@ export const Settings: React.FC = () => {
         setValue('gstNumber', data.restaurant.gstNumber || '');
         setValue('currency', data.settings.currency || 'INR');
         setValue('taxPercentage', data.settings.taxPercentage ?? 0);
+        setLogoPreview(data.restaurant.logoUrl || null);
 
         // Load business hours if saved
         if (data.settings.businessHours && typeof data.settings.businessHours === 'object') {
@@ -113,6 +150,7 @@ export const Settings: React.FC = () => {
         setLoading(false);
       }
     };
+
 
     loadSettings();
   }, [token, setValue]);
@@ -140,6 +178,26 @@ export const Settings: React.FC = () => {
     setBusinessHours(updated);
   };
 
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    setIsCompressingLogo(true);
+    try {
+      const compressed = await compressLogo(file);
+      setLogoPreview(compressed);
+      toast.success('Logo compressed successfully!');
+    } catch (err) {
+      toast.error('Failed to compress image');
+      console.error(err);
+    } finally {
+      setIsCompressingLogo(false);
+    }
+  };
+
   // Save
   const onSubmit: SubmitHandler<SettingsInputs> = async (payload) => {
     if (!token) return;
@@ -158,6 +216,7 @@ export const Settings: React.FC = () => {
           email: payload.email || null,
           address: payload.address || null,
           gstNumber: payload.gstNumber || null,
+          logoUrl: logoPreview || null,
           currency: payload.currency,
           taxPercentage: Number(payload.taxPercentage),
           businessHours,
@@ -165,6 +224,7 @@ export const Settings: React.FC = () => {
       });
 
       const data = await res.json();
+
       if (!res.ok) throw new Error(data.error || 'Failed to update settings');
       toast.success('Restaurant settings saved successfully!');
     } catch (err: any) {
@@ -201,7 +261,55 @@ export const Settings: React.FC = () => {
             Restaurant Profile
           </h3>
 
+          {/* Logo Upload Widget */}
+          <div className="flex flex-col sm:flex-row items-center gap-5 bg-[#111827]/20 border border-[#374151]/20 rounded-2xl p-4">
+            <div className="relative w-24 h-24 rounded-2xl bg-[#111827]/50 border border-[#374151]/55 overflow-hidden flex items-center justify-center shrink-0">
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-cover" />
+              ) : (
+                <Store className="w-8 h-8 text-gray-600" />
+              )}
+              {isCompressingLogo && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 text-[#FF6B35] animate-spin" />
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-2 text-center sm:text-left">
+              <h4 className="text-sm font-bold text-white">Restaurant Logo</h4>
+              <p className="text-xs text-[#9ca3af]">Upload a square photo from gallery or camera. Max size 5MB.</p>
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                <button
+                  type="button"
+                  onClick={() => logoInputRef.current?.click()}
+                  className="px-4 py-2 bg-[#FF6B35]/15 hover:bg-[#FF6B35]/25 border border-[#FF6B35]/30 hover:border-[#FF6B35]/50 text-[#FF6B35] text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  Choose Image
+                </button>
+                {logoPreview && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoPreview(null)}
+                    className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/35 text-red-400 text-xs font-bold rounded-xl transition-all"
+                  >
+                    Remove Logo
+                  </button>
+                )}
+              </div>
+              <input
+                type="file"
+                ref={logoInputRef}
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
 
             {/* Name */}
             <div className="space-y-2">

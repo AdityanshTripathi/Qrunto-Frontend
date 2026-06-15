@@ -15,7 +15,13 @@ import {
   X,
   Receipt,
   QrCode,
+  CreditCard,
+  Smartphone,
+  Check,
+  ArrowLeft,
+  ShieldAlert,
 } from 'lucide-react';
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Restaurant {
@@ -95,6 +101,24 @@ export const CustomerMenu: React.FC = () => {
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+
+  // Payment states
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'ONLINE'>('ONLINE');
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentOption, setPaymentOption] = useState<'CARD' | 'UPI' | null>(null);
+  const [upiApp, setUpiApp] = useState<string | null>(null);
+  const [upiId, setUpiId] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+
+  // Live tracking state
+  const [trackingOrder, setTrackingOrder] = useState<any>(null);
+
+
 
   // Fetch menu data
   useEffect(() => {
@@ -169,6 +193,25 @@ export const CustomerMenu: React.FC = () => {
 
   const featuredItems = menuItems.filter((item) => item.isFeatured).slice(0, 6);
 
+  // Polling order status
+  useEffect(() => {
+    if (!placedOrder || !slug) return;
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/public/${slug}/orders/${placedOrder.id}/status`);
+        if (res.ok) {
+          const data = await res.json();
+          setTrackingOrder(data.order);
+        }
+      } catch (err) {
+        console.error("Error polling order status:", err);
+      }
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 4000);
+    return () => clearInterval(interval);
+  }, [placedOrder, slug]);
+
   // Place order
   const handlePlaceOrder = async () => {
     if (!slug || !tableNumber || cart.length === 0) return;
@@ -189,10 +232,57 @@ export const CustomerMenu: React.FC = () => {
       setCart([]);
       setIsCartOpen(false);
       setIsCheckoutConfirming(false);
+
+      if (paymentMethod === 'ONLINE') {
+        // Open Razorpay simulated checkout modal
+        setIsPaymentModalOpen(true);
+      } else {
+        toast.success('Order placed! Pay at counter after your meal.', { duration: 3000 });
+      }
     } catch (err: any) {
       toast.error(err.message || 'Failed to place order. Please try again.');
     } finally {
       setIsPlacingOrder(false);
+    }
+  };
+
+  // Submit simulated payment to backend
+  const handleMockPaymentSubmit = async (method: 'UPI' | 'CARD') => {
+    if (!placedOrder || !slug) return;
+    setPaymentProcessing(true);
+    
+    // Simulate Razorpay Gateway processing delay
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    try {
+      const res = await fetch(`${BASE_URL}/public/${slug}/orders/${placedOrder.id}/pay-mock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentMethod: method }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Payment verification failed');
+      
+      setPaymentSuccess(true);
+      toast.success('Payment Received! Chef is starting your order.', { duration: 3000 });
+      
+      // Update tracking order local state
+      setTrackingOrder((prev: any) => prev ? { ...prev, paymentStatus: 'SUCCESS', paymentMethod: method } : null);
+      
+      setTimeout(() => {
+        setIsPaymentModalOpen(false);
+        setPaymentSuccess(false);
+        setPaymentProcessing(false);
+        setPaymentOption(null);
+        setUpiApp(null);
+        setUpiId('');
+        setCardNumber('');
+        setCardExpiry('');
+        setCardCvv('');
+      }, 1500);
+    } catch (err: any) {
+      toast.error(err.message || 'Payment simulation failed.');
+      setPaymentProcessing(false);
     }
   };
 
@@ -221,62 +311,364 @@ export const CustomerMenu: React.FC = () => {
     );
   }
 
-  // ─── Order Success Screen ──────────────────────────────────────────────────
+  // ─── Order Success / Live Tracking Screen ──────────────────────────────────
   if (placedOrder) {
+    const currentStatus = trackingOrder?.status ?? placedOrder.status;
+    const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS';
+    
+    // Status helpers
+    const getStatusStep = (status: string) => {
+      switch (status) {
+        case 'NEW': return 0;
+        case 'PREPARING': return 1;
+        case 'READY': return 2;
+        case 'SERVED': return 3;
+        default: return 0;
+      }
+    };
+
+    const stepIndex = getStatusStep(currentStatus);
+    const steps = [
+      { label: 'Placed', desc: 'Order received by kitchen' },
+      { label: 'Preparing', desc: 'Chef is cooking your food' },
+      { label: 'Ready', desc: 'Ready for table service' },
+      { label: 'Served', desc: 'Served hot at your table' }
+    ];
+
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#111827] to-[#1f2937] flex items-center justify-center p-6">
-        <div className="w-full max-w-sm bg-[#1f2937]/60 border border-[#374151]/50 rounded-[28px] p-8 text-center backdrop-blur-xl shadow-2xl">
-          <div className="w-20 h-20 bg-emerald-500/10 border-2 border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-emerald-400" />
+      <div className="min-h-screen bg-gradient-to-b from-[#111827] to-[#1f2937] flex flex-col justify-between p-4 pb-10">
+        <div className="w-full max-w-md mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between pt-4">
+            <h2 className="text-xl font-black text-white flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-[#FF6B35]" />
+              Qrunto Order Track
+            </h2>
+            <div className="bg-[#1f2937] border border-[#374151]/50 rounded-full px-3 py-1 text-xs text-[#9ca3af] font-semibold">
+              Table {placedOrder.tableNumber}
+            </div>
           </div>
-          <h2 className="text-2xl font-extrabold text-white mb-1">Order Placed! 🎉</h2>
-          <p className="text-[#9ca3af] text-sm mb-6">Your order has been received and is being prepared.</p>
 
-          <div className="bg-[#111827]/60 border border-[#374151]/40 rounded-2xl p-5 mb-6 text-left space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-[#9ca3af]">Order Number</span>
-              <span className="font-bold text-[#FF6B35]">{placedOrder.orderNumber}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-[#9ca3af]">Table</span>
-              <span className="font-semibold text-white">Table {placedOrder.tableNumber}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-[#9ca3af]">Items</span>
-              <span className="font-semibold text-white">{placedOrder.itemCount} item(s)</span>
-            </div>
-            {settings.taxPercentage > 0 && (
-              <>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#9ca3af]">Subtotal</span>
-                  <span className="text-white">{fmt(placedOrder.subtotal, settings.currency)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#9ca3af]">Tax ({settings.taxPercentage}%)</span>
-                  <span className="text-white">{fmt(placedOrder.taxAmount, settings.currency)}</span>
-                </div>
-              </>
+          {/* Stepper Card */}
+          <div className="bg-[#1f2937]/50 border border-[#374151]/40 rounded-3xl p-6 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+            {/* Status animation background */}
+            {currentStatus === 'PREPARING' && (
+              <div className="absolute top-2 right-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Cooking Active
+              </div>
             )}
-            <div className="border-t border-[#374151]/40 pt-3 flex justify-between">
-              <span className="font-bold text-white">Total</span>
-              <span className="font-extrabold text-[#FF6B35] text-lg">{fmt(placedOrder.totalAmount, settings.currency)}</span>
+            {currentStatus === 'READY' && (
+              <div className="absolute top-2 right-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
+                <CheckCircle className="w-3 h-3" />
+                Ready to Serve!
+              </div>
+            )}
+
+            <div className="text-center mb-6">
+              <h3 className="text-[#9ca3af] text-xs font-semibold uppercase tracking-wider">Order Status</h3>
+              <p className="text-2xl font-black text-white mt-1">
+                {currentStatus === 'NEW' && 'Placed & Confirmed 🧾'}
+                {currentStatus === 'PREPARING' && 'Chef is Cooking 🍳'}
+                {currentStatus === 'READY' && 'Food is Ready! 🍽️'}
+                {currentStatus === 'SERVED' && 'Order Served! 🎉'}
+                {currentStatus === 'CANCELLED' && 'Order Cancelled ❌'}
+              </p>
+              <p className="text-[#9ca3af] text-xs mt-2">
+                Order No: <span className="text-[#FF6B35] font-bold">{placedOrder.orderNumber}</span>
+              </p>
+            </div>
+
+            {/* Step Stepper UI */}
+            {currentStatus !== 'CANCELLED' && (
+              <div className="relative pl-6 space-y-6 border-l-2 border-[#374151]">
+                {steps.map((step, idx) => {
+                  const isActive = idx === stepIndex;
+                  const isCompleted = idx < stepIndex;
+                  return (
+                    <div key={idx} className="relative flex flex-col items-start gap-1">
+                      {/* Stepper Dot */}
+                      <div className={`absolute -left-[31px] top-0.5 w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center transition-all ${
+                        isActive
+                          ? 'bg-[#FF6B35] border-[#FF6B35] scale-125 shadow-lg shadow-[#FF6B35]/40'
+                          : isCompleted
+                          ? 'bg-emerald-500 border-emerald-500'
+                          : 'bg-[#111827] border-[#374151]'
+                      }`}>
+                        {isCompleted && <Check className="w-2.5 h-2.5 text-white" />}
+                        {isActive && <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />}
+                      </div>
+
+                      <span className={`text-sm font-bold transition-all ${
+                        isActive ? 'text-[#FF6B35]' : isCompleted ? 'text-emerald-400' : 'text-gray-400'
+                      }`}>
+                        {step.label}
+                      </span>
+                      <span className="text-xs text-[#9ca3af]">{step.desc}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {currentStatus === 'CANCELLED' && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex gap-3 items-center text-red-400">
+                <ShieldAlert className="w-8 h-8 shrink-0" />
+                <div>
+                  <p className="font-bold text-sm">Order Cancelled by Restaurant</p>
+                  <p className="text-xs text-red-400/80">Please check with the service staff at the counter.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Payment Status Card */}
+          <div className="bg-[#1f2937]/50 border border-[#374151]/40 rounded-3xl p-5 backdrop-blur-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-[#9ca3af] font-semibold">Bill Payment</p>
+                <p className="font-extrabold text-white text-base mt-0.5">
+                  {fmt(placedOrder.totalAmount, settings.currency)}
+                </p>
+              </div>
+              <div>
+                {isPaid ? (
+                  <span className="bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-bold text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-1.5">
+                    Paid Online ✅
+                  </span>
+                ) : (
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className="bg-amber-500/15 border border-amber-500/20 text-amber-400 font-bold text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-1.5">
+                      Pay Cash at Counter 💵
+                    </span>
+                    <button
+                      onClick={() => setIsPaymentModalOpen(true)}
+                      className="text-[#FF6B35] font-bold text-xs hover:underline flex items-center gap-1"
+                    >
+                      Pay Online Now (Razorpay) ➡️
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <p className="text-[#9ca3af] text-xs">
-            Please relax! Your food will be served to Table {placedOrder.tableNumber} shortly.
-          </p>
+          {/* Items Card */}
+          <div className="bg-[#1f2937]/30 border border-[#374151]/30 rounded-3xl p-5">
+            <h4 className="text-sm font-bold text-white mb-3">Order Details</h4>
+            <div className="space-y-3 max-h-48 overflow-y-auto">
+              {trackingOrder?.items ? (
+                trackingOrder.items.map((item: any) => (
+                  <div key={item.id} className="flex justify-between items-center text-xs">
+                    <span className="text-[#9ca3af]">
+                      {item.name} <strong className="text-white">× {item.quantity}</strong>
+                    </span>
+                    <span className="text-white font-semibold">{fmt(item.totalPrice, settings.currency)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#9ca3af]">{placedOrder.itemCount} Items</span>
+                  <span className="text-white font-semibold">{fmt(placedOrder.totalAmount, settings.currency)}</span>
+                </div>
+              )}
+            </div>
+            <div className="border-t border-[#374151]/40 mt-4 pt-3 flex justify-between text-sm font-bold text-white">
+              <span>Grand Total</span>
+              <span className="text-[#FF6B35]">{fmt(placedOrder.totalAmount, settings.currency)}</span>
+            </div>
+          </div>
+        </div>
 
+        {/* Footer Actions */}
+        <div className="max-w-md mx-auto w-full px-4 mt-6">
           <button
             onClick={() => setPlacedOrder(null)}
-            className="mt-6 w-full py-3 bg-[#374151] hover:bg-[#4b5563] text-white font-semibold rounded-xl transition-all text-sm"
+            className="w-full py-4 bg-[#374151] hover:bg-[#4b5563] text-white font-bold rounded-2xl transition-all text-sm shadow-xl flex items-center justify-center gap-2"
           >
-            Browse Menu Again
+            <Utensils className="w-4 h-4 text-[#FF6B35]" />
+            Browse Menu / Add More Items
           </button>
         </div>
+
+        {/* Floating Razorpay Simulation Modal */}
+        {isPaymentModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !paymentProcessing && setIsPaymentModalOpen(false)} />
+            
+            <div className="relative w-full max-w-sm bg-[#0f172a] rounded-[24px] border border-[#334155]/60 overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200 text-left">
+              {/* Top Razorpay Banner */}
+              <div className="bg-[#1e293b] p-4 flex items-center justify-between border-b border-[#334155]">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-[#3399FF] rounded flex items-center justify-center font-bold text-white text-xs">R</div>
+                  <div>
+                    <h5 className="text-xs font-black text-white uppercase tracking-wider">Razorpay Secure</h5>
+                    <p className="text-[10px] text-gray-400">Qrunto Payments · Order ID: {placedOrder.orderNumber}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-400">Amount to Pay</p>
+                  <p className="text-sm font-black text-[#3399FF]">{fmt(placedOrder.totalAmount, settings.currency)}</p>
+                </div>
+              </div>
+
+              {/* Payment Processing Screen */}
+              {paymentProcessing ? (
+                <div className="p-8 flex flex-col items-center justify-center text-center space-y-4">
+                  {paymentSuccess ? (
+                    <>
+                      <div className="w-16 h-16 bg-emerald-500/10 border-2 border-emerald-500 rounded-full flex items-center justify-center animate-bounce">
+                        <Check className="w-8 h-8 text-emerald-400" />
+                      </div>
+                      <h4 className="text-lg font-bold text-white">Payment Successful!</h4>
+                      <p className="text-xs text-gray-400">Merchant is processing your order.</p>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="w-12 h-12 text-[#3399FF] animate-spin" />
+                      <h4 className="text-sm font-bold text-white">Securing Payment...</h4>
+                      <p className="text-xs text-gray-400">Simulating bank gateway communication.</p>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="p-5 space-y-5">
+                  <h4 className="text-sm font-bold text-white uppercase tracking-wider text-center border-b border-[#334155] pb-2">Select Payment Method (Demo Mode)</h4>
+                  
+                  {paymentOption === null ? (
+                    <div className="space-y-3">
+                      {/* UPI Option */}
+                      <button
+                        onClick={() => setPaymentOption('UPI')}
+                        className="w-full p-4 bg-[#1e293b] hover:bg-[#334155]/60 border border-[#334155] rounded-xl flex items-center justify-between text-left transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Smartphone className="w-5 h-5 text-[#3399FF]" />
+                          <div>
+                            <p className="font-bold text-sm text-white">Pay via UPI / QR</p>
+                            <p className="text-xs text-gray-400">GPay, PhonePe, Paytm, BHIM</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      </button>
+
+                      {/* Card Option */}
+                      <button
+                        onClick={() => setPaymentOption('CARD')}
+                        className="w-full p-4 bg-[#1e293b] hover:bg-[#334155]/60 border border-[#334155] rounded-xl flex items-center justify-between text-left transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <CreditCard className="w-5 h-5 text-[#3399FF]" />
+                          <div>
+                            <p className="font-bold text-sm text-white">Pay via Card</p>
+                            <p className="text-xs text-gray-400">Visa, Mastercard, RuPay, Maestro</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
+                  ) : paymentOption === 'UPI' ? (
+                    <div className="space-y-4">
+                      <button onClick={() => setPaymentOption(null)} className="text-[#3399FF] text-xs hover:underline flex items-center gap-1 font-semibold">
+                        <ArrowLeft className="w-3.5 h-3.5" /> Back to methods
+                      </button>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        {['Google Pay', 'PhonePe', 'Paytm'].map((app) => (
+                          <button
+                            key={app}
+                            onClick={() => setUpiApp(app)}
+                            className={`p-2.5 rounded-lg border text-xs font-bold text-center transition-all ${
+                              upiApp === app
+                                ? 'bg-[#3399FF]/15 border-[#3399FF] text-white'
+                                : 'bg-[#1e293b] border-[#334155] text-gray-300 hover:bg-[#334155]/60'
+                            }`}
+                          >
+                            {app}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-gray-400 font-bold uppercase">Or Enter UPI ID</label>
+                        <input
+                          type="text"
+                          placeholder="username@okaxis"
+                          value={upiId}
+                          onChange={(e) => setUpiId(e.target.value)}
+                          className="w-full bg-[#1e293b] border border-[#334155] rounded-lg p-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#3399FF]"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => handleMockPaymentSubmit('UPI')}
+                        disabled={!upiApp && !upiId}
+                        className="w-full py-3 bg-[#3399FF] hover:bg-blue-600 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm mt-2"
+                      >
+                        Pay Demo {fmt(placedOrder.totalAmount, settings.currency)}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <button onClick={() => setPaymentOption(null)} className="text-[#3399FF] text-xs hover:underline flex items-center gap-1 font-semibold">
+                        <ArrowLeft className="w-3.5 h-3.5" /> Back to methods
+                      </button>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-gray-400 font-bold uppercase">Card Number</label>
+                        <input
+                          type="text"
+                          placeholder="4111 2222 3333 4444"
+                          maxLength={19}
+                          value={cardNumber}
+                          onChange={(e) => setCardNumber(e.target.value)}
+                          className="w-full bg-[#1e293b] border border-[#334155] rounded-lg p-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#3399FF]"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-gray-400 font-bold uppercase">Expiry (MM/YY)</label>
+                          <input
+                            type="text"
+                            placeholder="12/28"
+                            maxLength={5}
+                            value={cardExpiry}
+                            onChange={(e) => setCardExpiry(e.target.value)}
+                            className="w-full bg-[#1e293b] border border-[#334155] rounded-lg p-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#3399FF]"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-gray-400 font-bold uppercase">CVV</label>
+                          <input
+                            type="password"
+                            placeholder="123"
+                            maxLength={3}
+                            value={cardCvv}
+                            onChange={(e) => setCardCvv(e.target.value)}
+                            className="w-full bg-[#1e293b] border border-[#334155] rounded-lg p-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#3399FF]"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleMockPaymentSubmit('CARD')}
+                        disabled={cardNumber.length < 15}
+                        className="w-full py-3 bg-[#3399FF] hover:bg-blue-600 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm mt-2"
+                      >
+                        Pay Demo {fmt(placedOrder.totalAmount, settings.currency)}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
+
 
   // ─── Main Menu ─────────────────────────────────────────────────────────────
   return (
@@ -329,8 +721,13 @@ export const CustomerMenu: React.FC = () => {
                   className="shrink-0 w-44 bg-[#1f2937]/60 border border-[#374151]/40 rounded-[16px] overflow-hidden"
                 >
                   <div className="h-28 bg-[#374151]/30 overflow-hidden">
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    {item.imageUrl && !failedImages[item.id] ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={() => setFailedImages((prev) => ({ ...prev, [item.id]: true }))}
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Utensils className="w-8 h-8 text-[#374151]" />
@@ -401,8 +798,13 @@ export const CustomerMenu: React.FC = () => {
                   >
                     {/* Image */}
                     <div className="w-20 h-20 rounded-xl bg-[#374151]/40 overflow-hidden shrink-0">
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      {item.imageUrl && !failedImages[item.id] ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={() => setFailedImages((prev) => ({ ...prev, [item.id]: true }))}
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <Utensils className="w-7 h-7 text-[#374151]" />
@@ -515,10 +917,17 @@ export const CustomerMenu: React.FC = () => {
               {cart.map((item) => (
                 <div key={item.menuItemId} className="flex items-center gap-3 bg-[#111827]/40 border border-[#374151]/30 rounded-2xl p-3">
                   <div className="w-12 h-12 rounded-xl bg-[#374151]/50 overflow-hidden shrink-0">
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    {item.imageUrl && !failedImages[item.menuItemId] ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={() => setFailedImages((prev) => ({ ...prev, [item.menuItemId]: true }))}
+                      />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center"><Utensils className="w-5 h-5 text-[#374151]" /></div>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Utensils className="w-5 h-5 text-[#374151]" />
+                      </div>
                     )}
                   </div>
 
@@ -566,10 +975,42 @@ export const CustomerMenu: React.FC = () => {
 
               {/* Checkout confirm */}
               {isCheckoutConfirming ? (
-                <div className="space-y-3">
-                  <p className="text-center text-sm text-gray-300">
+                <div className="space-y-4">
+                  {/* Payment Method Selector */}
+                  <div className="bg-[#111827]/40 border border-[#374151]/30 rounded-xl p-3 space-y-2.5">
+                    <p className="text-xs text-[#9ca3af] font-semibold">Select Payment Method</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('ONLINE')}
+                        className={`py-2 px-3 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                          paymentMethod === 'ONLINE'
+                            ? 'bg-[#FF6B35]/10 border-[#FF6B35] text-white'
+                            : 'bg-[#111827] border-[#374151] text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        <CreditCard className="w-3.5 h-3.5 text-[#FF6B35]" />
+                        Pay Online (Demo)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('CASH')}
+                        className={`py-2 px-3 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                          paymentMethod === 'CASH'
+                            ? 'bg-[#FF6B35]/10 border-[#FF6B35] text-white'
+                            : 'bg-[#111827] border-[#374151] text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        <Receipt className="w-3.5 h-3.5 text-[#FF6B35]" />
+                        Pay at Counter
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-center text-xs text-gray-400">
                     Confirm order for <strong className="text-white">Table {decodeURIComponent(tableNumber ?? '')}</strong>?
                   </p>
+
                   <div className="flex gap-3">
                     <button onClick={() => setIsCheckoutConfirming(false)} className="flex-1 py-3 bg-[#374151] hover:bg-[#4b5563] text-white font-semibold rounded-xl transition-all text-sm">
                       Back

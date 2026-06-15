@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,10 +17,37 @@ import {
   EyeOff,
   Tags,
   IndianRupee,
-  ImageIcon,
+  Camera,
+  Upload,
   AlignLeft,
 } from 'lucide-react';
 import { api } from '../../lib/api';
+
+// ─── Image Compression Helper ─────────────────────────────────────────────────
+const compressImage = (file: File, maxSize = 600, quality = 0.82): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxSize) { height = Math.round((height * maxSize) / width); width = maxSize; }
+        } else {
+          if (height > maxSize) { width = Math.round((width * maxSize) / height); height = maxSize; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Category {
@@ -50,7 +77,7 @@ const MenuItemSchema = z.object({
   name: z.string().min(1, 'Item name is required').max(100),
   description: z.string().max(500, 'Description is too long').optional(),
   price: z.number().nonnegative('Price cannot be negative'),
-  imageUrl: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
+  imageUrl: z.string().optional(),
   isAvailable: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
 });
@@ -71,6 +98,10 @@ export const MenuManagement: React.FC = () => {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -112,6 +143,7 @@ export const MenuManagement: React.FC = () => {
   const handleOpenAddModal = () => {
     setEditingItem(null);
     reset({ isAvailable: true, isFeatured: false, categoryId: '', name: '', description: '', price: 0, imageUrl: '' });
+    setImagePreview(null);
     setIsModalOpen(true);
   };
 
@@ -126,7 +158,29 @@ export const MenuManagement: React.FC = () => {
       isAvailable: item.isAvailable,
       isFeatured: item.isFeatured,
     });
+    setImagePreview(item.imageUrl ?? null);
     setIsModalOpen(true);
+  };
+
+  // ─── File upload handler ────────────────────────────────────────────────────
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file.');
+      return;
+    }
+    setIsCompressing(true);
+    try {
+      const base64 = await compressImage(file);
+      setImagePreview(base64);
+      setValue('imageUrl', base64);
+    } catch {
+      toast.error('Failed to process image. Please try another.');
+    } finally {
+      setIsCompressing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   // ─── Form submit ───────────────────────────────────────────────────────────
@@ -140,13 +194,18 @@ export const MenuManagement: React.FC = () => {
         price: data.price,
       };
       if (data.description) payload.description = data.description;
-      if (data.imageUrl) payload.imageUrl = data.imageUrl;
+      payload.imageUrl = imagePreview || null;
       if (data.isAvailable !== undefined) payload.isAvailable = data.isAvailable;
       if (data.isFeatured !== undefined) payload.isFeatured = data.isFeatured;
 
       if (editingItem) {
         await api.patch(`/menu-items/${editingItem.id}`, payload);
         toast.success('Menu item updated successfully');
+        setFailedImages((prev) => {
+          const updated = { ...prev };
+          delete updated[editingItem.id];
+          return updated;
+        });
       } else {
         await api.post('/menu-items', payload);
         toast.success('Menu item added to your menu!');
@@ -300,13 +359,13 @@ export const MenuManagement: React.FC = () => {
             >
               {/* Image or Placeholder */}
               <div className="relative h-44 bg-gradient-to-br from-[#1f2937] to-[#111827] overflow-hidden">
-                {item.imageUrl ? (
+                {item.imageUrl && !failedImages[item.id] ? (
                   <img
                     src={item.imageUrl}
                     alt={item.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
+                    onError={() => {
+                      setFailedImages((prev) => ({ ...prev, [item.id]: true }));
                     }}
                   />
                 ) : (
@@ -542,22 +601,86 @@ export const MenuManagement: React.FC = () => {
                   {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
                 </div>
 
-                {/* Image URL */}
+                {/* Photo Upload */}
                 <div>
                   <label className="flex items-center gap-1.5 text-sm font-medium text-[#d1d5db] mb-2">
-                    <ImageIcon className="w-4 h-4 text-[#FF6B35]" />
-                    Image URL
+                    <Camera className="w-4 h-4 text-[#FF6B35]" />
+                    Item Photo
                     <span className="text-[#6b7280] text-xs font-normal">(optional)</span>
                   </label>
+
+                  {/* Hidden real file input */}
                   <input
-                    type="text"
-                    placeholder="https://example.com/paneer-tikka.jpg"
-                    className={`w-full bg-[#111827]/70 border ${
-                      errors.imageUrl ? 'border-red-500 focus:ring-red-500' : 'border-[#374151] focus:ring-[#FF6B35]'
-                    } rounded-[12px] py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
-                    {...register('imageUrl')}
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture={undefined}
+                    className="hidden"
+                    onChange={handleFileChange}
                   />
-                  {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
+
+                  {imagePreview ? (
+                    /* ── Preview State ── */
+                    <div className="relative rounded-[14px] overflow-hidden border border-[#374151]/50 bg-[#111827]/40">
+                      <img
+                        src={imagePreview}
+                        alt="Item preview"
+                        className="w-full h-40 object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                        <span className="text-xs text-white font-semibold bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-lg">
+                          Photo selected
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-xs text-white font-semibold bg-[#FF6B35]/80 hover:bg-[#FF6B35] backdrop-blur-sm px-3 py-1.5 rounded-lg transition-all"
+                          >
+                            Change
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setImagePreview(null); setValue('imageUrl', ''); }}
+                            className="text-xs text-white font-semibold bg-red-600/80 hover:bg-red-600 backdrop-blur-sm px-3 py-1.5 rounded-lg transition-all"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Upload Zone ── */
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isCompressing}
+                      className="w-full border-2 border-dashed border-[#374151]/60 hover:border-[#FF6B35]/50 bg-[#111827]/30 hover:bg-[#FF6B35]/5 rounded-[14px] py-8 flex flex-col items-center justify-center gap-3 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isCompressing ? (
+                        <>
+                          <Loader2 className="w-8 h-8 text-[#FF6B35] animate-spin" />
+                          <p className="text-sm font-semibold text-[#9ca3af]">Compressing image...</p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-12 h-12 rounded-2xl bg-[#374151]/40 group-hover:bg-[#FF6B35]/10 flex items-center justify-center transition-colors">
+                            <Upload className="w-6 h-6 text-[#9ca3af] group-hover:text-[#FF6B35] transition-colors" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-semibold text-[#d1d5db] group-hover:text-white transition-colors">
+                              Upload Photo
+                            </p>
+                            <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1.5">
+                              <Camera className="w-3.5 h-3.5" /> Camera &nbsp;·&nbsp;
+                              <Upload className="w-3.5 h-3.5" /> Gallery
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Toggles: Available & Featured */}
