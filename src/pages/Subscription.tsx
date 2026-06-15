@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ArrowRight, Sparkles, Percent } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Percent, CreditCard, Smartphone, Copy, CheckCircle, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 
@@ -17,9 +17,17 @@ interface Plan {
 export const Subscription: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectingPlanId, setSelectingPlanId] = useState<string | null>(null);
+  const [selectingPlan, setSelectingPlan] = useState<Plan | null>(null);
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
+  
+  // Payment Simulator states
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi'>('card');
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [generatedLicenseCode, setGeneratedLicenseCode] = useState<string | null>(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,24 +44,30 @@ export const Subscription: React.FC = () => {
     fetchPlans();
   }, []);
 
-  const handleSelectPlan = async (planId: string) => {
-    setSelectingPlanId(planId);
+  const handleSelectPlan = (plan: Plan) => {
+    setSelectingPlan(plan);
+    setIsCheckoutOpen(true);
+  };
+
+  const handleProcessPayment = async () => {
+    if (!selectingPlan) return;
+    setProcessingPayment(true);
     try {
-      // Create pending subscription session on the backend
-      await api.post('/subscriptions', { planId });
-      
-      toast.success('Subscription plan selected successfully!');
-      
-      // Simulate Payment redirection (mock payments for Phase 4)
-      toast.info('Simulating payment gateway redirect...');
-      
-      setTimeout(() => {
-        toast.success('Mock payment successful! Workspace created.');
-        navigate('/dashboard'); // Will lead to dashboard in next phase
-      }, 2000);
+      // Create transaction and generate license code on backend
+      const finalPrice = promoApplied ? 0 : selectingPlan.price;
+      const res = await api.post('/subscriptions/purchase', {
+        planId: selectingPlan.id,
+        paymentMethod: paymentMethod.toUpperCase(),
+        amount: finalPrice
+      });
+
+      setGeneratedLicenseCode(res.code);
+      setPaymentSuccess(true);
+      toast.success('Payment simulated successfully!');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to select subscription plan');
-      setSelectingPlanId(null);
+      toast.error(err.message || 'Payment processing failed');
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
@@ -63,12 +77,18 @@ export const Subscription: React.FC = () => {
       return;
     }
     
-    // Simulate promo codes for Phase 4
     if (promoCode.toUpperCase() === 'FREE30' || promoCode.toUpperCase() === 'FIRST100') {
       setPromoApplied(true);
       toast.success('Promo code applied! 100% discount on first month.');
     } else {
       toast.error('Invalid or expired promo code');
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (generatedLicenseCode) {
+      navigator.clipboard.writeText(generatedLicenseCode);
+      toast.success('License code copied to clipboard!');
     }
   };
 
@@ -180,15 +200,14 @@ export const Subscription: React.FC = () => {
 
                 <div className="mt-8">
                   <button
-                    onClick={() => handleSelectPlan(plan.id)}
-                    disabled={selectingPlanId !== null}
+                    onClick={() => handleSelectPlan(plan)}
                     className={`w-full font-bold rounded-[16px] py-4 px-4 flex items-center justify-center gap-2 transition-all ${
                       isProfessional
                         ? 'bg-gradient-to-r from-[#FF6B35] to-orange-500 hover:from-orange-600 hover:to-orange-700 text-white hover:shadow-lg hover:shadow-orange-600/20'
                         : 'bg-[#374151] hover:bg-[#4b5563] text-white'
                     }`}
                   >
-                    {selectingPlanId === plan.id ? 'Processing...' : 'Get Started'}
+                    Get Started
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -197,6 +216,193 @@ export const Subscription: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* PAYMENT MODAL OVERLAY */}
+      {isCheckoutOpen && selectingPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            onClick={() => {
+              if (!processingPayment) {
+                setIsCheckoutOpen(false);
+                setPaymentSuccess(false);
+                setGeneratedLicenseCode(null);
+              }
+            }} 
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm" 
+          />
+          
+          <div className="relative w-full max-w-md bg-[#1f2937] border border-[#374151] rounded-[28px] shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-[#111827] px-6 py-5 border-b border-[#374151] flex justify-between items-center">
+              <div>
+                <h3 className="font-extrabold text-white text-base">Qrunto Subscriptions</h3>
+                <p className="text-[11px] text-gray-400">Order Ref: SaaS-Plan-Checkout</p>
+              </div>
+              <button 
+                onClick={() => {
+                  setIsCheckoutOpen(false);
+                  setPaymentSuccess(false);
+                  setGeneratedLicenseCode(null);
+                }}
+                disabled={processingPayment}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content Switch */}
+            {!paymentSuccess ? (
+              <div className="p-6 space-y-6">
+                {/* Plan summary */}
+                <div className="bg-[#111827]/40 border border-[#374151]/55 rounded-2xl p-4 flex justify-between items-center">
+                  <div>
+                    <h4 className="font-extrabold text-sm text-white">{selectingPlan.name} Plan</h4>
+                    <p className="text-xs text-gray-400">{selectingPlan.durationDays} Days Duration</p>
+                  </div>
+                  <span className="text-[#FF6B35] font-black text-lg">
+                    ₹{(promoApplied ? 0 : selectingPlan.price).toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                {/* Gateway simulation */}
+                <div className="space-y-4">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Select Payment Method</p>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setPaymentMethod('card')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${
+                        paymentMethod === 'card'
+                          ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-white font-bold'
+                          : 'border-[#374151]/60 bg-[#111827]/20 text-gray-400 hover:border-gray-500'
+                      }`}
+                    >
+                      <CreditCard className="w-6 h-6 mb-2" />
+                      <span className="text-xs">Credit/Debit Card</span>
+                    </button>
+                    <button
+                      onClick={() => setPaymentMethod('upi')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${
+                        paymentMethod === 'upi'
+                          ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-white font-bold'
+                          : 'border-[#374151]/60 bg-[#111827]/20 text-gray-400 hover:border-gray-500'
+                      }`}
+                    >
+                      <Smartphone className="w-6 h-6 mb-2" />
+                      <span className="text-xs">UPI Netbanking</span>
+                    </button>
+                  </div>
+
+                  {paymentMethod === 'card' ? (
+                    <div className="space-y-3 pt-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[#9ca3af] uppercase">Card Number</label>
+                        <input
+                          type="text"
+                          disabled
+                          value="4111 2222 3333 4444"
+                          className="w-full bg-[#111827]/40 border border-[#374151]/60 rounded-xl py-2.5 px-3 text-xs text-white opacity-70 cursor-not-allowed"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-[#9ca3af] uppercase">Expiry</label>
+                          <input
+                            type="text"
+                            disabled
+                            value="12 / 29"
+                            className="w-full bg-[#111827]/40 border border-[#374151]/60 rounded-xl py-2.5 px-3 text-xs text-white opacity-70 cursor-not-allowed"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-[#9ca3af] uppercase">CVV</label>
+                          <input
+                            type="password"
+                            disabled
+                            value="***"
+                            className="w-full bg-[#111827]/40 border border-[#374151]/60 rounded-xl py-2.5 px-3 text-xs text-white opacity-70 cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="pt-2 text-center py-4 bg-[#111827]/30 border border-[#374151]/40 rounded-2xl">
+                      <p className="text-xs text-gray-300 font-semibold">UPI Integration Simulator</p>
+                      <p className="text-[10px] text-gray-500 mt-1">Simulated via secure payment link. ID: qrunto.pay@upi</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Submit button */}
+                <button
+                  onClick={handleProcessPayment}
+                  disabled={processingPayment}
+                  className="w-full py-4 bg-[#FF6B35] hover:bg-orange-600 disabled:bg-[#FF6B35]/40 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#FF6B35]/15"
+                >
+                  {processingPayment ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing Sandbox Payment...
+                    </>
+                  ) : (
+                    <>
+                      Pay ₹{(promoApplied ? 0 : selectingPlan.price).toLocaleString('en-IN')} Now
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="p-6 text-center space-y-6">
+                <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-400">
+                  <CheckCircle className="w-10 h-10" />
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-white">Payment Successful!</h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Your license code has been generated. Use it in the dashboard billing section to activate.
+                  </p>
+                </div>
+
+                {/* License Code Display Box */}
+                <div className="bg-[#111827] border border-[#374151]/80 rounded-2xl p-5 space-y-2 relative group">
+                  <span className="text-[9px] font-bold text-[#FF6B35] uppercase tracking-wider">License Activation Code</span>
+                  <div className="flex items-center justify-center gap-2">
+                    <code className="text-xl font-black text-white font-mono tracking-widest selection:bg-orange-500/20">
+                      {generatedLicenseCode}
+                    </code>
+                    <button
+                      onClick={copyToClipboard}
+                      className="p-1.5 bg-[#374151]/60 hover:bg-[#374151] rounded-lg text-gray-300 transition-colors"
+                      title="Copy Code"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    onClick={() => {
+                      setIsCheckoutOpen(false);
+                      setPaymentSuccess(false);
+                      setGeneratedLicenseCode(null);
+                      navigate('/dashboard/subscription'); // Direct to subscription billing
+                    }}
+                    className="flex-1 py-3 bg-[#FF6B35] hover:bg-orange-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1.5"
+                  >
+                    Go to Billing & Activate
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+export default Subscription;
