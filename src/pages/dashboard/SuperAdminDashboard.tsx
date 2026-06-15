@@ -13,6 +13,8 @@ import {
   Copy,
   ArrowRight,
   Sparkles,
+  Trash2,
+  Pencil,
 } from 'lucide-react';
 import { useAuthStore, type User } from '../../store/authStore';
 import { api } from '../../lib/api';
@@ -44,6 +46,7 @@ export const SuperAdminDashboard: React.FC = () => {
   // Modals / Forms States
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<any | null>(null);
   
   // Plan form fields
   const [planName, setPlanName] = useState('');
@@ -142,25 +145,81 @@ export const SuperAdminDashboard: React.FC = () => {
     }
   };
 
-  // Create Plan Submit
+  // Create / Update Plan Submit
   const handleCreatePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/superadmin/plans', {
-        name: planName,
-        price: planPrice,
-        durationDays: planDuration,
-        maxTables: planMaxTables,
-        maxMenuItems: planMaxMenuItems,
-      });
-      toast.success('Subscription plan created successfully!');
+      if (editingPlan) {
+        await api.patch(`/superadmin/plans/${editingPlan.id}`, {
+          name: planName,
+          price: planPrice,
+          durationDays: planDuration,
+          maxTables: planMaxTables,
+          maxMenuItems: planMaxMenuItems,
+        });
+        toast.success('Subscription plan updated successfully!');
+      } else {
+        await api.post('/superadmin/plans', {
+          name: planName,
+          price: planPrice,
+          durationDays: planDuration,
+          maxTables: planMaxTables,
+          maxMenuItems: planMaxMenuItems,
+        });
+        toast.success('Subscription plan created successfully!');
+      }
       setIsPlanModalOpen(false);
+      setEditingPlan(null);
       setPlanName('');
       setPlanPrice(0);
       setPlanDuration(30);
+      setPlanMaxTables(10);
+      setPlanMaxMenuItems(50);
       loadTabData();
     } catch (err: any) {
-      toast.error(err.message || 'Plan creation failed');
+      toast.error(err.message || 'Plan save failed');
+    }
+  };
+
+  // Delete Restaurant
+  const handleDeleteRestaurant = async (id: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this restaurant and all associated menus, tables, orders, and owners? This action CANNOT be undone.')) {
+      return;
+    }
+    try {
+      const res = await api.delete(`/superadmin/restaurants/${id}`);
+      toast.success(res.message || 'Restaurant deleted successfully');
+      loadTabData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete restaurant');
+    }
+  };
+
+  // Delete Plan
+  const handleDeletePlan = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this subscription plan? Associated subscriptions and codes will also be cleaned up.')) {
+      return;
+    }
+    try {
+      const res = await api.delete(`/superadmin/plans/${id}`);
+      toast.success(res.message || 'Plan deleted successfully');
+      loadTabData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete plan');
+    }
+  };
+
+  // Delete License Code
+  const handleDeleteLicenseCode = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this license code?')) {
+      return;
+    }
+    try {
+      const res = await api.delete(`/superadmin/license-codes/${id}`);
+      toast.success(res.message || 'License code deleted successfully');
+      loadTabData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete license code');
     }
   };
 
@@ -392,6 +451,13 @@ export const SuperAdminDashboard: React.FC = () => {
                               Login As
                               <ArrowRight className="w-3 h-3" />
                             </button>
+                            <button
+                              onClick={() => handleDeleteRestaurant(rest.id)}
+                              className="px-3 py-1.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 rounded-xl text-[10px] font-bold text-red-400 transition-all inline-flex items-center gap-1 shadow"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -431,6 +497,31 @@ export const SuperAdminDashboard: React.FC = () => {
                         <div className="border-t border-[#374151]/20 my-5 pt-4 space-y-2.5 text-xs text-gray-300">
                           <p>🍽️ Up to {plan.maxTables} Restaurant Tables</p>
                           <p>📁 Up to {plan.maxMenuItems} Menu Items</p>
+                        </div>
+                        
+                        <div className="flex justify-end gap-2 pt-2 border-t border-[#374151]/10">
+                          <button
+                            onClick={() => {
+                              setEditingPlan(plan);
+                              setPlanName(plan.name);
+                              setPlanPrice(plan.price);
+                              setPlanDuration(plan.durationDays);
+                              setPlanMaxTables(plan.maxTables);
+                              setPlanMaxMenuItems(plan.maxMenuItems);
+                              setIsPlanModalOpen(true);
+                            }}
+                            className="p-2 bg-[#374151]/30 hover:bg-[#374151] rounded-xl text-gray-300 transition-all"
+                            title="Edit Plan"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePlan(plan.id)}
+                            className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-red-400 transition-all border border-red-500/10"
+                            title="Delete Plan"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -494,16 +585,23 @@ export const SuperAdminDashboard: React.FC = () => {
                                 {lic.usageCount >= lic.usageLimit ? 'FULLY USED' : lic.isActive ? 'ACTIVE' : 'INACTIVE'}
                               </span>
                             </td>
-                            <td className="p-4 text-right">
+                            <td className="p-4 text-right space-x-2">
                               <button
                                 onClick={() => {
                                   navigator.clipboard.writeText(lic.code);
                                   toast.success('Code copied to clipboard!');
                                 }}
-                                className="p-2 bg-[#374151]/30 hover:bg-[#374151] rounded-xl text-gray-300"
+                                className="p-2 bg-[#374151]/30 hover:bg-[#374151] rounded-xl text-gray-300 inline-flex"
                                 title="Copy Code"
                               >
                                 <Copy className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLicenseCode(lic.id)}
+                                className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-red-400 border border-red-500/10 inline-flex"
+                                title="Delete License Code"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </td>
                           </tr>
@@ -612,9 +710,22 @@ export const SuperAdminDashboard: React.FC = () => {
       {/* PLAN CREATION MODAL */}
       {isPlanModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div onClick={() => setIsPlanModalOpen(false)} className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
+          <div 
+            onClick={() => {
+              setIsPlanModalOpen(false);
+              setEditingPlan(null);
+              setPlanName('');
+              setPlanPrice(0);
+              setPlanDuration(30);
+              setPlanMaxTables(10);
+              setPlanMaxMenuItems(50);
+            }} 
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm" 
+          />
           <div className="relative w-full max-w-sm bg-[#1f2937] border border-[#374151]/80 rounded-[24px] shadow-2xl p-6 z-10 animate-in zoom-in-95 duration-200">
-            <h2 className="text-lg font-bold text-white mb-4">Create New Plan</h2>
+            <h2 className="text-lg font-bold text-white mb-4">
+              {editingPlan ? 'Edit Subscription Plan' : 'Create New Plan'}
+            </h2>
             <form onSubmit={handleCreatePlan} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[#9ca3af] uppercase mb-1">Plan Name</label>
@@ -673,7 +784,15 @@ export const SuperAdminDashboard: React.FC = () => {
               <div className="flex gap-3 pt-3">
                 <button
                   type="button"
-                  onClick={() => setIsPlanModalOpen(false)}
+                  onClick={() => {
+                    setIsPlanModalOpen(false);
+                    setEditingPlan(null);
+                    setPlanName('');
+                    setPlanPrice(0);
+                    setPlanDuration(30);
+                    setPlanMaxTables(10);
+                    setPlanMaxMenuItems(50);
+                  }}
                   className="flex-1 py-3 bg-[#374151] hover:bg-[#4b5563] text-white font-semibold rounded-xl text-sm"
                 >
                   Cancel
@@ -682,7 +801,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   type="submit"
                   className="flex-1 py-3 bg-[#FF6B35] hover:bg-orange-600 text-white font-bold rounded-xl text-sm"
                 >
-                  Create Plan
+                  {editingPlan ? 'Save Changes' : 'Create Plan'}
                 </button>
               </div>
             </form>
