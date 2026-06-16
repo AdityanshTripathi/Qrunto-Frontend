@@ -62,8 +62,12 @@ export const Subscription: React.FC = () => {
       });
 
       setGeneratedLicenseCode(res.code);
+
+      // Auto-redeem the generated license code to activate the subscription immediately
+      await api.post('/subscriptions/redeem', { code: res.code });
+
       setPaymentSuccess(true);
-      toast.success('Payment simulated successfully!');
+      toast.success('Payment successful & subscription activated!');
     } catch (err: any) {
       toast.error(err.message || 'Payment processing failed');
     } finally {
@@ -359,15 +363,15 @@ export const Subscription: React.FC = () => {
                 </div>
                 
                 <div>
-                  <h3 className="text-xl font-bold text-white">Payment Successful!</h3>
+                  <h3 className="text-xl font-bold text-white">Subscription Activated!</h3>
                   <p className="text-xs text-gray-400 mt-1">
-                    Your license code has been generated. Use it in the dashboard billing section to activate.
+                    Your payment was successful and your subscription is active. Proceed to your dashboard.
                   </p>
                 </div>
 
                 {/* License Code Display Box */}
                 <div className="bg-[#111827] border border-[#374151]/80 rounded-2xl p-5 space-y-2 relative group">
-                  <span className="text-[9px] font-bold text-[#FF6B35] uppercase tracking-wider">License Activation Code</span>
+                  <span className="text-[9px] font-bold text-[#FF6B35] uppercase tracking-wider">License Code (Auto-Activated)</span>
                   <div className="flex items-center justify-center gap-2">
                     <code className="text-xl font-black text-white font-mono tracking-widest selection:bg-orange-500/20">
                       {generatedLicenseCode}
@@ -388,11 +392,11 @@ export const Subscription: React.FC = () => {
                       setIsCheckoutOpen(false);
                       setPaymentSuccess(false);
                       setGeneratedLicenseCode(null);
-                      navigate('/dashboard/subscription'); // Direct to subscription billing
+                      navigate('/dashboard'); // Direct to dashboard
                     }}
                     className="flex-1 py-3 bg-[#FF6B35] hover:bg-orange-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1.5"
                   >
-                    Go to Billing & Activate
+                    Go to Dashboard
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>

@@ -14,6 +14,7 @@ import {
   Printer,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type OrderStatus = 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED';
@@ -39,6 +40,8 @@ interface Order {
   taxAmount: number;
   totalAmount: number;
   notes: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
   createdAt: string;
   table: Table;
   orderItems: OrderItem[];
@@ -53,30 +56,27 @@ interface OrderStats {
 }
 
 // ─── Format Currency ──────────────────────────────────────────────────────────
-const fmt = (amount: number, currency = 'INR') =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+const fmt = (amount: number, _currency = 'INR') =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
 const BASE_URL = 'https://backend-steel-seven-97.vercel.app/api';
 
 export const OrderManagement: React.FC = () => {
   const token = useAuthStore((state) => state.accessToken);
 
-  // States
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<OrderStats>({ NEW: 0, PREPARING: 0, READY: 0, SERVED: 0, CANCELLED: 0 });
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>('ALL');
-  const [pollInterval, setPollInterval] = useState<number>(10000); // 10s default
+  const [pollInterval, setPollInterval] = useState<number>(10000);
 
-  // Fetch orders and stats
   const fetchOrdersAndStats = useCallback(async (silent = false) => {
     if (!token) return;
     if (!silent) setLoading(true);
 
     try {
-      // 1. Fetch Orders
       let ordersUrl = `${BASE_URL}/orders`;
       if (activeTab !== 'ALL') {
         ordersUrl += `?status=${activeTab}`;
@@ -87,22 +87,35 @@ export const OrderManagement: React.FC = () => {
       const ordersData = await ordersRes.json();
       if (!ordersRes.ok) throw new Error(ordersData.error || 'Failed to fetch orders');
       
-      // Check for any new order to trigger a sound/toast
       if (orders.length > 0 && ordersData.orders.length > orders.length) {
         const hasNew = ordersData.orders.some((o: Order) => o.status === 'NEW' && !orders.some(prev => prev.id === o.id));
         if (hasNew) {
           toast.success('🔔 New Order Received!', { duration: 5000 });
+          // Play notification chime sound using synthesized Web Audio API for maximum reliability
           try {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav');
-            audio.play();
-          } catch (e) {
-            // Browser might block audio play without user interaction
+            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const playTone = (freq: number, duration: number, delay: number) => {
+              const osc = audioCtx.createOscillator();
+              const gain = audioCtx.createGain();
+              osc.connect(gain);
+              gain.connect(audioCtx.destination);
+              osc.frequency.value = freq;
+              osc.type = 'sine';
+              gain.gain.setValueAtTime(0.15, audioCtx.currentTime + delay);
+              gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + delay + duration);
+              osc.start(audioCtx.currentTime + delay);
+              osc.stop(audioCtx.currentTime + delay + duration);
+            };
+            // Double chime: E5 (659.25Hz) then G5 (783.99Hz)
+            playTone(659.25, 0.15, 0);
+            playTone(783.99, 0.25, 0.12);
+          } catch (soundErr) {
+            console.log('Audio playback blocked by browser or unsupported', soundErr);
           }
         }
       }
       setOrders(ordersData.orders);
 
-      // 2. Fetch Stats
       const statsRes = await fetch(`${BASE_URL}/orders/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -117,7 +130,6 @@ export const OrderManagement: React.FC = () => {
     }
   }, [token, activeTab, orders]);
 
-  // Polling hook
   useEffect(() => {
     fetchOrdersAndStats();
     const timer = setInterval(() => {
@@ -126,7 +138,6 @@ export const OrderManagement: React.FC = () => {
     return () => clearInterval(timer);
   }, [pollInterval, activeTab, token]);
 
-  // Update Status
   const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
     if (!token) return;
     setUpdatingId(orderId);
@@ -143,18 +154,14 @@ export const OrderManagement: React.FC = () => {
       if (!res.ok) throw new Error(data.error || 'Failed to update order status');
       
       toast.success(`Order status updated to ${nextStatus}`);
-      
-      // Update local state to avoid full reload flickers
       setOrders((prev) => prev.map((o) => (o.id === orderId ? data.order : o)));
       
-      // Re-fetch stats in background
       const statsRes = await fetch(`${BASE_URL}/orders/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const statsData = await statsRes.json();
       if (statsRes.ok) setStats(statsData.stats);
 
-      // Update detail modal if open
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(data.order);
       }
@@ -165,23 +172,16 @@ export const OrderManagement: React.FC = () => {
     }
   };
 
-  // Helper to determine status styling
   const getStatusBadgeStyles = (status: OrderStatus) => {
     switch (status) {
-      case 'NEW':
-        return 'bg-blue-500/10 text-blue-400 border-blue-500/25';
-      case 'PREPARING':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/25';
-      case 'READY':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25';
-      case 'SERVED':
-        return 'bg-gray-500/10 text-gray-400 border-gray-500/25';
-      case 'CANCELLED':
-        return 'bg-rose-500/10 text-rose-400 border-rose-500/25';
+      case 'NEW': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25';
+      case 'PREPARING': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25';
+      case 'READY': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25';
+      case 'SERVED': return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/25';
+      case 'CANCELLED': return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25';
     }
   };
 
-  // Action flow helper
   const renderActionButtons = (order: Order) => {
     const isUpdating = updatingId === order.id;
     switch (order.status) {
@@ -191,7 +191,7 @@ export const OrderManagement: React.FC = () => {
             <button
               onClick={() => handleUpdateStatus(order.id, 'CANCELLED')}
               disabled={isUpdating}
-              className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold rounded-xl transition-all"
+              className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-semibold rounded-xl transition-all"
             >
               Decline
             </button>
@@ -211,7 +211,7 @@ export const OrderManagement: React.FC = () => {
             <button
               onClick={() => handleUpdateStatus(order.id, 'CANCELLED')}
               disabled={isUpdating}
-              className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold rounded-xl transition-all"
+              className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-semibold rounded-xl transition-all"
             >
               Cancel
             </button>
@@ -238,7 +238,7 @@ export const OrderManagement: React.FC = () => {
         );
       default:
         return (
-          <span className="text-xs text-gray-500 font-medium italic">
+          <span className="text-xs text-slate-500 dark:text-gray-500 font-medium italic">
             Completed
           </span>
         );
@@ -246,31 +246,31 @@ export const OrderManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       
       {/* Upper bar with title & stats */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             Live Order Kitchen
             <span className="flex h-2.5 w-2.5 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
           </h1>
-          <p className="text-sm text-[#9ca3af]">Accept, prepare, and track orders in real time.</p>
+          <p className="text-sm text-slate-500 dark:text-[#9ca3af]">Accept, prepare, and track orders in real time.</p>
         </div>
 
         {/* Polling & Refresh Controls */}
-        <div className="flex items-center gap-3 bg-[#1f2937]/35 border border-[#374151]/30 rounded-2xl px-4 py-2 self-start md:self-auto">
-          <span className="text-xs text-[#9ca3af] font-medium flex items-center gap-1.5">
+        <div className="flex items-center gap-3 bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/30 rounded-2xl px-4 py-2 self-start sm:self-auto">
+          <span className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium flex items-center gap-1.5">
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Auto-refresh
           </span>
           <select
             value={pollInterval}
             onChange={(e) => setPollInterval(Number(e.target.value))}
-            className="bg-[#111827] border border-[#374151]/40 rounded-lg text-xs text-white px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#FF6B35]"
+            className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-[#374151]/40 rounded-lg text-xs text-slate-800 dark:text-white px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#FF6B35]"
           >
             <option value={5000}>5s</option>
             <option value={10000}>10s</option>
@@ -278,7 +278,7 @@ export const OrderManagement: React.FC = () => {
           </select>
           <button
             onClick={() => fetchOrdersAndStats()}
-            className="p-1.5 hover:bg-[#374151]/50 rounded-lg text-gray-400 hover:text-white transition-all"
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#374151]/50 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all"
             title="Manual sync"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -287,27 +287,27 @@ export const OrderManagement: React.FC = () => {
       </div>
 
       {/* Stats Counter Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {(['NEW', 'PREPARING', 'READY', 'SERVED', 'CANCELLED'] as OrderStatus[]).map((status) => {
           let label: string = status;
-          let iconColor = 'text-blue-400';
+          let iconColor = 'text-blue-600 dark:text-blue-400';
           let bgColor = 'from-blue-500/10 to-transparent border-blue-500/20';
 
           if (status === 'PREPARING') {
             label = 'Preparing';
-            iconColor = 'text-amber-400';
+            iconColor = 'text-amber-600 dark:text-amber-400';
             bgColor = 'from-amber-500/10 to-transparent border-amber-500/20';
           } else if (status === 'READY') {
             label = 'Ready';
-            iconColor = 'text-emerald-400';
+            iconColor = 'text-emerald-600 dark:text-emerald-400';
             bgColor = 'from-emerald-500/10 to-transparent border-emerald-500/20';
           } else if (status === 'SERVED') {
             label = 'Served';
-            iconColor = 'text-gray-400';
-            bgColor = 'from-gray-500/10 to-transparent border-gray-500/20';
+            iconColor = 'text-slate-500 dark:text-gray-400';
+            bgColor = 'from-slate-500/10 to-transparent border-slate-500/20';
           } else if (status === 'CANCELLED') {
             label = 'Cancelled';
-            iconColor = 'text-rose-400';
+            iconColor = 'text-rose-600 dark:text-rose-400';
             bgColor = 'from-rose-500/10 to-transparent border-rose-500/20';
           } else {
             label = 'New';
@@ -317,26 +317,26 @@ export const OrderManagement: React.FC = () => {
             <div
               key={status}
               onClick={() => setActiveTab(status)}
-              className={`cursor-pointer rounded-2xl border bg-gradient-to-br p-4 transition-all hover:scale-[1.02] ${bgColor} ${
+              className={`cursor-pointer rounded-2xl border bg-gradient-to-br p-3 sm:p-4 transition-all hover:scale-[1.02] ${bgColor} ${
                 activeTab === status ? 'border-[#FF6B35]/50 ring-1 ring-[#FF6B35]/30' : ''
               }`}
             >
-              <p className="text-xs text-[#9ca3af] font-semibold">{label}</p>
-              <h3 className={`text-2xl font-bold mt-1 ${iconColor}`}>{stats[status] ?? 0}</h3>
+              <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-semibold">{label}</p>
+              <h3 className={`text-xl sm:text-2xl font-bold mt-1 ${iconColor}`}>{stats[status] ?? 0}</h3>
             </div>
           );
         })}
       </div>
 
       {/* Tab Filter Line */}
-      <div className="border-b border-[#374151]/30 flex gap-4 overflow-x-auto scrollbar-hide pb-0.5">
+      <div className="border-b border-slate-200 dark:border-[#374151]/30 flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide pb-0.5">
         <button
           onClick={() => setActiveTab('ALL')}
-          className={`pb-3 text-sm font-semibold relative transition-all ${
-            activeTab === 'ALL' ? 'text-[#FF6B35]' : 'text-[#9ca3af] hover:text-white'
+          className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${
+            activeTab === 'ALL' ? 'text-[#FF6B35]' : 'text-slate-500 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          All Orders ({Object.values(stats).reduce((a, b) => a + b, 0)})
+          All ({Object.values(stats).reduce((a, b) => a + b, 0)})
           {activeTab === 'ALL' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF6B35] rounded-full" />
           )}
@@ -348,17 +348,13 @@ export const OrderManagement: React.FC = () => {
               key={status}
               onClick={() => setActiveTab(status)}
               className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${
-                activeTab === status ? 'text-[#FF6B35]' : 'text-[#9ca3af] hover:text-white'
+                activeTab === status ? 'text-[#FF6B35]' : 'text-slate-500 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {status === 'NEW'
-                ? `New (${count})`
-                : status === 'PREPARING'
-                ? `Preparing (${count})`
-                : status === 'READY'
-                ? `Ready (${count})`
-                : status === 'SERVED'
-                ? `Served (${count})`
+              {status === 'NEW' ? `New (${count})`
+                : status === 'PREPARING' ? `Preparing (${count})`
+                : status === 'READY' ? `Ready (${count})`
+                : status === 'SERVED' ? `Served (${count})`
                 : `Cancelled (${count})`}
               {activeTab === status && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF6B35] rounded-full" />
@@ -370,26 +366,23 @@ export const OrderManagement: React.FC = () => {
 
       {/* Orders Grid/List */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <RefreshCw className="w-8 h-8 text-[#FF6B35] animate-spin" />
-          <p className="text-[#9ca3af] text-sm font-medium">Fetching orders...</p>
-        </div>
+        <SkeletonLoader type="grid" count={6} />
       ) : orders.length === 0 ? (
-        <div className="bg-[#1f2937]/15 border border-[#374151]/30 rounded-[28px] p-16 text-center backdrop-blur-md flex flex-col items-center justify-center min-h-[350px]">
-          <div className="w-16 h-16 bg-[#374151]/30 rounded-2xl flex items-center justify-center mb-4 text-[#9ca3af]">
-            <Coffee className="w-8 h-8" />
+        <div className="bg-white dark:bg-[#1f2937]/15 border border-slate-200 dark:border-[#374151]/30 rounded-[28px] p-10 sm:p-16 text-center backdrop-blur-md flex flex-col items-center justify-center min-h-[280px] sm:min-h-[350px]">
+          <div className="w-14 sm:w-16 h-14 sm:h-16 bg-slate-100 dark:bg-[#374151]/30 rounded-2xl flex items-center justify-center mb-4 text-slate-400 dark:text-[#9ca3af]">
+            <Coffee className="w-7 sm:w-8 h-7 sm:h-8" />
           </div>
-          <h3 className="text-lg font-bold text-gray-200">No orders here</h3>
-          <p className="text-sm text-[#9ca3af] max-w-xs mt-1">
-            There are currently no orders in the status filter: <strong className="text-white">{activeTab}</strong>.
+          <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-gray-200">No orders here</h3>
+          <p className="text-sm text-slate-500 dark:text-[#9ca3af] max-w-xs mt-1">
+            There are currently no orders in the status filter: <strong className="text-slate-900 dark:text-white">{activeTab}</strong>.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {orders.map((order) => (
             <div
               key={order.id}
-              className="bg-[#1f2937]/30 border border-[#374151]/40 rounded-[22px] p-5 backdrop-blur-md flex flex-col justify-between hover:border-[#374151]/70 transition-all group"
+              className="bg-white dark:bg-[#1f2937]/30 border border-slate-200 dark:border-[#374151]/40 rounded-[22px] p-4 sm:p-5 backdrop-blur-md flex flex-col justify-between hover:border-slate-300 dark:hover:border-[#374151]/70 hover:shadow-md transition-all group"
             >
               <div>
                 {/* Header info */}
@@ -398,38 +391,42 @@ export const OrderManagement: React.FC = () => {
                     <span className="text-[10px] text-[#FF6B35] font-extrabold uppercase bg-[#FF6B35]/10 px-2 py-0.5 rounded-md border border-[#FF6B35]/25">
                       {order.orderNumber}
                     </span>
-                    <h4 className="text-base font-extrabold text-white mt-1.5">
+                    <h4 className="text-base font-extrabold text-slate-900 dark:text-white mt-1.5">
                       Table {order.table.tableNumber}
                     </h4>
+                    {order.customerName && (
+                      <p className="text-xs text-slate-600 dark:text-gray-400 mt-1 flex flex-wrap items-center gap-1 font-medium">
+                        <span>👤 {order.customerName}</span>
+                        {order.customerPhone && <span className="text-slate-400 dark:text-gray-500 font-normal">({order.customerPhone})</span>}
+                      </p>
+                    )}
                   </div>
                   <span
-                    className={`text-[10px] font-bold border px-2 py-0.5 rounded-full ${getStatusBadgeStyles(
-                      order.status
-                    )}`}
+                    className={`text-[10px] font-bold border px-2 py-0.5 rounded-full ${getStatusBadgeStyles(order.status)}`}
                   >
                     {order.status}
                   </span>
                 </div>
 
                 {/* Order Time */}
-                <div className="flex items-center gap-1.5 text-xs text-[#9ca3af] mb-4">
-                  <Clock className="w-3.5 h-3.5 text-gray-500" />
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#9ca3af] mb-4">
+                  <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-gray-500" />
                   {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(order.createdAt).toLocaleDateString()})
                 </div>
 
                 {/* Items Summary */}
-                <div className="border-t border-[#374151]/20 pt-3 space-y-2 mb-6">
+                <div className="border-t border-slate-100 dark:border-[#374151]/20 pt-3 space-y-2 mb-6">
                   {order.orderItems.map((item) => (
                     <div key={item.id} className="flex justify-between items-center text-xs">
-                      <span className="text-gray-300 font-medium">
+                      <span className="text-slate-700 dark:text-gray-300 font-medium">
                         <strong className="text-[#FF6B35] mr-1">{item.quantity}×</strong> {item.itemName}
                       </span>
-                      <span className="text-[#9ca3af] font-semibold">{fmt(item.totalPrice)}</span>
+                      <span className="text-slate-500 dark:text-[#9ca3af] font-semibold">{fmt(item.totalPrice)}</span>
                     </div>
                   ))}
                   {order.notes && (
-                    <div className="mt-2 bg-[#111827]/40 border border-[#374151]/20 rounded-xl p-2.5 text-[11px] text-amber-400/90 leading-relaxed italic">
-                      <strong className="text-amber-500 font-bold block mb-0.5 not-italic">Notes:</strong>
+                    <div className="mt-2 bg-amber-50 dark:bg-[#111827]/40 border border-amber-200 dark:border-[#374151]/20 rounded-xl p-2.5 text-[11px] text-amber-700 dark:text-amber-400/90 leading-relaxed italic">
+                      <strong className="text-amber-600 dark:text-amber-500 font-bold block mb-0.5 not-italic">Notes:</strong>
                       "{order.notes}"
                     </div>
                   )}
@@ -437,10 +434,10 @@ export const OrderManagement: React.FC = () => {
               </div>
 
               {/* Action Buttons Footer */}
-              <div className="border-t border-[#374151]/20 pt-4 flex items-center justify-between gap-4">
+              <div className="border-t border-slate-100 dark:border-[#374151]/20 pt-4 flex items-center justify-between gap-4">
                 <button
                   onClick={() => setSelectedOrder(order)}
-                  className="p-2 bg-[#374151]/30 hover:bg-[#374151]/60 text-gray-300 hover:text-white rounded-xl transition-all flex items-center gap-1 text-xs font-semibold"
+                  className="p-2 bg-slate-100 dark:bg-[#374151]/30 hover:bg-slate-200 dark:hover:bg-[#374151]/60 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all flex items-center gap-1 text-xs font-semibold border border-slate-200 dark:border-transparent"
                   title="View details"
                 >
                   <Eye className="w-4 h-4" />
@@ -458,42 +455,63 @@ export const OrderManagement: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setSelectedOrder(null)} className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
 
-          <div className="relative bg-[#1f2937] border border-[#374151]/55 rounded-[28px] max-w-lg w-full overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200">
+          <div className="relative bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/55 rounded-[28px] max-w-lg w-full overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#374151]/30">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-[#374151]/30">
               <div>
                 <span className="text-xs text-[#FF6B35] font-extrabold uppercase bg-[#FF6B35]/15 px-2.5 py-1 rounded-md border border-[#FF6B35]/30">
                   {selectedOrder.orderNumber}
                 </span>
-                <h2 className="text-xl font-extrabold text-white mt-2">
+                <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-2">
                   Order Details — Table {selectedOrder.table.tableNumber}
                 </h2>
               </div>
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="p-2 hover:bg-[#374151] rounded-xl text-gray-400 hover:text-white transition-all"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-[#374151] rounded-xl text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all"
               >
                 ✕
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+            <div className="p-5 sm:p-6 space-y-5 sm:space-y-6 max-h-[55vh] sm:max-h-[60vh] overflow-y-auto scrollbar-thin">
               {/* Order Status & Time */}
-              <div className="flex justify-between items-center bg-[#111827]/40 border border-[#374151]/30 rounded-2xl p-4">
+              <div className="flex justify-between items-center bg-slate-50 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/30 rounded-2xl p-4">
                 <div>
-                  <p className="text-[10px] text-[#9ca3af] uppercase font-bold tracking-wider">Status</p>
+                  <p className="text-[10px] text-slate-500 dark:text-[#9ca3af] uppercase font-bold tracking-wider">Status</p>
                   <span className={`text-xs font-bold inline-block border px-2 py-0.5 rounded-full mt-1 ${getStatusBadgeStyles(selectedOrder.status)}`}>
                     {selectedOrder.status}
                   </span>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-[#9ca3af] uppercase font-bold tracking-wider">Order Time</p>
-                  <p className="text-xs text-white font-semibold mt-1">
+                  <p className="text-[10px] text-slate-500 dark:text-[#9ca3af] uppercase font-bold tracking-wider">Order Time</p>
+                  <p className="text-xs text-slate-800 dark:text-white font-semibold mt-1">
                     {new Date(selectedOrder.createdAt).toLocaleTimeString()} · {new Date(selectedOrder.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
+
+              {/* Customer Details */}
+              {selectedOrder.customerName && (
+                <div>
+                  <h4 className="text-xs text-[#FF6B35] font-extrabold uppercase tracking-wider mb-2">
+                    Customer Details
+                  </h4>
+                  <div className="bg-slate-50 dark:bg-[#111827]/25 border border-slate-200 dark:border-[#374151]/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
+                    <div>
+                      <p className="text-[10px] text-slate-400">Name</p>
+                      <p className="font-bold text-slate-900 dark:text-white mt-0.5">{selectedOrder.customerName}</p>
+                    </div>
+                    {selectedOrder.customerPhone && (
+                      <div className="sm:text-right">
+                        <p className="text-[10px] text-slate-400">Phone</p>
+                        <p className="font-bold text-slate-900 dark:text-white mt-0.5">{selectedOrder.customerPhone}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Items List */}
               <div>
@@ -501,16 +519,16 @@ export const OrderManagement: React.FC = () => {
                   <FileText className="w-3.5 h-3.5" />
                   Order Items
                 </h4>
-                <div className="bg-[#111827]/25 border border-[#374151]/20 rounded-2xl p-4 space-y-3">
+                <div className="bg-slate-50 dark:bg-[#111827]/25 border border-slate-200 dark:border-[#374151]/20 rounded-2xl p-4 space-y-3">
                   {selectedOrder.orderItems.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center text-sm border-b border-[#374151]/20 pb-2.5 last:border-0 last:pb-0">
+                    <div key={item.id} className="flex justify-between items-center text-sm border-b border-slate-100 dark:border-[#374151]/20 pb-2.5 last:border-0 last:pb-0">
                       <div>
-                        <p className="font-semibold text-white">{item.itemName}</p>
-                        <p className="text-xs text-[#9ca3af] mt-0.5">
+                        <p className="font-semibold text-slate-900 dark:text-white">{item.itemName}</p>
+                        <p className="text-xs text-slate-500 dark:text-[#9ca3af] mt-0.5">
                           {fmt(item.unitPrice)} × {item.quantity}
                         </p>
                       </div>
-                      <span className="font-bold text-gray-200">{fmt(item.totalPrice)}</span>
+                      <span className="font-bold text-slate-800 dark:text-gray-200">{fmt(item.totalPrice)}</span>
                     </div>
                   ))}
                 </div>
@@ -519,10 +537,10 @@ export const OrderManagement: React.FC = () => {
               {/* Customer Notes */}
               {selectedOrder.notes && (
                 <div>
-                  <h4 className="text-xs text-amber-500 font-extrabold uppercase tracking-wider mb-2">
+                  <h4 className="text-xs text-amber-600 dark:text-amber-500 font-extrabold uppercase tracking-wider mb-2">
                     Customer Notes
                   </h4>
-                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 text-xs text-amber-400/90 leading-relaxed italic">
+                  <div className="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 text-xs text-amber-700 dark:text-amber-400/90 leading-relaxed italic">
                     "{selectedOrder.notes}"
                   </div>
                 </div>
@@ -530,23 +548,29 @@ export const OrderManagement: React.FC = () => {
 
               {/* Summary calculations */}
               <div>
-                <h4 className="text-xs text-[#9ca3af] font-extrabold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <h4 className="text-xs text-slate-500 dark:text-[#9ca3af] font-extrabold uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <Receipt className="w-3.5 h-3.5" />
                   Receipt Summary
                 </h4>
-                <div className="bg-[#111827]/40 border border-[#374151]/30 rounded-2xl p-4 space-y-2">
+                <div className="bg-slate-50 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/30 rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#9ca3af]">Subtotal</span>
-                    <span className="text-white font-semibold">{fmt(selectedOrder.subtotal)}</span>
+                    <span className="text-slate-500 dark:text-[#9ca3af]">Subtotal</span>
+                    <span className="text-slate-900 dark:text-white font-semibold">{fmt(selectedOrder.subtotal)}</span>
                   </div>
                   {selectedOrder.taxAmount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#9ca3af]">Tax Amount</span>
-                      <span className="text-white font-semibold">{fmt(selectedOrder.taxAmount)}</span>
-                    </div>
+                    <>
+                      <div className="flex justify-between text-xs pl-2 border-l border-slate-200 dark:border-[#374151]/30">
+                        <span className="text-slate-500 dark:text-[#9ca3af]">CGST (50%)</span>
+                        <span className="text-slate-900 dark:text-white font-medium">{fmt(selectedOrder.taxAmount / 2)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs pl-2 border-l border-slate-200 dark:border-[#374151]/30">
+                        <span className="text-slate-500 dark:text-[#9ca3af]">SGST (50%)</span>
+                        <span className="text-slate-900 dark:text-white font-medium">{fmt(selectedOrder.taxAmount / 2)}</span>
+                      </div>
+                    </>
                   )}
-                  <div className="border-t border-[#374151]/40 pt-2 flex justify-between">
-                    <span className="font-bold text-white text-base">Total Bill</span>
+                  <div className="border-t border-slate-200 dark:border-[#374151]/40 pt-2 flex justify-between">
+                    <span className="font-bold text-slate-900 dark:text-white text-base">Total Bill</span>
                     <span className="font-extrabold text-[#FF6B35] text-lg">{fmt(selectedOrder.totalAmount)}</span>
                   </div>
                 </div>
@@ -554,12 +578,10 @@ export const OrderManagement: React.FC = () => {
             </div>
 
             {/* Footer Quick Action */}
-            <div className="px-6 py-5 bg-[#111827]/50 border-t border-[#374151]/40 flex justify-between gap-4">
+            <div className="px-5 sm:px-6 py-4 sm:py-5 bg-slate-50 dark:bg-[#111827]/50 border-t border-slate-200 dark:border-[#374151]/40 flex justify-between gap-4">
               <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="px-4 py-2 bg-[#374151] hover:bg-[#4b5563] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+                onClick={() => { window.print(); }}
+                className="px-4 py-2 bg-slate-200 dark:bg-[#374151] hover:bg-slate-300 dark:hover:bg-[#4b5563] text-slate-800 dark:text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
               >
                 <Printer className="w-4 h-4" />
                 Print KOT

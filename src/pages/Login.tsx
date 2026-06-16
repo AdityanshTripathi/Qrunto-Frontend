@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Store, Mail, Lock, LogIn } from 'lucide-react';
+import { Mail, Lock, LogIn } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
@@ -39,7 +39,7 @@ export const Login: React.FC = () => {
       // Since dashboard doesn't exist yet, we will redirect them to subscription page 
       // if they don't have subscription, or placeholder dashboard.
       // Let's redirect to '/dashboard' for now (or '/subscription' to complete flow).
-      navigate('/subscription');
+      navigate('/dashboard');
     } catch (err: any) {
       toast.error(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -56,11 +56,9 @@ export const Login: React.FC = () => {
       <div className="w-full max-w-md bg-[#1f2937]/40 backdrop-blur-xl border border-[#374151]/50 rounded-[24px] shadow-2xl p-8 md:p-10 relative overflow-hidden">
         {/* Top brand header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-tr from-[#FF6B35] to-orange-400 rounded-2xl flex items-center justify-center shadow-lg shadow-[#FF6B35]/25 mb-4 transform hover:rotate-6 transition-transform">
-            <Store className="w-8 h-8 text-white" />
-          </div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">Log In to QRUNTO</h2>
-          <p className="text-[#9ca3af] mt-2 text-center">Manage your menu, tables and orders from one dashboard.</p>
+          <img src="/logo-black.png" alt="Qrunto Logo" className="h-16 w-auto object-contain mb-4 transform hover:scale-105 transition-transform duration-300" />
+          <h2 className="text-2xl font-bold text-white tracking-tight">Log In to your Account</h2>
+          <p className="text-[#9ca3af] mt-2 text-center text-sm">Manage your menu, tables and orders from one dashboard.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

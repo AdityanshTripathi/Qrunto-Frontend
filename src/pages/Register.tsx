@@ -36,7 +36,7 @@ export const Register: React.FC = () => {
       const response = await api.post('/auth/register', data);
       setAuth(response.user, response.tokens.accessToken, response.tokens.refreshToken);
       toast.success('Registration successful! Setup your subscription to get started.');
-      navigate('/subscription');
+      navigate('/dashboard');
     } catch (err: any) {
       toast.error(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -53,11 +53,9 @@ export const Register: React.FC = () => {
       <div className="w-full max-w-lg bg-[#1f2937]/40 backdrop-blur-xl border border-[#374151]/50 rounded-[24px] shadow-2xl p-8 md:p-10 relative overflow-hidden">
         {/* Top brand header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-tr from-[#FF6B35] to-orange-400 rounded-2xl flex items-center justify-center shadow-lg shadow-[#FF6B35]/25 mb-4 transform hover:rotate-6 transition-transform">
-            <Store className="w-8 h-8 text-white" />
-          </div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">Create your Account</h2>
-          <p className="text-[#9ca3af] mt-2 text-center">Get started with QRUNTO. Setup your menu and start receiving orders instantly.</p>
+          <img src="/logo-black.png" alt="Qrunto Logo" className="h-16 w-auto object-contain mb-4 transform hover:scale-105 transition-transform duration-300" />
+          <h2 className="text-2xl font-bold text-white tracking-tight">Create your Account</h2>
+          <p className="text-[#9ca3af] mt-2 text-center text-sm">Get started with QRUNTO. Setup your menu and start receiving orders instantly.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -14,19 +14,127 @@ import {
   X, 
   User,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Bell,
+  BellRing
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/api';
+import { toast } from 'sonner';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeToggle } from './ThemeToggle';
 
 export const DashboardLayout: React.FC = () => {
   const { user, clearAuth, setAuth } = useAuthStore();
+  const { theme } = useTheme();
+  const logoSrc = theme === 'light' ? '/logo-white.png' : '/logo-black.png';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [checkingSub, setCheckingSub] = useState(true);
   const [hasSub, setHasSub] = useState(false);
+
+  interface Notification {
+    id: string;
+    title: string;
+    message: string;
+    type: 'NEW_ORDER' | 'BILLING' | 'SYSTEM' | 'HELP_REQUEST';
+    isRead: boolean;
+    createdAt: string;
+  }
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  const notificationsRef = useRef<Notification[]>([]);
+  const unreadCountRef = useRef<number>(0);
+
+  useEffect(() => {
+    notificationsRef.current = notifications;
+    unreadCountRef.current = unreadCount;
+  }, [notifications, unreadCount]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.patch('/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      toast.success('All notifications marked as read');
+    } catch (err: any) {
+      toast.error('Failed to mark all as read: ' + err.message);
+    }
+  };
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      await api.patch(`/notifications/${id}/read`);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err: any) {
+      toast.error('Failed to mark notification as read');
+    }
+  };
+
+  useEffect(() => {
+    const fetchNotifications = async (silent = false) => {
+      try {
+        const res = await api.get('/notifications');
+        const newNotifications = res.notifications || [];
+        const newUnread = newNotifications.filter((n: any) => !n.isRead).length;
+        
+        if (!silent && newUnread > unreadCountRef.current) {
+          // Play notification chime sound using synthesized Web Audio API for maximum reliability
+          try {
+            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const playTone = (freq: number, duration: number, delay: number) => {
+              const osc = audioCtx.createOscillator();
+              const gain = audioCtx.createGain();
+              osc.connect(gain);
+              gain.connect(audioCtx.destination);
+              osc.frequency.value = freq;
+              osc.type = 'sine';
+              gain.gain.setValueAtTime(0.15, audioCtx.currentTime + delay);
+              gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + delay + duration);
+              osc.start(audioCtx.currentTime + delay);
+              osc.stop(audioCtx.currentTime + delay + duration);
+            };
+            // Double chime: E5 (659.25Hz) then G5 (783.99Hz)
+            playTone(659.25, 0.15, 0);
+            playTone(783.99, 0.25, 0.12);
+          } catch (soundErr) {
+            console.log('Audio playback blocked by browser or unsupported', soundErr);
+          }
+
+          // Trigger toast for new notifications
+          const currentIds = new Set(notificationsRef.current.map(n => n.id));
+          const addedNotifs = newNotifications.filter((n: any) => !n.isRead && !currentIds.has(n.id));
+          
+          addedNotifs.forEach((n: any) => {
+            toast.info(n.title, {
+              description: n.message,
+              duration: 5000,
+            });
+          });
+        }
+
+        setNotifications(newNotifications);
+        setUnreadCount(newUnread);
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+      }
+    };
+
+    // Initial silent load on mount
+    fetchNotifications(true);
+
+    const interval = setInterval(() => {
+      fetchNotifications(false);
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (user?.role === 'SUPER_ADMIN') {
@@ -53,10 +161,10 @@ export const DashboardLayout: React.FC = () => {
 
   if (checkingSub) {
     return (
-      <div className="min-h-screen bg-[#111827] flex items-center justify-center">
+      <div className="min-h-screen bg-slate-100 dark:bg-[#111827] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[#FF6B35] border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-white font-medium">Verifying subscription...</p>
+          <p className="text-slate-800 dark:text-white font-medium">Verifying subscription...</p>
         </div>
       </div>
     );
@@ -102,7 +210,7 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#111827] text-white flex flex-col">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
       {/* ⚠️ Admin Bypass Banner */}
       {localStorage.getItem('admin_access_token') && (
         <div className="w-full bg-amber-500 text-black py-2 px-4 text-center text-xs font-black flex items-center justify-center gap-2 z-50 shrink-0">
@@ -118,7 +226,7 @@ export const DashboardLayout: React.FC = () => {
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* 1. Desktop Sidebar Container */}
       <aside 
-        className={`hidden lg:flex flex-col justify-between border-r border-[#374151]/50 bg-[#1f2937]/35 backdrop-blur-xl transition-all duration-300 relative ${
+        className={`hidden lg:flex flex-col justify-between border-r border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl transition-all duration-300 relative ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -132,14 +240,11 @@ export const DashboardLayout: React.FC = () => {
 
         {/* Sidebar Header/Logo */}
         <div>
-          <div className="flex items-center gap-3 px-6 py-6 border-b border-[#374151]/35">
-            <div className="w-10 h-10 min-w-10 min-h-10 bg-gradient-to-tr from-[#FF6B35] to-orange-400 rounded-xl flex items-center justify-center font-bold text-lg text-white shadow-md shadow-[#FF6B35]/15">
-              Q
-            </div>
-            {!sidebarCollapsed && (
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                QRUNTO
-              </span>
+          <div className="flex items-center justify-center px-4 py-5 border-b border-slate-100 dark:border-[#374151]/35">
+            {sidebarCollapsed ? (
+              <img src="/favicon.png" alt="Qrunto Logo" className="w-8 h-8 object-contain rounded-lg" />
+            ) : (
+              <img src={logoSrc} alt="Qrunto Logo" className="h-10 w-auto object-contain" />
             )}
           </div>
 
@@ -158,7 +263,7 @@ export const DashboardLayout: React.FC = () => {
                     } ${
                       isActive 
                         ? 'bg-[#FF6B35] text-white font-medium shadow-lg shadow-[#FF6B35]/15' 
-                        : 'text-[#9ca3af] hover:text-white hover:bg-[#374151]/30'
+                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-[#9ca3af] dark:hover:text-white dark:hover:bg-[#374151]/30'
                     }`
                   }
                   title={link.name}
@@ -172,15 +277,15 @@ export const DashboardLayout: React.FC = () => {
         </div>
 
         {/* Profile Card & Logout */}
-        <div className="border-t border-[#374151]/35 p-4 flex flex-col gap-2">
+        <div className="border-t border-slate-200 dark:border-[#374151]/35 p-4 flex flex-col gap-2">
           {!sidebarCollapsed ? (
-            <div className="bg-[#111827]/40 border border-[#374151]/30 rounded-2xl p-3 flex items-center gap-3">
+            <div className="bg-slate-50 border border-slate-100 dark:bg-[#111827]/40 dark:border-[#374151]/30 rounded-2xl p-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#FF6B35]">
                 <User className="w-4 h-4" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-100 truncate">{user?.name}</p>
-                <p className="text-[10px] text-gray-400 font-mono truncate tracking-wider uppercase">{userRole.replace('_', ' ')}</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 truncate">{user?.name}</p>
+                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-mono truncate tracking-wider uppercase">{userRole.replace('_', ' ')}</p>
               </div>
             </div>
           ) : (
@@ -203,20 +308,20 @@ export const DashboardLayout: React.FC = () => {
       </aside>
 
       {/* 2. Mobile Header Bar */}
-      <header className="lg:hidden flex items-center justify-between border-b border-[#374151]/50 bg-[#1f2937]/35 backdrop-blur-xl px-6 py-4">
+      <header className="lg:hidden flex items-center justify-between border-b border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-tr from-[#FF6B35] to-orange-400 rounded-xl flex items-center justify-center font-bold text-white shadow-md">
-            Q
-          </div>
-          <span className="font-extrabold text-lg tracking-tight">QRUNTO</span>
+          <img src={logoSrc} alt="Qrunto Logo" className="h-8 w-auto object-contain" />
         </div>
         
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className="p-2 bg-[#374151]/50 border border-[#4b5563]/40 rounded-xl text-gray-200"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-2 bg-slate-100 dark:bg-[#374151]/50 border border-slate-200 dark:border-[#4b5563]/40 rounded-xl text-slate-700 dark:text-gray-200"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
       </header>
 
       {/* 3. Mobile Navigation Drawer Menu */}
@@ -229,19 +334,16 @@ export const DashboardLayout: React.FC = () => {
           ></div>
           
           {/* Drawer sheet content */}
-          <div className="relative w-80 max-w-[80%] bg-[#111827] border-r border-[#374151]/50 p-6 flex flex-col justify-between z-10 animate-in slide-in-from-left duration-200">
+          <div className="relative w-80 max-w-[80%] bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-[#374151]/50 p-6 flex flex-col justify-between z-10 animate-in slide-in-from-left duration-200">
             <div>
               {/* Close Button */}
-              <div className="flex items-center justify-between pb-6 border-b border-[#374151]/35">
+              <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-[#374151]/35">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-gradient-to-tr from-[#FF6B35] to-orange-400 rounded-xl flex items-center justify-center font-bold text-white">
-                    Q
-                  </div>
-                  <span className="font-extrabold text-lg">QRUNTO</span>
+                  <img src={logoSrc} alt="Qrunto Logo" className="h-8 w-auto object-contain" />
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-1.5 bg-[#1f2937] border border-[#374151] rounded-lg text-[#9ca3af]"
+                  className="p-1.5 bg-slate-100 border border-slate-200 dark:bg-[#1f2937] dark:border-[#374151] rounded-lg text-slate-500 dark:text-[#9ca3af]"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -261,7 +363,7 @@ export const DashboardLayout: React.FC = () => {
                         `flex items-center gap-4 py-3.5 px-4 rounded-xl transition-all ${
                           isActive 
                             ? 'bg-[#FF6B35] text-white font-medium shadow-md shadow-[#FF6B35]/15' 
-                            : 'text-[#9ca3af] hover:text-white hover:bg-[#374151]/20'
+                            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-[#9ca3af] dark:hover:text-white dark:hover:bg-[#374151]/20'
                         }`
                       }
                     >
@@ -274,14 +376,14 @@ export const DashboardLayout: React.FC = () => {
             </div>
 
             {/* Mobile bottom profile */}
-            <div className="border-t border-[#374151]/35 pt-4 space-y-3">
-              <div className="bg-[#1f2937]/50 border border-[#374151]/30 rounded-2xl p-3 flex items-center gap-3">
+            <div className="border-t border-slate-200 dark:border-[#374151]/35 pt-4 space-y-3">
+              <div className="bg-slate-50 border border-slate-100 dark:bg-[#1f2937]/50 dark:border-[#374151]/30 rounded-2xl p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#FF6B35]">
                   <User className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate text-gray-100">{user?.name}</p>
-                  <p className="text-[10px] text-gray-400 font-mono truncate uppercase tracking-wider">{userRole.replace('_', ' ')}</p>
+                  <p className="text-sm font-semibold truncate text-slate-800 dark:text-gray-100">{user?.name}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-gray-400 font-mono truncate uppercase tracking-wider">{userRole.replace('_', ' ')}</p>
                 </div>
               </div>
 
@@ -303,20 +405,126 @@ export const DashboardLayout: React.FC = () => {
       {/* 4. Desktop Main Content Layout */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Desktop Top Header Bar */}
-        <header className="hidden lg:flex items-center justify-between px-8 py-5 border-b border-[#374151]/40 bg-[#111827]/60 backdrop-blur-md relative z-20">
+        <header className="hidden lg:flex items-center justify-between px-8 py-5 border-b border-slate-200 dark:border-[#374151]/40 bg-white/80 dark:bg-[#111827]/60 backdrop-blur-md relative z-20 transition-colors duration-300">
           <div className="flex flex-col">
-            <h1 className="text-xl font-bold text-gray-100">{currentRoute}</h1>
-            <span className="text-xs text-[#9ca3af] mt-0.5">Logged in as {userRole.replace('_', ' ').toLowerCase()}</span>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100">{currentRoute}</h1>
+            <span className="text-xs text-slate-500 dark:text-[#9ca3af] mt-0.5">Logged in as {userRole.replace('_', ' ').toLowerCase()}</span>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="px-3.5 py-1.5 bg-[#1f2937] border border-[#374151]/50 rounded-xl text-xs font-semibold text-gray-300 shadow-sm">
+          <div className="flex items-center gap-4 relative">
+            {/* Theme Toggle Button */}
+            <ThemeToggle />
+
+            {/* Notification Bell Icon */}
+            <div className="relative">
+              <button
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className="relative p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#1f2937]/80 border border-slate-200 dark:border-[#374151]/60 text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white transition-all focus:outline-none rounded-xl"
+              >
+                {unreadCount > 0 ? (
+                  <BellRing className="w-5 h-5 text-[#FF6B35] animate-pulse" />
+                ) : (
+                  <Bell className="w-5 h-5" />
+                )}
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-black text-white flex items-center justify-center border border-[#111827]">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {isNotifOpen && (
+                <>
+                  {/* Backdrop to close */}
+                  <div className="fixed inset-0 z-40" onClick={() => setIsNotifOpen(false)}></div>
+                  
+                  <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-[#1f2937]/95 backdrop-blur-md border border-slate-200 dark:border-[#374151]/80 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200">
+                    {/* Header */}
+                    <div className="p-4 border-b border-slate-100 dark:border-[#374151]/50 flex items-center justify-between">
+                      <span className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
+                        Notifications
+                        {unreadCount > 0 && (
+                          <span className="px-2 py-0.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-[10px] font-bold">
+                            {unreadCount} new
+                          </span>
+                        )}
+                      </span>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllRead}
+                          className="text-xs text-[#FF6B35] hover:underline font-semibold"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Notification List */}
+                    <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-[#374151]/35">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500 text-xs font-medium">
+                          No notifications yet.
+                        </div>
+                      ) : (
+                        notifications.map((n) => {
+                          let Icon = Bell;
+                          let iconClass = "text-red-400 bg-red-500/10 border-red-500/20";
+                          if (n.type === 'NEW_ORDER') {
+                            Icon = ShoppingBag;
+                            iconClass = "text-orange-400 bg-orange-500/10 border-orange-500/20";
+                          } else if (n.type === 'BILLING') {
+                            Icon = CreditCard;
+                            iconClass = "text-blue-400 bg-blue-500/10 border-blue-500/20";
+                          } else if (n.type === 'SYSTEM') {
+                            Icon = SettingsIcon;
+                            iconClass = "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+                          }
+
+                          return (
+                            <div
+                              key={n.id}
+                              onClick={() => {
+                                if (!n.isRead) handleMarkRead(n.id);
+                              }}
+                              className={`p-4 hover:bg-slate-50 dark:hover:bg-[#374151]/20 transition-colors cursor-pointer flex gap-3 ${
+                                !n.isRead ? 'bg-slate-50/50 dark:bg-[#374151]/15' : ''
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconClass}`}>
+                                <Icon className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className={`text-xs truncate ${!n.isRead ? 'font-bold text-slate-800 dark:text-white' : 'text-slate-600 dark:text-gray-300'}`}>
+                                    {n.title}
+                                  </p>
+                                  {!n.isRead && <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>}
+                                </div>
+                                <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-1 leading-relaxed line-clamp-2">
+                                  {n.message}
+                                </p>
+                                <span className="text-[9px] text-gray-500 mt-1.5 block">
+                                  {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <span className="px-3.5 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 dark:bg-[#1f2937] dark:border-[#374151]/50 dark:text-gray-300 shadow-sm">
               🏬 {user?.restaurants[0]?.name}
             </span>
           </div>
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 relative z-10">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 relative z-10 scrollbar-thin">
           <Outlet />
         </main>
       </div>

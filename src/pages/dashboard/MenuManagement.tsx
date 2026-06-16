@@ -22,6 +22,7 @@ import {
   AlignLeft,
 } from 'lucide-react';
 import { api } from '../../lib/api';
+import { SkeletonLoader } from '../../components/SkeletonLoader';
 
 // ─── Image Compression Helper ─────────────────────────────────────────────────
 const compressImage = (file: File, maxSize = 600, quality = 0.82): Promise<string> =>
@@ -275,8 +276,8 @@ export const MenuManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Menu Management</h1>
-          <p className="text-sm text-[#9ca3af]">Create, manage, and organise your restaurant's dishes and drinks.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Menu Management</h1>
+          <p className="text-sm text-slate-500 dark:text-[#9ca3af]">Create, manage, and organise your restaurant's dishes and drinks.</p>
         </div>
         <button
           onClick={handleOpenAddModal}
@@ -295,7 +296,7 @@ export const MenuManagement: React.FC = () => {
             className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
               activeCategoryFilter === 'all'
                 ? 'bg-[#FF6B35] text-white border-[#FF6B35] shadow-sm'
-                : 'bg-[#1f2937]/20 text-[#9ca3af] border-[#374151]/40 hover:text-white hover:border-[#FF6B35]/40'
+                : 'bg-white dark:bg-[#1f2937]/20 text-slate-600 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40 hover:text-slate-900 dark:hover:text-white hover:border-[#FF6B35]/40'
             }`}
           >
             All ({menuItems.length})
@@ -309,7 +310,7 @@ export const MenuManagement: React.FC = () => {
                 className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
                   activeCategoryFilter === cat.id
                     ? 'bg-[#FF6B35] text-white border-[#FF6B35] shadow-sm'
-                    : 'bg-[#1f2937]/20 text-[#9ca3af] border-[#374151]/40 hover:text-white hover:border-[#FF6B35]/40'
+                    : 'bg-white dark:bg-[#1f2937]/20 text-slate-600 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40 hover:text-slate-900 dark:hover:text-white hover:border-[#FF6B35]/40'
                 }`}
               >
                 {cat.name} ({count})
@@ -321,19 +322,16 @@ export const MenuManagement: React.FC = () => {
 
       {/* Content Area */}
       {loading ? (
-        <div className="bg-[#1f2937]/10 border border-[#374151]/30 rounded-[24px] p-24 flex flex-col items-center justify-center min-h-[400px]">
-          <Loader2 className="w-10 h-10 text-[#FF6B35] animate-spin mb-4" />
-          <p className="text-gray-300 font-medium">Loading menu items...</p>
-        </div>
+        <SkeletonLoader type="grid" count={6} />
       ) : filteredItems.length === 0 ? (
-        <div className="bg-[#1f2937]/20 border border-[#374151]/40 rounded-[24px] p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-          <div className="w-16 h-16 bg-[#374151]/30 rounded-2xl flex items-center justify-center mb-4 text-[#9ca3af]">
+        <div className="bg-white dark:bg-[#1f2937]/20 border border-slate-200 dark:border-[#374151]/40 rounded-[24px] p-12 text-center flex flex-col items-center justify-center min-h-[400px] backdrop-blur-md">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-[#374151]/30 rounded-2xl flex items-center justify-center mb-4 text-slate-400 dark:text-[#9ca3af]">
             <Utensils className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-bold text-gray-200">
+          <h3 className="text-lg font-bold text-slate-800 dark:text-gray-200">
             {activeCategoryFilter === 'all' ? 'No menu items yet' : 'No items in this category'}
           </h3>
-          <p className="text-sm text-[#9ca3af] max-w-sm mt-1 mb-6">
+          <p className="text-sm text-slate-500 dark:text-[#9ca3af] max-w-sm mt-1 mb-6">
             {activeCategoryFilter === 'all'
               ? "Your menu is empty. Add your first dish to get started!"
               : "No items in this category yet. Add some using the button above."}
@@ -341,7 +339,7 @@ export const MenuManagement: React.FC = () => {
           {activeCategoryFilter === 'all' && (
             <button
               onClick={handleOpenAddModal}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#374151] hover:bg-[#4b5563] border border-[#4b5563]/40 font-semibold text-sm text-white rounded-xl transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-[#374151] hover:bg-slate-200 dark:hover:bg-[#4b5563] border border-slate-200 dark:border-[#4b5563]/40 font-semibold text-sm text-slate-700 dark:text-white rounded-xl transition-all"
             >
               <Plus className="w-4 h-4" />
               Add Your First Item
@@ -353,12 +351,12 @@ export const MenuManagement: React.FC = () => {
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className={`bg-[#1f2937]/25 border border-[#374151]/35 hover:border-[#FF6B35]/30 rounded-[20px] overflow-hidden flex flex-col transition-all duration-200 group ${
+              className={`bg-white dark:bg-[#1f2937]/25 border border-slate-200 dark:border-[#374151]/35 hover:border-[#FF6B35]/30 rounded-[20px] overflow-hidden flex flex-col transition-all duration-200 group ${
                 !item.isAvailable ? 'opacity-60' : ''
               }`}
             >
               {/* Image or Placeholder */}
-              <div className="relative h-44 bg-gradient-to-br from-[#1f2937] to-[#111827] overflow-hidden">
+              <div className="relative h-44 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#1f2937] dark:to-[#111827] overflow-hidden">
                 {item.imageUrl && !failedImages[item.id] ? (
                   <img
                     src={item.imageUrl}
@@ -370,7 +368,7 @@ export const MenuManagement: React.FC = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Utensils className="w-12 h-12 text-[#374151]" />
+                    <Utensils className="w-12 h-12 text-slate-300 dark:text-[#374151]" />
                   </div>
                 )}
 
@@ -401,7 +399,7 @@ export const MenuManagement: React.FC = () => {
               {/* Card Body */}
               <div className="p-5 flex flex-col flex-1">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="font-bold text-white leading-tight group-hover:text-orange-100 transition-colors">
+                  <h3 className="font-bold text-slate-800 dark:text-white leading-tight group-hover:text-[#FF6B35] transition-colors">
                     {item.name}
                   </h3>
                   <span className="text-[#FF6B35] font-extrabold text-lg whitespace-nowrap">
@@ -410,11 +408,11 @@ export const MenuManagement: React.FC = () => {
                 </div>
 
                 {item.description && (
-                  <p className="text-xs text-[#9ca3af] leading-relaxed flex-1 line-clamp-2">{item.description}</p>
+                  <p className="text-xs text-slate-500 dark:text-[#9ca3af] leading-relaxed flex-1 line-clamp-2">{item.description}</p>
                 )}
 
                 {/* Actions Row */}
-                <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-[#374151]/25">
+                <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-[#374151]/25">
                   {/* Availability & Featured toggles */}
                   <div className="flex items-center gap-2">
                     <button
@@ -423,8 +421,8 @@ export const MenuManagement: React.FC = () => {
                       title={item.isAvailable ? 'Mark Unavailable' : 'Mark Available'}
                       className={`p-2 rounded-lg border text-xs transition-all ${
                         item.isAvailable
-                          ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/20'
-                          : 'bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30 hover:bg-[#EF4444]/20'
+                          ? 'bg-emerald-50 dark:bg-[#10B981]/10 text-emerald-600 dark:text-[#10B981] border-emerald-200 dark:border-[#10B981]/30 hover:bg-emerald-100 dark:hover:bg-[#10B981]/20'
+                          : 'bg-rose-50 dark:bg-[#EF4444]/10 text-rose-600 dark:text-[#EF4444] border-rose-200 dark:border-[#EF4444]/30 hover:bg-rose-100 dark:hover:bg-[#EF4444]/20'
                       }`}
                     >
                       {item.isAvailable ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -435,8 +433,8 @@ export const MenuManagement: React.FC = () => {
                       title={item.isFeatured ? 'Remove Featured' : 'Mark as Featured'}
                       className={`p-2 rounded-lg border text-xs transition-all ${
                         item.isFeatured
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
-                          : 'bg-[#374151]/20 text-[#9ca3af] border-[#374151]/40 hover:text-white'
+                          ? 'bg-amber-50 dark:bg-amber-50/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/20'
+                          : 'bg-slate-50 dark:bg-[#374151]/20 text-slate-500 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#374151]/30'
                       }`}
                     >
                       {item.isFeatured ? <Star className="w-3.5 h-3.5" /> : <StarOff className="w-3.5 h-3.5" />}
@@ -446,8 +444,8 @@ export const MenuManagement: React.FC = () => {
                   {/* Edit & Delete */}
                   <div className="flex items-center gap-2">
                     {deleteConfirmId === item.id ? (
-                      <div className="flex items-center gap-1 bg-red-950/20 border border-red-500/30 rounded-xl p-1 animate-in fade-in zoom-in-95 duration-100">
-                        <span className="text-[11px] text-red-400 font-semibold px-1.5">Delete?</span>
+                      <div className="flex items-center gap-1 bg-rose-50 dark:bg-red-950/20 border border-rose-200 dark:border-red-500/30 rounded-xl p-1 animate-in fade-in zoom-in-95 duration-100">
+                        <span className="text-[11px] text-rose-600 dark:text-red-400 font-semibold px-1.5">Delete?</span>
                         <button
                           onClick={() => handleDelete(item.id)}
                           disabled={actionLoading}
@@ -457,7 +455,7 @@ export const MenuManagement: React.FC = () => {
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(null)}
-                          className="p-1 bg-[#374151] hover:bg-[#4b5563] text-gray-300 rounded-lg transition-all"
+                          className="p-1 bg-slate-200 dark:bg-[#374151] hover:bg-slate-300 dark:hover:bg-[#4b5563] text-slate-600 dark:text-gray-300 rounded-lg transition-all"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -466,14 +464,14 @@ export const MenuManagement: React.FC = () => {
                       <>
                         <button
                           onClick={() => handleOpenEditModal(item)}
-                          className="p-2.5 bg-[#374151]/30 hover:bg-[#374151] border border-[#374151]/40 hover:border-[#4b5563]/60 rounded-xl text-gray-300 hover:text-white transition-all"
+                          className="p-2.5 bg-slate-50 dark:bg-[#374151]/30 hover:bg-slate-100 dark:hover:bg-[#374151] border border-slate-200 dark:border-[#374151]/40 hover:border-slate-300 dark:hover:border-[#4b5563]/60 rounded-xl text-slate-600 dark:text-gray-300 hover:text-slate-800 dark:hover:text-white transition-all"
                           title="Edit"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(item.id)}
-                          className="p-2.5 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/30 rounded-xl text-red-400 hover:text-red-300 transition-all"
+                          className="p-2.5 bg-rose-50 dark:bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/30 rounded-xl text-rose-600 dark:text-red-400 hover:text-rose-700 dark:hover:text-red-300 transition-all"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -498,19 +496,19 @@ export const MenuManagement: React.FC = () => {
           />
 
           {/* Modal */}
-          <div className="relative w-full max-w-lg bg-[#1f2937] border border-[#374151]/75 rounded-[24px] shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-10 overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="relative w-full max-w-lg bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[24px] shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-10 overflow-hidden max-h-[90vh] flex flex-col">
             {/* Ambient glow */}
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#FF6B35]/10 rounded-full blur-2xl pointer-events-none" />
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#374151]/40 relative shrink-0">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-[#374151]/40 relative shrink-0">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Utensils className="w-5 h-5 text-[#FF6B35]" />
                 {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 bg-[#111827] border border-[#374151] rounded-xl text-gray-400 hover:text-white transition-all"
+                className="p-1.5 bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] rounded-xl text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -524,15 +522,15 @@ export const MenuManagement: React.FC = () => {
               <div className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
                 {/* Category Select */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-[#d1d5db] mb-2">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-[#d1d5db] mb-2">
                     <Tags className="w-4 h-4 text-[#FF6B35]" />
                     Category
                   </label>
                   <select
                     {...register('categoryId')}
-                    className={`w-full bg-[#111827]/70 border ${
-                      errors.categoryId ? 'border-red-500 focus:ring-red-500' : 'border-[#374151] focus:ring-[#FF6B35]'
-                    } rounded-[12px] py-3 px-4 text-white focus:outline-none focus:ring-2 focus:border-transparent transition-all appearance-none`}
+                    className={`w-full bg-slate-50 dark:bg-[#111827]/70 border ${
+                      errors.categoryId ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-[#374151] focus:ring-[#FF6B35]'
+                    } rounded-[12px] py-3 px-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:border-transparent transition-all appearance-none`}
                   >
                     <option value="" disabled>Select a category...</option>
                     {activeCategories.map((cat) => (
@@ -543,22 +541,22 @@ export const MenuManagement: React.FC = () => {
                   </select>
                   {errors.categoryId && <p className="text-red-500 text-xs mt-1">{errors.categoryId.message}</p>}
                   {activeCategories.length === 0 && (
-                    <p className="text-amber-400 text-xs mt-1">⚠ No active categories found. Create categories first.</p>
+                    <p className="text-amber-500 dark:text-amber-400 text-xs mt-1">⚠ No active categories found. Create categories first.</p>
                   )}
                 </div>
 
                 {/* Item Name */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-[#d1d5db] mb-2">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-[#d1d5db] mb-2">
                     <Utensils className="w-4 h-4 text-[#FF6B35]" />
                     Item Name
                   </label>
                   <input
                     type="text"
                     placeholder="e.g. Paneer Tikka, Mango Lassi"
-                    className={`w-full bg-[#111827]/70 border ${
-                      errors.name ? 'border-red-500 focus:ring-red-500' : 'border-[#374151] focus:ring-[#FF6B35]'
-                    } rounded-[12px] py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    className={`w-full bg-slate-50 dark:bg-[#111827]/70 border ${
+                      errors.name ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-[#374151] focus:ring-[#FF6B35]'
+                    } rounded-[12px] py-3 px-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                     {...register('name')}
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
@@ -566,7 +564,7 @@ export const MenuManagement: React.FC = () => {
 
                 {/* Price */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-[#d1d5db] mb-2">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-[#d1d5db] mb-2">
                     <IndianRupee className="w-4 h-4 text-[#FF6B35]" />
                     Price (₹)
                   </label>
@@ -575,9 +573,9 @@ export const MenuManagement: React.FC = () => {
                     step="0.01"
                     min="0"
                     placeholder="e.g. 250"
-                    className={`w-full bg-[#111827]/70 border ${
-                      errors.price ? 'border-red-500 focus:ring-red-500' : 'border-[#374151] focus:ring-[#FF6B35]'
-                    } rounded-[12px] py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    className={`w-full bg-slate-50 dark:bg-[#111827]/70 border ${
+                      errors.price ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-[#374151] focus:ring-[#FF6B35]'
+                    } rounded-[12px] py-3 px-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                     {...register('price', { valueAsNumber: true })}
                   />
                   {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
@@ -585,17 +583,17 @@ export const MenuManagement: React.FC = () => {
 
                 {/* Description */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-[#d1d5db] mb-2">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-[#d1d5db] mb-2">
                     <AlignLeft className="w-4 h-4 text-[#FF6B35]" />
                     Description
-                    <span className="text-[#6b7280] text-xs font-normal">(optional)</span>
+                    <span className="text-slate-400 dark:text-[#6b7280] text-xs font-normal">(optional)</span>
                   </label>
                   <textarea
                     rows={3}
                     placeholder="A short, appetising description for customers..."
-                    className={`w-full bg-[#111827]/70 border ${
-                      errors.description ? 'border-red-500 focus:ring-red-500' : 'border-[#374151] focus:ring-[#FF6B35]'
-                    } rounded-[12px] py-3 px-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none`}
+                    className={`w-full bg-slate-50 dark:bg-[#111827]/70 border ${
+                      errors.description ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-[#374151] focus:ring-[#FF6B35]'
+                    } rounded-[12px] py-3 px-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none`}
                     {...register('description')}
                   />
                   {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
@@ -603,10 +601,10 @@ export const MenuManagement: React.FC = () => {
 
                 {/* Photo Upload */}
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-[#d1d5db] mb-2">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-[#d1d5db] mb-2">
                     <Camera className="w-4 h-4 text-[#FF6B35]" />
                     Item Photo
-                    <span className="text-[#6b7280] text-xs font-normal">(optional)</span>
+                    <span className="text-slate-400 dark:text-[#6b7280] text-xs font-normal">(optional)</span>
                   </label>
 
                   {/* Hidden real file input */}
@@ -621,7 +619,7 @@ export const MenuManagement: React.FC = () => {
 
                   {imagePreview ? (
                     /* ── Preview State ── */
-                    <div className="relative rounded-[14px] overflow-hidden border border-[#374151]/50 bg-[#111827]/40">
+                    <div className="relative rounded-[14px] overflow-hidden border border-slate-200 dark:border-[#374151]/50 bg-slate-50 dark:bg-[#111827]/40">
                       <img
                         src={imagePreview}
                         alt="Item preview"
@@ -656,23 +654,23 @@ export const MenuManagement: React.FC = () => {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isCompressing}
-                      className="w-full border-2 border-dashed border-[#374151]/60 hover:border-[#FF6B35]/50 bg-[#111827]/30 hover:bg-[#FF6B35]/5 rounded-[14px] py-8 flex flex-col items-center justify-center gap-3 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full border-2 border-dashed border-slate-200 dark:border-[#374151]/60 hover:border-[#FF6B35]/50 bg-slate-50 dark:bg-[#111827]/30 hover:bg-[#FF6B35]/5 rounded-[14px] py-8 flex flex-col items-center justify-center gap-3 transition-all group disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {isCompressing ? (
                         <>
                           <Loader2 className="w-8 h-8 text-[#FF6B35] animate-spin" />
-                          <p className="text-sm font-semibold text-[#9ca3af]">Compressing image...</p>
+                          <p className="text-sm font-semibold text-slate-500 dark:text-[#9ca3af]">Compressing image...</p>
                         </>
                       ) : (
                         <>
-                          <div className="w-12 h-12 rounded-2xl bg-[#374151]/40 group-hover:bg-[#FF6B35]/10 flex items-center justify-center transition-colors">
-                            <Upload className="w-6 h-6 text-[#9ca3af] group-hover:text-[#FF6B35] transition-colors" />
+                          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-[#374151]/40 group-hover:bg-[#FF6B35]/10 flex items-center justify-center transition-colors">
+                            <Upload className="w-6 h-6 text-slate-400 group-hover:text-[#FF6B35] transition-colors" />
                           </div>
                           <div className="text-center">
-                            <p className="text-sm font-semibold text-[#d1d5db] group-hover:text-white transition-colors">
+                            <p className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 dark:text-[#d1d5db] dark:group-hover:text-white transition-colors">
                               Upload Photo
                             </p>
-                            <p className="text-xs text-[#6b7280] mt-1 flex items-center justify-center gap-1.5">
+                            <p className="text-xs text-slate-400 dark:text-[#6b7280] mt-1 flex items-center justify-center gap-1.5">
                               <Camera className="w-3.5 h-3.5" /> Camera &nbsp;·&nbsp;
                               <Upload className="w-3.5 h-3.5" /> Gallery
                             </p>
@@ -691,8 +689,8 @@ export const MenuManagement: React.FC = () => {
                     onClick={() => setValue('isAvailable', !watchedIsAvailable)}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] border font-semibold text-sm transition-all ${
                       watchedIsAvailable
-                        ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30'
-                        : 'bg-[#374151]/20 text-[#9ca3af] border-[#374151]/40'
+                        ? 'bg-emerald-50 dark:bg-[#10B981]/10 text-emerald-600 dark:text-[#10B981] border-emerald-200 dark:border-[#10B981]/30'
+                        : 'bg-slate-50 dark:bg-[#374151]/20 text-slate-500 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40'
                     }`}
                   >
                     {watchedIsAvailable ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -705,8 +703,8 @@ export const MenuManagement: React.FC = () => {
                     onClick={() => setValue('isFeatured', !watchedIsFeatured)}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] border font-semibold text-sm transition-all ${
                       watchedIsFeatured
-                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                        : 'bg-[#374151]/20 text-[#9ca3af] border-[#374151]/40'
+                        ? 'bg-amber-50 dark:bg-amber-50/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                        : 'bg-slate-50 dark:bg-[#374151]/20 text-slate-500 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40'
                     }`}
                   >
                     {watchedIsFeatured ? <Star className="w-4 h-4" /> : <StarOff className="w-4 h-4" />}
@@ -716,11 +714,11 @@ export const MenuManagement: React.FC = () => {
               </div>
 
               {/* Modal Footer */}
-              <div className="flex gap-3 px-6 py-4 border-t border-[#374151]/40 shrink-0">
+              <div className="flex gap-3 px-6 py-4 border-t border-slate-200 dark:border-[#374151]/40 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 px-4 bg-[#374151] hover:bg-[#4b5563] font-semibold text-sm text-white rounded-[12px] transition-all"
+                  className="flex-1 py-3 px-4 bg-slate-100 dark:bg-[#374151] hover:bg-slate-200 dark:hover:bg-[#4b5563] font-semibold text-sm text-slate-800 dark:text-white rounded-[12px] transition-all"
                 >
                   Cancel
                 </button>
