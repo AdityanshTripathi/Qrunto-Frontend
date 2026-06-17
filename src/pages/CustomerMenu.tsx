@@ -6,7 +6,7 @@ import {
   ShoppingCart, Plus, Minus, Trash2, Star, Search, ChevronRight,
   Loader2, CheckCircle, Utensils, X, Receipt, QrCode, CreditCard,
   Smartphone, Check, ArrowLeft, ShieldAlert, Bell, Sun, Moon, Flame,
-  MapPin, ChevronLeft, ArrowUpDown, SlidersHorizontal, List,
+  MapPin, ChevronLeft, ArrowUpDown, SlidersHorizontal,
 } from 'lucide-react';
 
 import html2canvas from 'html2canvas';
@@ -214,7 +214,7 @@ export const CustomerMenu: React.FC = () => {
     fetchMenu();
   }, [slug]);
 
-  const addToCart = useCallback((item: MenuItem) => {
+  const addToCart = useCallback((item: Pick<MenuItem, 'id' | 'name' | 'price' | 'imageUrl'>) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.menuItemId === item.id);
       if (existing) return prev.map((c) => c.menuItemId === item.id ? { ...c, quantity: c.quantity + 1 } : c);
@@ -1582,7 +1582,7 @@ export const CustomerMenu: React.FC = () => {
                         <Minus className="w-3 h-3" />
                       </button>
                       <span className="text-white font-black text-sm w-5 text-center">{item.quantity}</span>
-                      <button onClick={() => addToCart({ id: item.menuItemId, name: item.name, price: item.price, imageUrl: item.imageUrl, categoryId: '', description: null, isFeatured: false, category: { id: '', name: '', displayOrder: 0 } })} className="w-5 h-5 flex items-center justify-center text-white hover:bg-white/20 rounded-lg">
+                      <button onClick={() => addToCart({ id: item.menuItemId, name: item.name, price: item.price, imageUrl: item.imageUrl })} className="w-5 h-5 flex items-center justify-center text-white hover:bg-white/20 rounded-lg">
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>

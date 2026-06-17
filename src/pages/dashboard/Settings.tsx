@@ -92,10 +92,10 @@ const compressLogo = (file: File, maxSize = 300, quality = 0.85): Promise<string
     reader.readAsDataURL(file);
   });
 
-const BASE_URL = import.meta.env.VITE_API_URL || 
+const BASE_URL = import.meta.env.VITE_API_URL ||
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
-    : 'https://backend-steel-seven-97.vercel.app/api');
+    : '');
 
 
 export const Settings: React.FC = () => {
@@ -369,7 +369,7 @@ const SettingsContent: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="space-y-2 text-center sm:text-left">
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">Restaurant Logo</h4>
               <p className="text-xs text-slate-500 dark:text-[#9ca3af]">Upload a square photo from gallery or camera. Max size 5MB.</p>
@@ -578,11 +578,10 @@ const SettingsContent: React.FC = () => {
               return (
                 <div
                   key={key}
-                  className={`flex items-center gap-3 sm:gap-4 rounded-2xl px-3 sm:px-4 py-3 border transition-all ${
-                    schedule.isClosed
+                  className={`flex items-center gap-3 sm:gap-4 rounded-2xl px-3 sm:px-4 py-3 border transition-all ${schedule.isClosed
                       ? 'bg-slate-50 dark:bg-[#111827]/20 border-slate-200 dark:border-[#374151]/20 opacity-60'
                       : 'bg-slate-50 dark:bg-[#111827]/30 border-slate-200 dark:border-[#374151]/40'
-                  }`}
+                    }`}
                 >
                   {/* Day label */}
                   <span className="w-8 sm:w-10 text-xs font-bold text-slate-700 dark:text-gray-300 shrink-0">{short}</span>
@@ -591,14 +590,12 @@ const SettingsContent: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => updateDaySchedule(key, 'isClosed', !schedule.isClosed)}
-                    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
-                      schedule.isClosed ? 'bg-slate-300 dark:bg-[#374151]' : 'bg-[#FF6B35]'
-                    }`}
+                    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${schedule.isClosed ? 'bg-slate-300 dark:bg-[#374151]' : 'bg-[#FF6B35]'
+                      }`}
                   >
                     <span
-                      className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                        schedule.isClosed ? 'translate-x-0' : 'translate-x-5'
-                      }`}
+                      className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${schedule.isClosed ? 'translate-x-0' : 'translate-x-5'
+                        }`}
                     />
                   </button>
 
@@ -643,7 +640,7 @@ const SettingsContent: React.FC = () => {
             <Lock className="w-4 h-4" />
             Security & Access Lock
           </h3>
-          
+
           <div className="space-y-4">
             {/* Toggle Row */}
             <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#111827]/30 border border-slate-200 dark:border-[#374151]/40 rounded-2xl">
@@ -653,7 +650,7 @@ const SettingsContent: React.FC = () => {
                   Locks Analytics, Billing Plan, and Settings sections with a security passcode.
                 </p>
               </div>
-              
+
               <button
                 type="button"
                 onClick={() => {
@@ -663,14 +660,12 @@ const SettingsContent: React.FC = () => {
                   }
                   setIsVerifyOpen(true);
                 }}
-                className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
-                  passcodeEnabled ? 'bg-[#FF6B35]' : 'bg-slate-300 dark:bg-[#374151]'
-                }`}
+                className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${passcodeEnabled ? 'bg-[#FF6B35]' : 'bg-slate-300 dark:bg-[#374151]'
+                  }`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                    passcodeEnabled ? 'translate-x-5' : 'translate-x-0'
-                  }`}
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${passcodeEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
                 />
               </button>
             </div>
@@ -767,9 +762,8 @@ const SettingsContent: React.FC = () => {
                         Forgot Passcode? Send Reset Request
                       </button>
                     ) : (
-                      <span className={`text-xs font-bold ${
-                        passcodeRequest.status === 'PENDING' ? 'text-amber-500' : 'text-emerald-500'
-                      }`}>
+                      <span className={`text-xs font-bold ${passcodeRequest.status === 'PENDING' ? 'text-amber-500' : 'text-emerald-500'
+                        }`}>
                         Reset Request: {passcodeRequest.status === 'PENDING' ? 'Pending Admin Approval' : 'Approved! Set passcode without current.'}
                       </span>
                     )}
