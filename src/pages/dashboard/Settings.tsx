@@ -92,7 +92,10 @@ const compressLogo = (file: File, maxSize = 300, quality = 0.85): Promise<string
     reader.readAsDataURL(file);
   });
 
-const BASE_URL = 'https://backend-steel-seven-97.vercel.app/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : 'https://backend-steel-seven-97.vercel.app/api');
 
 
 export const Settings: React.FC = () => {

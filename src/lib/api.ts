@@ -1,6 +1,9 @@
 import { useAuthStore } from '../store/authStore';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://backend-steel-seven-97.vercel.app/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000/api'
+    : 'https://backend-steel-seven-97.vercel.app/api');
 
 interface RequestOptions extends RequestInit {
   body?: any;

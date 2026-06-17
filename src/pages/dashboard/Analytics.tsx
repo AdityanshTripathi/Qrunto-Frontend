@@ -66,7 +66,10 @@ interface AnalyticsData {
 const fmt = (amount: number, _currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
-const BASE_URL = 'https://backend-steel-seven-97.vercel.app/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : 'https://backend-steel-seven-97.vercel.app/api');
 
 // ─── Custom Tooltip for AreaChart ─────────────────────────────────────────────
 const TrendTooltip = ({ active, payload, label }: any) => {

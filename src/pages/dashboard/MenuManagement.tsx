@@ -67,6 +67,7 @@ interface MenuItem {
   imageUrl: string | null;
   isAvailable: boolean;
   isFeatured: boolean;
+  foodType: 'veg' | 'nonveg';
   createdAt: string;
   updatedAt: string;
   category: Category;
@@ -81,6 +82,7 @@ const MenuItemSchema = z.object({
   imageUrl: z.string().optional(),
   isAvailable: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  foodType: z.enum(['veg', 'nonveg']),
 });
 
 type MenuItemInputs = z.infer<typeof MenuItemSchema>;
@@ -113,11 +115,12 @@ export const MenuManagement: React.FC = () => {
     formState: { errors },
   } = useForm<MenuItemInputs>({
     resolver: zodResolver(MenuItemSchema),
-    defaultValues: { isAvailable: true, isFeatured: false },
+    defaultValues: { isAvailable: true, isFeatured: false, foodType: 'veg' },
   });
 
   const watchedIsAvailable = watch('isAvailable');
   const watchedIsFeatured = watch('isFeatured');
+  const watchedFoodType = watch('foodType');
 
   // ─── Data fetching ─────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -143,7 +146,7 @@ export const MenuManagement: React.FC = () => {
   // ─── Modal open helpers ────────────────────────────────────────────────────
   const handleOpenAddModal = () => {
     setEditingItem(null);
-    reset({ isAvailable: true, isFeatured: false, categoryId: '', name: '', description: '', price: 0, imageUrl: '' });
+    reset({ isAvailable: true, isFeatured: false, categoryId: '', name: '', description: '', price: 0, imageUrl: '', foodType: 'veg' });
     setImagePreview(null);
     setIsModalOpen(true);
   };
@@ -158,6 +161,7 @@ export const MenuManagement: React.FC = () => {
       imageUrl: item.imageUrl ?? '',
       isAvailable: item.isAvailable,
       isFeatured: item.isFeatured,
+      foodType: item.foodType,
     });
     setImagePreview(item.imageUrl ?? null);
     setIsModalOpen(true);
@@ -193,6 +197,7 @@ export const MenuManagement: React.FC = () => {
         categoryId: data.categoryId,
         name: data.name,
         price: data.price,
+        foodType: data.foodType,
       };
       if (data.description) payload.description = data.description;
       payload.imageUrl = imagePreview || null;
@@ -399,9 +404,20 @@ export const MenuManagement: React.FC = () => {
               {/* Card Body */}
               <div className="p-5 flex flex-col flex-1">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="font-bold text-slate-800 dark:text-white leading-tight group-hover:text-[#FF6B35] transition-colors">
-                    {item.name}
-                  </h3>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {item.foodType === 'veg' ? (
+                      <span className="w-3.5 h-3.5 border border-emerald-500 rounded flex items-center justify-center shrink-0" title="Veg">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                      </span>
+                    ) : (
+                      <span className="w-3.5 h-3.5 border border-red-500 rounded flex items-center justify-center shrink-0" title="Non-Veg">
+                        <span className="w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-b-[6px] border-b-red-600" />
+                      </span>
+                    )}
+                    <h3 className="font-bold text-slate-800 dark:text-white leading-tight group-hover:text-[#FF6B35] transition-colors truncate">
+                      {item.name}
+                    </h3>
+                  </div>
                   <span className="text-[#FF6B35] font-extrabold text-lg whitespace-nowrap">
                     {formatPrice(item.price)}
                   </span>
@@ -560,6 +576,42 @@ export const MenuManagement: React.FC = () => {
                     {...register('name')}
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+                </div>
+
+                {/* Food Type */}
+                <div>
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-[#d1d5db] mb-2">
+                    <Utensils className="w-4 h-4 text-[#FF6B35]" />
+                    Food Type
+                  </label>
+                  <input type="hidden" {...register('foodType')} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setValue('foodType', 'veg')}
+                      className={`flex items-center justify-center gap-2 py-3 rounded-[12px] border font-semibold text-sm transition-all ${
+                        watchedFoodType === 'veg'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold'
+                          : 'bg-slate-50 dark:bg-[#111827]/70 text-slate-500 dark:text-[#9ca3af] border-slate-300 dark:border-[#374151]'
+                      }`}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                      Veg
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValue('foodType', 'nonveg')}
+                      className={`flex items-center justify-center gap-2 py-3 rounded-[12px] border font-semibold text-sm transition-all ${
+                        watchedFoodType === 'nonveg'
+                          ? 'bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-red-500/30 font-bold'
+                          : 'bg-slate-50 dark:bg-[#111827]/70 text-slate-500 dark:text-[#9ca3af] border-slate-300 dark:border-[#374151]'
+                      }`}
+                    >
+                      <span className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-red-600 shrink-0" />
+                      Non-Veg
+                    </button>
+                  </div>
+                  {errors.foodType && <p className="text-red-500 text-xs mt-1">{errors.foodType.message}</p>}
                 </div>
 
                 {/* Price */}
