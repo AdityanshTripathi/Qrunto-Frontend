@@ -91,6 +91,9 @@ export const api = {
     
   post: (path: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) => 
     request(path, { ...options, method: 'POST', body }),
+
+  put: (path: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) => 
+    request(path, { ...options, method: 'PUT', body }),
     
   patch: (path: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) => 
     request(path, { ...options, method: 'PATCH', body }),

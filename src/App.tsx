@@ -16,6 +16,9 @@ import { SuperAdminDashboard } from './pages/dashboard/SuperAdminDashboard';
 import { Settings } from './pages/dashboard/Settings';
 import { CustomerMenu } from './pages/CustomerMenu';
 import { useAuthStore } from './store/authStore';
+import { WaitersPage } from './pages/dashboard/WaitersPage';
+import { WaiterDashboardLayout } from './components/WaiterDashboardLayout';
+import { WaiterDashboard } from './pages/waiter/WaiterDashboard';
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -38,7 +41,7 @@ function App() {
         />
 
         {/* Protected dashboard routes */}
-        <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF']} />}>
           <Route path="/subscription" element={<Subscription />} />
           
           <Route 
@@ -50,9 +53,17 @@ function App() {
             <Route path="categories" element={<CategoryManagement />} />
             <Route path="tables" element={<TableManagement />} />
             <Route path="orders" element={<OrderManagement />} />
+            <Route path="waiters" element={<WaitersPage />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="subscription" element={<SubscriptionManagement />} />
             <Route path="settings" element={<Settings />} />
+          </Route>
+        </Route>
+
+        {/* Protected waiter routes */}
+        <Route element={<ProtectedRoute allowedRoles={['WAITER']} />}>
+          <Route path="/waiter-dashboard" element={<WaiterDashboardLayout />}>
+            <Route index element={<WaiterDashboard />} />
           </Route>
         </Route>
 
@@ -62,7 +73,7 @@ function App() {
         {/* Catch-all redirect */}
         <Route 
           path="*" 
-          element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
+          element={<Navigate to={isAuthenticated ? (user?.role === 'WAITER' ? "/waiter-dashboard" : "/dashboard") : "/login"} replace />} 
         />
       </Routes>
     </BrowserRouter>

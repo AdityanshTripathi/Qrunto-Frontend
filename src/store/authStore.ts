@@ -4,7 +4,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'SUPER_ADMIN' | 'RESTAURANT_OWNER' | 'STAFF';
+  role: 'SUPER_ADMIN' | 'RESTAURANT_OWNER' | 'STAFF' | 'WAITER';
   restaurants: Array<{
     id: string;
     name: string;

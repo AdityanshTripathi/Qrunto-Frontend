@@ -110,6 +110,7 @@ export const CustomerMenu: React.FC = () => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+  const [isSettleBillRequested, setIsSettleBillRequested] = useState(false);
 
   // Sorting & Filtering
   const [sortBy, setSortBy] = useState<string>('default');
@@ -123,7 +124,7 @@ export const CustomerMenu: React.FC = () => {
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'ONLINE'>('ONLINE');
+  const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'COUNTER' | 'WAITER'>('ONLINE');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -193,7 +194,8 @@ export const CustomerMenu: React.FC = () => {
               if (statusRes.ok) {
                 const statusData = await statusRes.json();
                 const currentStatus = statusData.order?.status;
-                if (currentStatus && currentStatus !== 'SERVED' && currentStatus !== 'CANCELLED') {
+                const isOrderPaid = statusData.order?.paymentStatus === 'SUCCESS';
+                if (currentStatus && !isOrderPaid && currentStatus !== 'CANCELLED') {
                   setPlacedOrder(parsedOrder);
                   setTrackingOrder(statusData.order);
                   setActiveCookieOrder(parsedOrder);
@@ -285,7 +287,8 @@ export const CustomerMenu: React.FC = () => {
           const data = await res.json();
           setTrackingOrder(data.order);
           const currentStatus = data.order?.status;
-          if (currentStatus === 'SERVED' || currentStatus === 'CANCELLED') {
+          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
+          if (isOrderPaid || currentStatus === 'CANCELLED') {
             deleteCookie(`qrunto_active_order_${slug}`);
             setActiveCookieOrder(null);
           }
@@ -306,7 +309,8 @@ export const CustomerMenu: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           const currentStatus = data.order?.status;
-          if (currentStatus === 'SERVED' || currentStatus === 'CANCELLED') {
+          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
+          if (isOrderPaid || currentStatus === 'CANCELLED') {
             deleteCookie(`qrunto_active_order_${slug}`);
             setActiveCookieOrder(null);
           } else {
@@ -334,6 +338,7 @@ export const CustomerMenu: React.FC = () => {
           items: cart.map((c) => ({ menuItemId: c.menuItemId, quantity: c.quantity })),
           customerName: customerName || undefined,
           customerPhone: customerPhone || undefined,
+          existingOrderId: activeCookieOrder?.id || undefined,
         }),
       });
       const data = await res.json();
@@ -346,8 +351,17 @@ export const CustomerMenu: React.FC = () => {
       setCustomerPhone('');
       setIsCartOpen(false);
       setIsCheckoutConfirming(false);
-      if (paymentMethod === 'ONLINE') setIsPaymentModalOpen(true);
-      else toast.success('Order placed! Call waiter to collect cash.', { duration: 3000 });
+      setIsSettleBillRequested(false);
+      localStorage.setItem(`qrunto_payment_method_${data.order.id}`, paymentMethod);
+      
+      // Fetch updated status immediately so items and totals update instantly
+      const statusRes = await fetch(`${BASE_URL}/public/${slug}/orders/${data.order.id}/status`);
+      if (statusRes.ok) {
+        const statusData = await statusRes.json();
+        setTrackingOrder(statusData.order);
+      }
+
+      toast.success(activeCookieOrder ? 'Items added to order!' : 'Order placed successfully!', { duration: 3000 });
     } catch (err: any) {
       toast.error(err.message || 'Failed to place order. Please try again.');
     } finally { setIsPlacingOrder(false); }
@@ -365,6 +379,7 @@ export const CustomerMenu: React.FC = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Payment failed');
       setPaymentSuccess(true);
+      setIsSettleBillRequested(false);
       toast.success('Payment Received! Chef is starting your order.', { duration: 3000 });
       setTrackingOrder((prev: any) => prev ? { ...prev, paymentStatus: 'SUCCESS', paymentMethod: method } : null);
       setTimeout(() => {
@@ -488,6 +503,7 @@ export const CustomerMenu: React.FC = () => {
   if (placedOrder) {
     const currentStatus = trackingOrder?.status ?? placedOrder.status;
     const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS';
+    const paymentPref = localStorage.getItem(`qrunto_payment_method_${placedOrder.id}`) || 'ONLINE';
     const getStep = (s: string) => ({ 'NEW': 0, 'PREPARING': 1, 'READY': 2, 'SERVED': 3 }[s] ?? 0);
     const stepIndex = getStep(currentStatus);
     const steps = [
@@ -613,22 +629,67 @@ export const CustomerMenu: React.FC = () => {
               <span className="font-black text-[#D97757] text-lg">{fmt(placedOrder.totalAmount, settings.currency)}</span>
             </div>
             <div className="mt-3 flex justify-between items-center">
-              <span className={`text-xs ${t.subtext}`}>Payment</span>
+              <span className={`text-xs ${t.subtext}`}>Payment Preference</span>
+              <span className="text-xs font-bold text-[#2C2C2C] dark:text-[#9ca3af]">
+                {paymentPref === 'ONLINE' ? '💳 Pay Online' : paymentPref === 'COUNTER' ? '🏦 Pay at Counter' : '🙋 Pay via Waiter'}
+              </span>
+            </div>
+
+            <div className="mt-3 flex flex-col gap-2 pt-3 border-t border-dashed border-[#D97757]/20">
               {isPaid ? (
-                <span className="text-xs font-bold text-[#2E7D32] bg-[#2E7D32]/10 border border-[#2E7D32]/30 px-3 py-1 rounded-full">✅ Paid Online</span>
+                <span className="text-xs font-bold text-[#2E7D32] bg-[#2E7D32]/10 border border-[#2E7D32]/30 px-3 py-2 rounded-full text-center">
+                  ✅ Bill Paid Successfully
+                </span>
+              ) : currentStatus === 'SERVED' ? (
+                !isSettleBillRequested ? (
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => setIsSettleBillRequested(true)} 
+                      className="w-full py-3 bg-[#2E7D32] hover:bg-[#235F26] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      Settle Bill & Pay
+                    </button>
+                    <span className={`text-[10px] ${t.subtext} italic text-center block`}>
+                      Enjoy your meal! You can still add more items from the menu.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => setIsPaymentModalOpen(true)} 
+                      className="w-full py-3 bg-[#D97757] hover:bg-[#c87024] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Pay Bill Online Now
+                    </button>
+                    {paymentPref !== 'ONLINE' && (
+                      <button 
+                        onClick={() => handleRequestAssistance('BILL')} 
+                        className={`w-full py-3 ${t.qtyBg} border ${t.cardBorder} ${t.text} font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2`}
+                      >
+                        <Receipt className="w-4 h-4" />
+                        Request Waiter/Counter Settle Bill
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => setIsSettleBillRequested(false)} 
+                      className={`w-full py-2 bg-transparent text-xs ${t.subtext} font-bold hover:underline`}
+                    >
+                      ← Back (Keep ordering)
+                    </button>
+                  </div>
+                )
               ) : (
-                <div className="flex flex-col items-end gap-1">
-                  <span className="text-xs font-bold text-[#5C4033] bg-[#F4A261]/25 border border-[#F4A261]/45 px-3 py-1 rounded-full">💵 Call Waiter to Collect Cash</span>
-                  <button onClick={() => setIsPaymentModalOpen(true)} className="text-[#D97757] text-xs font-semibold">
-                    Pay online now →
-                  </button>
-                </div>
+                <span className={`text-xs font-semibold ${t.subtext} italic text-center block py-1.5`}>
+                  ⏳ You can pay your bill once the food is served!
+                </span>
               )}
             </div>
           </div>
 
           {/* Invoice Summary Card */}
-          {currentStatus === 'SERVED' && (
+          {currentStatus === 'SERVED' && isPaid && (
             <div className={`${t.card} rounded-3xl border border-emerald-500/30 p-5 shadow-sm space-y-4`}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600">
@@ -651,7 +712,7 @@ export const CustomerMenu: React.FC = () => {
 
           {/* Add More */}
           <button
-            onClick={() => setPlacedOrder(null)}
+            onClick={() => { setPlacedOrder(null); setIsSettleBillRequested(false); }}
             className={`w-full py-4 ${t.card} border ${t.cardBorder} ${t.text} font-bold rounded-2xl transition-all text-sm flex items-center justify-center gap-2 shadow-sm`}
           >
             <Utensils className="w-4 h-4 text-[#D97757]" />
@@ -660,7 +721,7 @@ export const CustomerMenu: React.FC = () => {
         </div>
 
         {/* Invoice Modal */}
-        {isInvoiceModalOpen && (
+        {isInvoiceModalOpen && isPaid && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm no-print" onClick={() => setIsInvoiceModalOpen(false)} />
             <div className={`relative w-full max-w-md ${t.header} rounded-3xl overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200 text-left border ${t.cardBorder} flex flex-col max-h-[90vh]`}>
@@ -1547,10 +1608,17 @@ export const CustomerMenu: React.FC = () => {
 
             {/* Header */}
             <div className={`flex items-center justify-between px-5 py-3 border-b ${t.divider}`}>
-              <h2 className={`text-base font-black flex items-center gap-2 ${t.text}`}>
-                <ShoppingCart className="w-5 h-5 text-[#D97757]" />
-                Your Cart
-                <span className={`text-sm font-normal ${t.subtext}`}>({totalItems})</span>
+              <h2 className={`text-base font-black flex flex-col ${t.text}`}>
+                <span className="flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5 text-[#D97757]" />
+                  {activeCookieOrder ? 'Add to Your Order' : 'Your Cart'}
+                  <span className={`text-sm font-normal ${t.subtext}`}>({totalItems})</span>
+                </span>
+                {activeCookieOrder && (
+                  <span className="text-[10px] text-emerald-500 font-semibold mt-0.5">
+                    Adding to Order #{activeCookieOrder.orderNumber}
+                  </span>
+                )}
               </h2>
               <button onClick={() => { setIsCartOpen(false); setIsCheckoutConfirming(false); }} className={`p-1.5 ${t.qtyBg} rounded-xl ${t.subtext}`}>
                 <X className="w-4 h-4" />
@@ -1638,20 +1706,29 @@ export const CustomerMenu: React.FC = () => {
                   </div>
 
                   {/* Payment method */}
-                  <div className={`${isDark ? 'bg-[#2a2a2a]' : 'bg-[#F5EDE4]'} rounded-xl p-3 space-y-2`}>
-                    <p className={`text-xs font-bold ${t.subtext}`}>Payment Method</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => setPaymentMethod('ONLINE')} className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${paymentMethod === 'ONLINE' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
-                        <CreditCard className="w-3.5 h-3.5" /> Pay Online
-                      </button>
-                      <button onClick={() => setPaymentMethod('CASH')} className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${paymentMethod === 'CASH' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
-                        <Receipt className="w-3.5 h-3.5" /> Call Waiter to Collect Cash
-                      </button>
+                  {!activeCookieOrder && (
+                    <div className={`${isDark ? 'bg-[#2a2a2a]' : 'bg-[#F5EDE4]'} rounded-xl p-3 space-y-2`}>
+                      <p className={`text-xs font-bold ${t.subtext}`}>Payment Preference</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <button onClick={() => setPaymentMethod('ONLINE')} className={`py-2 px-1 rounded-xl border text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'ONLINE' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
+                          <CreditCard className="w-3.5 h-3.5" /> Pay Online
+                        </button>
+                        <button onClick={() => setPaymentMethod('COUNTER')} className={`py-2 px-1 rounded-xl border text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'COUNTER' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
+                          <Receipt className="w-3.5 h-3.5" /> Pay at Counter
+                        </button>
+                        <button onClick={() => setPaymentMethod('WAITER')} className={`py-2 px-1 rounded-xl border text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'WAITER' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
+                          <Utensils className="w-3.5 h-3.5" /> Pay via Waiter
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <p className={`text-center text-xs ${t.subtext}`}>
-                    Ordering for <strong className={t.text}>Table {decodeURIComponent(tableNumber ?? '')}</strong>
+                    {activeCookieOrder ? (
+                      <span>Adding to <strong className={t.text}>Order #{activeCookieOrder.orderNumber}</strong> at Table {decodeURIComponent(tableNumber ?? '')}</span>
+                    ) : (
+                      <span>Ordering for <strong className={t.text}>Table {decodeURIComponent(tableNumber ?? '')}</strong></span>
+                    )}
                   </p>
 
                   <div className="flex gap-3">
@@ -1659,7 +1736,13 @@ export const CustomerMenu: React.FC = () => {
                       Back
                     </button>
                     <button onClick={handlePlaceOrder} disabled={isPlacingOrder} className="flex-1 py-3 bg-[#2E7D32] hover:bg-[#235F26] text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-60">
-                      {isPlacingOrder ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing...</> : <><CheckCircle className="w-4 h-4" /> Place Order!</>}
+                      {isPlacingOrder ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Placing...</>
+                      ) : activeCookieOrder ? (
+                        <><CheckCircle className="w-4 h-4" /> Add to Order!</>
+                      ) : (
+                        <><CheckCircle className="w-4 h-4" /> Place Order!</>
+                      )}
                     </button>
                   </div>
                 </div>

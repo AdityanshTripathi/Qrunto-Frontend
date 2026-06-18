@@ -35,11 +35,12 @@ export const Login: React.FC = () => {
       setAuth(response.user, response.tokens.accessToken, response.tokens.refreshToken);
       toast.success('Welcome back!');
       
-      // Redirect to /subscription if they haven't active plan, or directly to dashboard
-      // Since dashboard doesn't exist yet, we will redirect them to subscription page 
-      // if they don't have subscription, or placeholder dashboard.
-      // Let's redirect to '/dashboard' for now (or '/subscription' to complete flow).
-      navigate('/dashboard');
+      // Redirect based on role
+      if (response.user.role === 'WAITER') {
+        navigate('/waiter-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       toast.error(err.message || 'Login failed. Please check your credentials.');
     } finally {
