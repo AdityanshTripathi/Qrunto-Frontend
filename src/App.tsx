@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Subscription } from './pages/Subscription';
@@ -30,6 +31,12 @@ function App() {
       <Toaster position="top-right" theme="dark" richColors closeButton />
       
       <Routes>
+        {/* Root route: Landing page for unauthenticated users, dashboard redirect for authenticated */}
+        <Route 
+          path="/" 
+          element={isAuthenticated ? <Navigate to={user?.role === 'WAITER' ? "/waiter-dashboard" : "/dashboard"} replace /> : <Landing />} 
+        />
+
         {/* Public auth routes */}
         <Route 
           path="/login" 
@@ -73,7 +80,7 @@ function App() {
         {/* Catch-all redirect */}
         <Route 
           path="*" 
-          element={<Navigate to={isAuthenticated ? (user?.role === 'WAITER' ? "/waiter-dashboard" : "/dashboard") : "/login"} replace />} 
+          element={<Navigate to={isAuthenticated ? (user?.role === 'WAITER' ? "/waiter-dashboard" : "/dashboard") : "/"} replace />} 
         />
       </Routes>
     </BrowserRouter>

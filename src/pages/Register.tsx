@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Store, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Store, Mail, Lock, User, ArrowRight, ArrowLeft } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
@@ -45,7 +45,16 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#111827] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#111827] flex items-center justify-center p-4 relative">
+      {/* Back to Home Button */}
+      <Link 
+        to="/" 
+        className="absolute top-6 left-6 z-50 flex items-center gap-2 text-sm text-[#9ca3af] hover:text-white transition-colors bg-[#1f2937]/40 hover:bg-[#1f2937]/80 px-4 py-2 rounded-[12px] border border-[#374151]/50 backdrop-blur-xl"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Home
+      </Link>
+
       {/* Decorative gradients */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FF6B35]/10 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>

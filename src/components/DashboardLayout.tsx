@@ -35,6 +35,7 @@ export const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
   const [checkingSub, setCheckingSub] = useState(true);
   const [hasSub, setHasSub] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
 
   interface Notification {
     id: string;
@@ -153,6 +154,7 @@ export const DashboardLayout: React.FC = () => {
         }
       } catch (err: any) {
         console.error('Subscription check failed:', err);
+        setConnectionError(true);
       } finally {
         setCheckingSub(false);
       }
@@ -166,6 +168,28 @@ export const DashboardLayout: React.FC = () => {
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-[#FF6B35] border-t-transparent rounded-full animate-spin"></div>
           <p className="text-slate-800 dark:text-white font-medium">Verifying subscription...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (connectionError) {
+    return (
+      <div className="min-h-screen bg-slate-100 dark:bg-[#111827] flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 rounded-[24px] shadow-2xl p-8 text-center relative z-50">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mx-auto mb-6">
+            <X className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-3">Connection Failed</h2>
+          <p className="text-sm text-slate-500 dark:text-gray-400 mb-6 leading-relaxed">
+            Unable to connect to the backend server. Please make sure the backend server is running on port 5000.
+          </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full bg-[#FF6B35] hover:bg-orange-600 text-white font-semibold rounded-[12px] py-3.5 transition-all active:scale-[0.98]"
+          >
+            Retry Connection
+          </button>
         </div>
       </div>
     );

@@ -81,6 +81,9 @@ async function request(path: string, options: RequestOptions = {}) {
     return await response.json();
   } catch (err: any) {
     console.error('API Request failed:', err);
+    if (err instanceof TypeError && (err.message.toLowerCase().includes('fetch') || err.message.toLowerCase().includes('networkerror'))) {
+      throw new Error('Unable to connect to the server. Please ensure the backend is running on port 5000.');
+    }
     throw err;
   }
 }
