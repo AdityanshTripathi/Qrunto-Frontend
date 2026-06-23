@@ -8,6 +8,8 @@ interface Plan {
   id: string;
   name: string;
   price: number;
+  price6Month: number;
+  price1Year: number;
   durationDays: number;
   maxTables: number;
   maxMenuItems: number;
@@ -18,6 +20,7 @@ export const Subscription: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectingPlan, setSelectingPlan] = useState<Plan | null>(null);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | '6month' | 'yearly'>('monthly');
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   
@@ -54,11 +57,20 @@ export const Subscription: React.FC = () => {
     setProcessingPayment(true);
     try {
       // Create transaction and generate license code on backend
-      const finalPrice = promoApplied ? 0 : selectingPlan.price;
+      let basePrice = selectingPlan.price;
+      if (billingCycle === '6month') {
+        basePrice = selectingPlan.price6Month || (selectingPlan.price * 6);
+      } else if (billingCycle === 'yearly') {
+        basePrice = selectingPlan.price1Year || (selectingPlan.price * 12);
+      }
+      const finalPrice = promoApplied ? 0 : basePrice;
+      const durationMonths = billingCycle === '6month' ? 6 : billingCycle === 'yearly' ? 12 : 1;
+
       const res = await api.post('/subscriptions/purchase', {
         planId: selectingPlan.id,
         paymentMethod: paymentMethod.toUpperCase(),
-        amount: finalPrice
+        amount: finalPrice,
+        durationMonths
       });
 
       setGeneratedLicenseCode(res.code);
@@ -151,6 +163,48 @@ export const Subscription: React.FC = () => {
           </button>
         </div>
 
+        {/* Billing Cycle Switcher */}
+        <div className="flex justify-center mb-12">
+          <div className="bg-[#1f2937]/50 border border-[#374151]/60 p-1 rounded-2xl flex items-center backdrop-blur-md">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                billingCycle === 'monthly'
+                  ? 'bg-[#FF6B35] text-white shadow-md'
+                  : 'text-[#9ca3af] hover:text-white'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingCycle('6month')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                billingCycle === '6month'
+                  ? 'bg-[#FF6B35] text-white shadow-md'
+                  : 'text-[#9ca3af] hover:text-white'
+              }`}
+            >
+              6 Months
+              <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase">
+                Save
+              </span>
+            </button>
+            <button
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                billingCycle === 'yearly'
+                  ? 'bg-[#FF6B35] text-white shadow-md'
+                  : 'text-[#9ca3af] hover:text-white'
+              }`}
+            >
+              1 Year
+              <span className="bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase">
+                Best Value
+              </span>
+            </button>
+          </div>
+        </div>
+
         {/* Pricing Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
           {plans.map((plan) => {
@@ -172,17 +226,50 @@ export const Subscription: React.FC = () => {
 
                 <div>
                   <h3 className="text-xl font-bold text-gray-100">{plan.name} Plan</h3>
-                  <div className="flex items-baseline gap-1 mt-4">
-                    <span className="text-4xl font-extrabold tracking-tight">
-                      {promoApplied ? '₹0' : `₹${plan.price}`}
-                    </span>
-                    <span className="text-[#9ca3af] text-sm">/ {plan.durationDays} days</span>
-                  </div>
-                  {promoApplied && (
-                    <span className="text-xs text-[#22C55E] font-medium block mt-1 line-through text-gray-500">
-                      Was ₹{plan.price}
-                    </span>
-                  )}
+                  {(() => {
+                    let displayPrice = plan.price;
+                    let displayDuration = `${plan.durationDays} days`;
+                    let savingText = '';
+                    
+                    if (billingCycle === '6month') {
+                      displayPrice = plan.price6Month || (plan.price * 6);
+                      displayDuration = '6 months';
+                      const monthlyEquivalent = displayPrice / 6;
+                      const savingsPercent = Math.round(((plan.price * 6 - displayPrice) / (plan.price * 6)) * 100);
+                      if (savingsPercent > 0) {
+                        savingText = `₹${Math.round(monthlyEquivalent)}/mo · Save ${savingsPercent}%`;
+                      }
+                    } else if (billingCycle === 'yearly') {
+                      displayPrice = plan.price1Year || (plan.price * 12);
+                      displayDuration = '1 year';
+                      const monthlyEquivalent = displayPrice / 12;
+                      const savingsPercent = Math.round(((plan.price * 12 - displayPrice) / (plan.price * 12)) * 100);
+                      if (savingsPercent > 0) {
+                        savingText = `₹${Math.round(monthlyEquivalent)}/mo · Save ${savingsPercent}%`;
+                      }
+                    }
+
+                    return (
+                      <div className="space-y-1 mt-4">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-extrabold tracking-tight">
+                            {promoApplied ? '₹0' : `₹${displayPrice}`}
+                          </span>
+                          <span className="text-[#9ca3af] text-sm">/ {displayDuration}</span>
+                        </div>
+                        {savingText && !promoApplied && (
+                          <span className="text-xs text-emerald-400 font-bold block">
+                            {savingText}
+                          </span>
+                        )}
+                        {promoApplied && (
+                          <span className="text-xs text-[#22C55E] font-medium block line-through text-gray-500">
+                            Was ₹{displayPrice}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <p className="text-sm text-[#9ca3af] mt-4">
                     Ideal for {plan.name === 'Starter' ? 'small kiosks & cafes' : plan.name === 'Professional' ? 'mid-sized restaurants' : 'high-volume dining chains'}.
                   </p>
@@ -259,15 +346,30 @@ export const Subscription: React.FC = () => {
             {!paymentSuccess ? (
               <div className="p-6 space-y-6">
                 {/* Plan summary */}
-                <div className="bg-[#111827]/40 border border-[#374151]/55 rounded-2xl p-4 flex justify-between items-center">
-                  <div>
-                    <h4 className="font-extrabold text-sm text-white">{selectingPlan.name} Plan</h4>
-                    <p className="text-xs text-gray-400">{selectingPlan.durationDays} Days Duration</p>
-                  </div>
-                  <span className="text-[#FF6B35] font-black text-lg">
-                    ₹{(promoApplied ? 0 : selectingPlan.price).toLocaleString('en-IN')}
-                  </span>
-                </div>
+                {(() => {
+                  let displayPrice = selectingPlan.price;
+                  let displayDuration = `${selectingPlan.durationDays} Days`;
+                  
+                  if (billingCycle === '6month') {
+                    displayPrice = selectingPlan.price6Month || (selectingPlan.price * 6);
+                    displayDuration = '6 Months (180 Days)';
+                  } else if (billingCycle === 'yearly') {
+                    displayPrice = selectingPlan.price1Year || (selectingPlan.price * 12);
+                    displayDuration = '1 Year (365 Days)';
+                  }
+
+                  return (
+                    <div className="bg-[#111827]/40 border border-[#374151]/55 rounded-2xl p-4 flex justify-between items-center">
+                      <div>
+                        <h4 className="font-extrabold text-sm text-white">{selectingPlan.name} Plan</h4>
+                        <p className="text-xs text-gray-400">{displayDuration} Duration</p>
+                      </div>
+                      <span className="text-[#FF6B35] font-black text-lg">
+                        ₹{(promoApplied ? 0 : displayPrice).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* Gateway simulation */}
                 <div className="space-y-4">
@@ -351,7 +453,12 @@ export const Subscription: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      Pay ₹{(promoApplied ? 0 : selectingPlan.price).toLocaleString('en-IN')} Now
+                      Pay ₹{(() => {
+                        let displayPrice = selectingPlan.price;
+                        if (billingCycle === '6month') displayPrice = selectingPlan.price6Month || (selectingPlan.price * 6);
+                        else if (billingCycle === 'yearly') displayPrice = selectingPlan.price1Year || (selectingPlan.price * 12);
+                        return (promoApplied ? 0 : displayPrice).toLocaleString('en-IN');
+                      })()} Now
                     </>
                   )}
                 </button>

@@ -148,59 +148,78 @@ const SubscriptionManagementContent: React.FC = () => {
               </div>
 
               {/* Subscription details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-slate-100 dark:bg-[#374151]/30 rounded-xl text-slate-500 dark:text-[#9ca3af]">
-                    <CreditCard className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium">Pricing</p>
-                    <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                      ₹{subscription.plan.price.toLocaleString('en-IN')} / 30 Days
-                    </p>
-                  </div>
-                </div>
+              {(() => {
+                const diffTime = Math.abs(new Date(subscription.endDate).getTime() - new Date(subscription.startDate).getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                let displayPrice = subscription.plan.price;
+                let displayDurationLabel = `${diffDays} Days`;
+                if (diffDays >= 170 && diffDays <= 190) {
+                  displayPrice = (subscription.plan as any).price6Month || (subscription.plan.price * 6);
+                  displayDurationLabel = '6 Months';
+                } else if (diffDays >= 360 && diffDays <= 370) {
+                  displayPrice = (subscription.plan as any).price1Year || (subscription.plan.price * 12);
+                  displayDurationLabel = '1 Year';
+                } else if (diffDays === 30) {
+                  displayDurationLabel = '30 Days';
+                }
 
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-slate-100 dark:bg-[#374151]/30 rounded-xl text-slate-500 dark:text-[#9ca3af]">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium">Renews / Expires On</p>
-                    <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                      {new Date(subscription.endDate).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                </div>
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-slate-100 dark:bg-[#374151]/30 rounded-xl text-slate-500 dark:text-[#9ca3af]">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium">Pricing</p>
+                        <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+                          ₹{displayPrice.toLocaleString('en-IN')} / {displayDurationLabel}
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-slate-100 dark:bg-[#374151]/30 rounded-xl text-slate-500 dark:text-[#9ca3af]">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium">Table Limit</p>
-                    <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                      {subscription.plan.maxTables === 9999 ? 'Unlimited' : `Up to ${subscription.plan.maxTables} Tables`}
-                    </p>
-                  </div>
-                </div>
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-slate-100 dark:bg-[#374151]/30 rounded-xl text-slate-500 dark:text-[#9ca3af]">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium">Renews / Expires On</p>
+                        <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+                          {new Date(subscription.endDate).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-slate-100 dark:bg-[#374151]/30 rounded-xl text-slate-500 dark:text-[#9ca3af]">
-                    <ShieldCheck className="w-5 h-5" />
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-slate-100 dark:bg-[#374151]/30 rounded-xl text-slate-500 dark:text-[#9ca3af]">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium">Table Limit</p>
+                        <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+                          {subscription.plan.maxTables === 9999 ? 'Unlimited' : `Up to ${subscription.plan.maxTables} Tables`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-slate-100 dark:bg-[#374151]/30 rounded-xl text-slate-500 dark:text-[#9ca3af]">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium">Menu Items Limit</p>
+                        <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+                          {subscription.plan.maxMenuItems === 9999 ? 'Unlimited' : `Up to ${subscription.plan.maxMenuItems} Items`}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium">Menu Items Limit</p>
-                    <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                      {subscription.plan.maxMenuItems === 9999 ? 'Unlimited' : `Up to ${subscription.plan.maxMenuItems} Items`}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Action */}
               <div className="flex flex-col sm:flex-row gap-4">

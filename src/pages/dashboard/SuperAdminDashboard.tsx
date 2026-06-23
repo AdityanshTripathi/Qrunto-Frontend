@@ -54,6 +54,8 @@ export const SuperAdminDashboard: React.FC = () => {
   // Plan form fields
   const [planName, setPlanName] = useState('');
   const [planPrice, setPlanPrice] = useState(0);
+  const [planPrice6Month, setPlanPrice6Month] = useState(0);
+  const [planPrice1Year, setPlanPrice1Year] = useState(0);
   const [planDuration, setPlanDuration] = useState(30);
   const [planMaxTables, setPlanMaxTables] = useState(10);
   const [planMaxMenuItems, setPlanMaxMenuItems] = useState(50);
@@ -159,6 +161,8 @@ export const SuperAdminDashboard: React.FC = () => {
         await api.patch(`/superadmin/plans/${editingPlan.id}`, {
           name: planName,
           price: planPrice,
+          price6Month: planPrice6Month,
+          price1Year: planPrice1Year,
           durationDays: planDuration,
           maxTables: planMaxTables,
           maxMenuItems: planMaxMenuItems,
@@ -168,6 +172,8 @@ export const SuperAdminDashboard: React.FC = () => {
         await api.post('/superadmin/plans', {
           name: planName,
           price: planPrice,
+          price6Month: planPrice6Month,
+          price1Year: planPrice1Year,
           durationDays: planDuration,
           maxTables: planMaxTables,
           maxMenuItems: planMaxMenuItems,
@@ -178,6 +184,8 @@ export const SuperAdminDashboard: React.FC = () => {
       setEditingPlan(null);
       setPlanName('');
       setPlanPrice(0);
+      setPlanPrice6Month(0);
+      setPlanPrice1Year(0);
       setPlanDuration(30);
       setPlanMaxTables(10);
       setPlanMaxMenuItems(50);
@@ -529,8 +537,12 @@ export const SuperAdminDashboard: React.FC = () => {
                             {plan.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
-                        <p className="text-2xl font-black text-[#FF6B35] mt-4">{fmt(plan.price)}</p>
-                        <p className="text-xs text-slate-500 dark:text-[#9ca3af] mt-1">{plan.durationDays} Days Duration</p>
+                        <div className="mt-4 space-y-1">
+                          <p className="text-2xl font-black text-[#FF6B35]">{fmt(plan.price)} <span className="text-[10px] text-slate-400 font-normal">/ Month</span></p>
+                          <p className="text-xs font-bold text-slate-600 dark:text-gray-300 flex justify-between"><span>6 Months:</span> <span className="text-[#FF6B35] font-semibold">{fmt(plan.price6Month || 0)}</span></p>
+                          <p className="text-xs font-bold text-slate-600 dark:text-gray-300 flex justify-between"><span>1 Year:</span> <span className="text-[#FF6B35] font-semibold">{fmt(plan.price1Year || 0)}</span></p>
+                        </div>
+                        <p className="text-[10px] text-slate-400 dark:text-gray-500 mt-2">{plan.durationDays} Days Base Duration</p>
 
                         <div className="border-t border-slate-100 dark:border-[#374151]/20 my-5 pt-4 space-y-2.5 text-xs text-slate-600 dark:text-gray-300">
                           <p>🍽️ Up to {plan.maxTables} Restaurant Tables</p>
@@ -543,6 +555,8 @@ export const SuperAdminDashboard: React.FC = () => {
                               setEditingPlan(plan);
                               setPlanName(plan.name);
                               setPlanPrice(plan.price);
+                              setPlanPrice6Month(plan.price6Month || 0);
+                              setPlanPrice1Year(plan.price1Year || 0);
                               setPlanDuration(plan.durationDays);
                               setPlanMaxTables(plan.maxTables);
                               setPlanMaxMenuItems(plan.maxMenuItems);
@@ -832,6 +846,8 @@ export const SuperAdminDashboard: React.FC = () => {
               setEditingPlan(null);
               setPlanName('');
               setPlanPrice(0);
+              setPlanPrice6Month(0);
+              setPlanPrice1Year(0);
               setPlanDuration(30);
               setPlanMaxTables(10);
               setPlanMaxMenuItems(50);
@@ -856,7 +872,7 @@ export const SuperAdminDashboard: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase mb-1">Price (₹)</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase mb-1">Monthly Price (₹)</label>
                   <input
                     type="number"
                     required
@@ -872,6 +888,28 @@ export const SuperAdminDashboard: React.FC = () => {
                     required
                     value={planDuration}
                     onChange={(e) => setPlanDuration(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] rounded-xl p-3 text-sm text-slate-800 dark:text-white focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase mb-1">6-Month Price (₹)</label>
+                  <input
+                    type="number"
+                    required
+                    value={planPrice6Month}
+                    onChange={(e) => setPlanPrice6Month(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] rounded-xl p-3 text-sm text-slate-800 dark:text-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase mb-1">1-Year Price (₹)</label>
+                  <input
+                    type="number"
+                    required
+                    value={planPrice1Year}
+                    onChange={(e) => setPlanPrice1Year(Number(e.target.value))}
                     className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] rounded-xl p-3 text-sm text-slate-800 dark:text-white focus:outline-none"
                   />
                 </div>
@@ -905,6 +943,8 @@ export const SuperAdminDashboard: React.FC = () => {
                     setEditingPlan(null);
                     setPlanName('');
                     setPlanPrice(0);
+                    setPlanPrice6Month(0);
+                    setPlanPrice1Year(0);
                     setPlanDuration(30);
                     setPlanMaxTables(10);
                     setPlanMaxMenuItems(50);
