@@ -21,7 +21,7 @@ interface Settings { currency: string; taxPercentage: number; }
 interface Category { id: string; name: string; displayOrder: number; }
 interface MenuItem {
   id: string; categoryId: string; name: string; description: string | null;
-  price: number; imageUrl: string | null; isFeatured: boolean; category: Category;
+  price: number; imageUrl: string | null; isFeatured: boolean; isCompleteYourMeal?: boolean; category: Category;
   foodType: 'veg' | 'nonveg';
 }
 interface CartItem {
@@ -265,6 +265,12 @@ export const CustomerMenu: React.FC = () => {
   const featuredItems = menuItems
     .filter((i) => i.isFeatured && (!filterVeg || isItemVeg(i)))
     .slice(0, 8);
+
+  const recommendedItems = menuItems
+    .filter((item) => item.isCompleteYourMeal !== false && !cart.some((c) => c.menuItemId === item.id))
+    .sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0))
+    .slice(0, 10);
+
 
   // Auto-slide effect for Carousel
   useEffect(() => {
@@ -1626,40 +1632,103 @@ export const CustomerMenu: React.FC = () => {
             </div>
 
             {/* Cart Items */}
-            <div className="overflow-y-auto flex-1 px-4 py-3 space-y-2">
-              {cart.map((item) => (
-                <div key={item.menuItemId} className={`flex items-center gap-3 ${isDark ? 'bg-[#2a2a2a]' : 'bg-[#F5EDE4]'} rounded-2xl p-3`}>
-                  <div className={`w-12 h-12 rounded-xl ${t.imgBg} overflow-hidden shrink-0`}>
-                    {item.imageUrl && !failedImages[item.menuItemId] ? (
-                      <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" onError={() => setFailedImages((p) => ({ ...p, [item.menuItemId]: true }))} />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Utensils className={`w-5 h-5 ${t.subtext}`} />
+            <div className="overflow-y-auto flex-1 px-4 py-3 space-y-4">
+              <div className="space-y-2">
+                {cart.map((item) => (
+                  <div key={item.menuItemId} className={`flex items-center gap-3 ${isDark ? 'bg-[#2a2a2a]' : 'bg-[#F5EDE4]'} rounded-2xl p-3`}>
+                    <div className={`w-12 h-12 rounded-xl ${t.imgBg} overflow-hidden shrink-0`}>
+                      {item.imageUrl && !failedImages[item.menuItemId] ? (
+                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" onError={() => setFailedImages((p) => ({ ...p, [item.menuItemId]: true }))} />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Utensils className={`w-5 h-5 ${t.subtext}`} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold text-sm truncate ${t.text}`}>{item.name}</p>
+                      <p className="text-[#D97757] font-bold text-xs mt-0.5">{fmt(item.price * item.quantity, settings.currency)}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1.5 bg-[#D97757] rounded-xl px-1.5 py-1">
+                        <button onClick={() => removeFromCart(item.menuItemId)} className="w-5 h-5 flex items-center justify-center text-white hover:bg-white/20 rounded-lg">
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="text-white font-black text-sm w-5 text-center">{item.quantity}</span>
+                        <button onClick={() => addToCart({ id: item.menuItemId, name: item.name, price: item.price, imageUrl: item.imageUrl })} className="w-5 h-5 flex items-center justify-center text-white hover:bg-white/20 rounded-lg">
+                          <Plus className="w-3 h-3" />
+                        </button>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-semibold text-sm truncate ${t.text}`}>{item.name}</p>
-                    <p className="text-[#D97757] font-bold text-xs mt-0.5">{fmt(item.price * item.quantity, settings.currency)}</p>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-1.5 bg-[#D97757] rounded-xl px-1.5 py-1">
-                      <button onClick={() => removeFromCart(item.menuItemId)} className="w-5 h-5 flex items-center justify-center text-white hover:bg-white/20 rounded-lg">
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="text-white font-black text-sm w-5 text-center">{item.quantity}</span>
-                      <button onClick={() => addToCart({ id: item.menuItemId, name: item.name, price: item.price, imageUrl: item.imageUrl })} className="w-5 h-5 flex items-center justify-center text-white hover:bg-white/20 rounded-lg">
-                        <Plus className="w-3 h-3" />
+                      <button onClick={() => deleteFromCart(item.menuItemId)} className="p-1.5 text-red-400 hover:text-red-500 transition-all">
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <button onClick={() => deleteFromCart(item.menuItemId)} className="p-1.5 text-red-400 hover:text-red-500 transition-all">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Complete Your Meal */}
+              {recommendedItems.length > 0 && (
+                <div className="pt-2.5 border-t border-dashed border-[#D97757]/15">
+                  <h3 className={`text-xs font-black tracking-wider uppercase mb-3 ${t.subtext}`}>
+                    Complete Your Meal
+                  </h3>
+                  <div className="flex gap-3.5 overflow-x-auto pb-2.5 scrollbar-hide">
+                    {recommendedItems.map((item) => (
+                      <div key={item.id} className="w-[105px] shrink-0 flex flex-col group">
+                        {/* Image Container */}
+                        <div className={`relative w-[105px] h-[85px] rounded-2xl ${t.imgBg} overflow-hidden shrink-0 border ${t.cardBorder}`}>
+                          {item.imageUrl && !failedImages[item.id] ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              onError={() => setFailedImages((p) => ({ ...p, [item.id]: true }))}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Utensils className={`w-5 h-5 ${t.subtext} opacity-40`} />
+                            </div>
+                          )}
+                          
+                          {/* Plus Add Button on Image */}
+                          <button
+                            onClick={() => {
+                              addToCart(item);
+                              toast.success(`${item.name} added to cart!`, { duration: 1000 });
+                            }}
+                            className="absolute top-1.5 right-1.5 w-6 h-6 bg-white dark:bg-[#111827] border border-emerald-500/40 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 hover:bg-emerald-500/10 transition-all text-emerald-600 dark:text-emerald-400"
+                            title="Add to cart"
+                          >
+                            <Plus className="w-4 h-4 stroke-[3]" />
+                          </button>
+                        </div>
+
+                        {/* Name and Price */}
+                        <div className="mt-1.5 text-left min-w-0">
+                          <div className="flex items-start gap-1 min-w-0">
+                            <span className="shrink-0 mt-0.5">
+                              {item.foodType === 'veg' ? (
+                                <VegIcon className="w-[10px] h-[10px]" />
+                              ) : (
+                                <NonVegIcon className="w-[10px] h-[10px]" />
+                              )}
+                            </span>
+                            <span className={`text-[11px] font-bold truncate flex-1 block leading-tight ${t.text}`} title={item.name}>
+                              {item.name}
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-black text-[#D97757] block mt-0.5">
+                            {fmt(item.price, settings.currency)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
 
             {/* Bill + Checkout */}

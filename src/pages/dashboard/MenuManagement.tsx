@@ -67,6 +67,7 @@ interface MenuItem {
   imageUrl: string | null;
   isAvailable: boolean;
   isFeatured: boolean;
+  isCompleteYourMeal: boolean;
   foodType: 'veg' | 'nonveg';
   createdAt: string;
   updatedAt: string;
@@ -82,6 +83,7 @@ const MenuItemSchema = z.object({
   imageUrl: z.string().optional(),
   isAvailable: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  isCompleteYourMeal: z.boolean().optional(),
   foodType: z.enum(['veg', 'nonveg']),
 });
 
@@ -115,11 +117,12 @@ export const MenuManagement: React.FC = () => {
     formState: { errors },
   } = useForm<MenuItemInputs>({
     resolver: zodResolver(MenuItemSchema),
-    defaultValues: { isAvailable: true, isFeatured: false, foodType: 'veg' },
+    defaultValues: { isAvailable: true, isFeatured: false, isCompleteYourMeal: true, foodType: 'veg' },
   });
 
   const watchedIsAvailable = watch('isAvailable');
   const watchedIsFeatured = watch('isFeatured');
+  const watchedIsCompleteYourMeal = watch('isCompleteYourMeal');
   const watchedFoodType = watch('foodType');
 
   // ─── Data fetching ─────────────────────────────────────────────────────────
@@ -146,7 +149,7 @@ export const MenuManagement: React.FC = () => {
   // ─── Modal open helpers ────────────────────────────────────────────────────
   const handleOpenAddModal = () => {
     setEditingItem(null);
-    reset({ isAvailable: true, isFeatured: false, categoryId: '', name: '', description: '', price: 0, imageUrl: '', foodType: 'veg' });
+    reset({ isAvailable: true, isFeatured: false, isCompleteYourMeal: true, categoryId: '', name: '', description: '', price: 0, imageUrl: '', foodType: 'veg' });
     setImagePreview(null);
     setIsModalOpen(true);
   };
@@ -161,6 +164,7 @@ export const MenuManagement: React.FC = () => {
       imageUrl: item.imageUrl ?? '',
       isAvailable: item.isAvailable,
       isFeatured: item.isFeatured,
+      isCompleteYourMeal: item.isCompleteYourMeal !== false,
       foodType: item.foodType,
     });
     setImagePreview(item.imageUrl ?? null);
@@ -203,6 +207,7 @@ export const MenuManagement: React.FC = () => {
       payload.imageUrl = imagePreview || null;
       if (data.isAvailable !== undefined) payload.isAvailable = data.isAvailable;
       if (data.isFeatured !== undefined) payload.isFeatured = data.isFeatured;
+      if (data.isCompleteYourMeal !== undefined) payload.isCompleteYourMeal = data.isCompleteYourMeal;
 
       if (editingItem) {
         await api.patch(`/menu-items/${editingItem.id}`, payload);
@@ -247,6 +252,20 @@ export const MenuManagement: React.FC = () => {
       fetchData();
     } catch (err: any) {
       toast.error(err.message || 'Failed to update featured status');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleToggleCompleteYourMeal = async (item: MenuItem) => {
+    setActionLoading(true);
+    try {
+      const newVal = item.isCompleteYourMeal === false ? true : false;
+      await api.patch(`/menu-items/${item.id}`, { isCompleteYourMeal: newVal });
+      toast.success(`${item.name} ${newVal ? 'included in' : 'excluded from'} suggestions`);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update suggestion status');
     } finally {
       setActionLoading(false);
     }
@@ -426,6 +445,24 @@ export const MenuManagement: React.FC = () => {
                 {item.description && (
                   <p className="text-xs text-slate-500 dark:text-[#9ca3af] leading-relaxed flex-1 line-clamp-2">{item.description}</p>
                 )}
+
+                {/* Complete Your Meal slide toggle */}
+                <div className="flex items-center justify-between mt-3 bg-slate-50 dark:bg-[#1f2937]/10 p-2.5 rounded-xl border border-slate-100 dark:border-[#374151]/20">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-gray-400">Complete Your Meal Suggestions</span>
+                  <button
+                    onClick={() => handleToggleCompleteYourMeal(item)}
+                    disabled={actionLoading}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      item.isCompleteYourMeal !== false ? 'bg-[#FF6B35]' : 'bg-slate-200 dark:bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        item.isCompleteYourMeal !== false ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
 
                 {/* Actions Row */}
                 <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-[#374151]/25">
@@ -733,34 +770,50 @@ export const MenuManagement: React.FC = () => {
                   )}
                 </div>
 
-                {/* Toggles: Available & Featured */}
-                <div className="flex gap-3">
-                  {/* Available Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => setValue('isAvailable', !watchedIsAvailable)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] border font-semibold text-sm transition-all ${
-                      watchedIsAvailable
-                        ? 'bg-emerald-50 dark:bg-[#10B981]/10 text-emerald-600 dark:text-[#10B981] border-emerald-200 dark:border-[#10B981]/30'
-                        : 'bg-slate-50 dark:bg-[#374151]/20 text-slate-500 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40'
-                    }`}
-                  >
-                    {watchedIsAvailable ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    {watchedIsAvailable ? 'Available' : 'Unavailable'}
-                  </button>
+                {/* Toggles: Available, Featured & Complete Your Meal */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-3">
+                    {/* Available Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setValue('isAvailable', !watchedIsAvailable)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] border font-semibold text-sm transition-all ${
+                        watchedIsAvailable
+                          ? 'bg-emerald-50 dark:bg-[#10B981]/10 text-emerald-600 dark:text-[#10B981] border-emerald-200 dark:border-[#10B981]/30'
+                          : 'bg-slate-50 dark:bg-[#374151]/20 text-slate-500 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40'
+                      }`}
+                    >
+                      {watchedIsAvailable ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      {watchedIsAvailable ? 'Available' : 'Unavailable'}
+                    </button>
 
-                  {/* Featured Toggle */}
+                    {/* Featured Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setValue('isFeatured', !watchedIsFeatured)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] border font-semibold text-sm transition-all ${
+                        watchedIsFeatured
+                          ? 'bg-amber-50 dark:bg-amber-50/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                          : 'bg-slate-50 dark:bg-[#374151]/20 text-slate-500 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40'
+                      }`}
+                    >
+                      {watchedIsFeatured ? <Star className="w-4 h-4" /> : <StarOff className="w-4 h-4" />}
+                      {watchedIsFeatured ? 'Featured' : 'Not Featured'}
+                    </button>
+                  </div>
+
+                  {/* Complete Your Meal Toggle */}
                   <button
                     type="button"
-                    onClick={() => setValue('isFeatured', !watchedIsFeatured)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[12px] border font-semibold text-sm transition-all ${
-                      watchedIsFeatured
-                        ? 'bg-amber-50 dark:bg-amber-50/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                    onClick={() => setValue('isCompleteYourMeal', !watchedIsCompleteYourMeal)}
+                    className={`w-full flex items-center justify-center gap-2 py-3 rounded-[12px] border font-semibold text-sm transition-all ${
+                      watchedIsCompleteYourMeal
+                        ? 'bg-emerald-50 dark:bg-[#10B981]/10 text-emerald-600 dark:text-[#10B981] border-[#10B981]/30'
                         : 'bg-slate-50 dark:bg-[#374151]/20 text-slate-500 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40'
                     }`}
                   >
-                    {watchedIsFeatured ? <Star className="w-4 h-4" /> : <StarOff className="w-4 h-4" />}
-                    {watchedIsFeatured ? 'Featured' : 'Not Featured'}
+                    <Utensils className="w-4 h-4" />
+                    {watchedIsCompleteYourMeal ? 'Include in suggestions (Complete Your Meal)' : 'Exclude from suggestions'}
                   </button>
                 </div>
               </div>
