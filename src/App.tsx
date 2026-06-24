@@ -20,6 +20,11 @@ import { useAuthStore } from './store/authStore';
 import { WaitersPage } from './pages/dashboard/WaitersPage';
 import { WaiterDashboardLayout } from './components/WaiterDashboardLayout';
 import { WaiterDashboard } from './pages/waiter/WaiterDashboard';
+import { Terms } from './pages/Terms';
+import { Privacy } from './pages/Privacy';
+import { Refund } from './pages/Refund';
+import { Contact } from './pages/Contact';
+import { Help } from './pages/Help';
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -46,6 +51,13 @@ function App() {
           path="/register" 
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} 
         />
+
+        {/* Public Policy & Support routes */}
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/refund" element={<Refund />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/help" element={<Help />} />
 
         {/* Protected dashboard routes */}
         <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF']} />}>

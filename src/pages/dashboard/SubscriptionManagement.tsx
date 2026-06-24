@@ -299,14 +299,14 @@ const SubscriptionManagementContent: React.FC = () => {
           <div onClick={() => setIsRedeemModalOpen(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[24px] shadow-2xl p-6 z-10 animate-in zoom-in-95 duration-200">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Redeem License Code</h2>
-            <p className="text-xs text-slate-500 dark:text-[#9ca3af] mb-4">Enter your Qrunto activation key or promo code to activate subscription plan.</p>
+            <p className="text-xs text-slate-500 dark:text-[#9ca3af] mb-4">Enter your Ordio activation key or promo code to activate subscription plan.</p>
             
             <form onSubmit={handleRedeemCode} className="space-y-4">
               <div>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. QR1M-ABCD1234"
+                  placeholder="e.g. OR1M-ABCD1234"
                   value={redeemCode}
                   onChange={(e) => setRedeemCode(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-300 dark:border-[#374151] rounded-xl p-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[#FF6B35] uppercase tracking-wider font-mono text-center"

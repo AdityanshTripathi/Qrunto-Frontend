@@ -28,7 +28,7 @@ import { ThemeToggle } from './ThemeToggle';
 export const DashboardLayout: React.FC = () => {
   const { user, clearAuth, setAuth } = useAuthStore();
   const { theme } = useTheme();
-  const logoSrc = theme === 'light' ? '/logo-white.png' : '/logo-black.png';
+  const logoSrc = theme === 'light' ? '/logo-black.png' : '/logo-white.png';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -268,9 +268,9 @@ export const DashboardLayout: React.FC = () => {
         <div>
           <div className="flex items-center justify-center px-4 py-5 border-b border-slate-100 dark:border-[#374151]/35">
             {sidebarCollapsed ? (
-              <img src="/favicon.png" alt="Qrunto Logo" className="w-8 h-8 object-contain rounded-lg" />
+              <img src="/favicon.png" alt="Ordio Logo" className="w-8 h-8 object-contain rounded-lg" />
             ) : (
-              <img src={logoSrc} alt="Qrunto Logo" className="h-10 w-auto object-contain" />
+              <img src={logoSrc} alt="Ordio Logo" className="h-10 w-auto object-contain" />
             )}
           </div>
 
@@ -336,7 +336,7 @@ export const DashboardLayout: React.FC = () => {
       {/* 2. Mobile Header Bar */}
       <header className="lg:hidden flex items-center justify-between border-b border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl px-6 py-4">
         <div className="flex items-center gap-3">
-          <img src={logoSrc} alt="Qrunto Logo" className="h-8 w-auto object-contain" />
+          <img src={logoSrc} alt="Ordio Logo" className="h-8 w-auto object-contain" />
         </div>
         
         <div className="flex items-center gap-3">
@@ -365,7 +365,7 @@ export const DashboardLayout: React.FC = () => {
               {/* Close Button */}
               <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-[#374151]/35">
                 <div className="flex items-center gap-3">
-                  <img src={logoSrc} alt="Qrunto Logo" className="h-8 w-auto object-contain" />
+                  <img src={logoSrc} alt="Ordio Logo" className="h-8 w-auto object-contain" />
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}

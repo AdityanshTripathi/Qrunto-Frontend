@@ -62,9 +62,9 @@ export const Register: React.FC = () => {
       <div className="w-full max-w-lg bg-[#1f2937]/40 backdrop-blur-xl border border-[#374151]/50 rounded-[24px] shadow-2xl p-8 md:p-10 relative overflow-hidden">
         {/* Top brand header */}
         <div className="flex flex-col items-center mb-8">
-          <img src="/logo-black.png" alt="Qrunto Logo" className="h-16 w-auto object-contain mb-4 transform hover:scale-105 transition-transform duration-300" />
+          <img src="/logo-white.png" alt="Ordio Logo" className="h-16 w-auto object-contain mb-4 transform hover:scale-105 transition-transform duration-300" />
           <h2 className="text-2xl font-bold text-white tracking-tight">Create your Account</h2>
-          <p className="text-[#9ca3af] mt-2 text-center text-sm">Get started with QRUNTO. Setup your menu and start receiving orders instantly.</p>
+          <p className="text-[#9ca3af] mt-2 text-center text-sm">Get started with Ordio. Setup your menu and start receiving orders instantly.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

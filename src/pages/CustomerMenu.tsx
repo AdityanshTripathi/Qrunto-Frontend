@@ -185,7 +185,7 @@ export const CustomerMenu: React.FC = () => {
         setMenuItems(data.menuItems);
 
         // Check for active order cookie
-        const savedOrderCookie = getCookie(`qrunto_active_order_${slug}`);
+        const savedOrderCookie = getCookie(`ordio_active_order_${slug}`);
         if (savedOrderCookie) {
           try {
             const parsedOrder = JSON.parse(savedOrderCookie);
@@ -200,10 +200,10 @@ export const CustomerMenu: React.FC = () => {
                   setTrackingOrder(statusData.order);
                   setActiveCookieOrder(parsedOrder);
                 } else {
-                  deleteCookie(`qrunto_active_order_${slug}`);
+                  deleteCookie(`ordio_active_order_${slug}`);
                 }
               } else {
-                deleteCookie(`qrunto_active_order_${slug}`);
+                deleteCookie(`ordio_active_order_${slug}`);
               }
             }
           } catch (e) {
@@ -295,7 +295,7 @@ export const CustomerMenu: React.FC = () => {
           const currentStatus = data.order?.status;
           const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
           if (isOrderPaid || currentStatus === 'CANCELLED') {
-            deleteCookie(`qrunto_active_order_${slug}`);
+            deleteCookie(`ordio_active_order_${slug}`);
             setActiveCookieOrder(null);
           }
         }
@@ -317,13 +317,13 @@ export const CustomerMenu: React.FC = () => {
           const currentStatus = data.order?.status;
           const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
           if (isOrderPaid || currentStatus === 'CANCELLED') {
-            deleteCookie(`qrunto_active_order_${slug}`);
+            deleteCookie(`ordio_active_order_${slug}`);
             setActiveCookieOrder(null);
           } else {
             setActiveCookieOrder(data.order);
           }
         } else {
-          deleteCookie(`qrunto_active_order_${slug}`);
+          deleteCookie(`ordio_active_order_${slug}`);
           setActiveCookieOrder(null);
         }
       } catch { /* silent */ }
@@ -351,14 +351,14 @@ export const CustomerMenu: React.FC = () => {
       if (!res.ok) throw new Error(data.error || 'Failed to place order');
       setPlacedOrder(data.order);
       setActiveCookieOrder(data.order);
-      setCookie(`qrunto_active_order_${slug}`, JSON.stringify(data.order), 24);
+      setCookie(`ordio_active_order_${slug}`, JSON.stringify(data.order), 24);
       setCart([]);
       setCustomerName('');
       setCustomerPhone('');
       setIsCartOpen(false);
       setIsCheckoutConfirming(false);
       setIsSettleBillRequested(false);
-      localStorage.setItem(`qrunto_payment_method_${data.order.id}`, paymentMethod);
+      localStorage.setItem(`ordio_payment_method_${data.order.id}`, paymentMethod);
       
       // Fetch updated status immediately so items and totals update instantly
       const statusRes = await fetch(`${BASE_URL}/public/${slug}/orders/${data.order.id}/status`);
@@ -509,7 +509,7 @@ export const CustomerMenu: React.FC = () => {
   if (placedOrder) {
     const currentStatus = trackingOrder?.status ?? placedOrder.status;
     const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS';
-    const paymentPref = localStorage.getItem(`qrunto_payment_method_${placedOrder.id}`) || 'ONLINE';
+    const paymentPref = localStorage.getItem(`ordio_payment_method_${placedOrder.id}`) || 'ONLINE';
     const getStep = (s: string) => ({ 'NEW': 0, 'PREPARING': 1, 'READY': 2, 'SERVED': 3 }[s] ?? 0);
     const stepIndex = getStep(currentStatus);
     const steps = [
@@ -879,7 +879,7 @@ export const CustomerMenu: React.FC = () => {
 
                   <div className="space-y-1">
                     <p className={`text-xs font-bold ${t.text}`}>Thank you for dining with us!</p>
-                    <p className={`text-[10px] ${t.subtext}`}>Please visit again. Powered by Qrunto.</p>
+                    <p className={`text-[10px] ${t.subtext}`}>Please visit again. Powered by Ordio.</p>
                   </div>
                 </div>
               </div>
@@ -925,7 +925,7 @@ export const CustomerMenu: React.FC = () => {
                   <div className="w-6 h-6 bg-[#3399FF] rounded flex items-center justify-center font-bold text-white text-xs">R</div>
                   <div>
                     <h5 className="text-xs font-black text-white uppercase tracking-wider">Razorpay Secure</h5>
-                    <p className="text-[10px] text-gray-400">Qrunto · Order ID: {placedOrder.orderNumber}</p>
+                    <p className="text-[10px] text-gray-400">Ordio · Order ID: {placedOrder.orderNumber}</p>
                   </div>
                 </div>
                 <div className="text-right">

@@ -59,6 +59,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const [planDuration, setPlanDuration] = useState(30);
   const [planMaxTables, setPlanMaxTables] = useState(10);
   const [planMaxMenuItems, setPlanMaxMenuItems] = useState(50);
+  const [planFeatures, setPlanFeatures] = useState('');
   
   // License form fields
   const [licenseCodeInput, setLicenseCodeInput] = useState('');
@@ -66,6 +67,13 @@ export const SuperAdminDashboard: React.FC = () => {
   const [licenseDuration, setLicenseDuration] = useState(30);
   const [licenseUsageLimit, setLicenseUsageLimit] = useState(1);
   const [licenseExpiresAt, setLicenseExpiresAt] = useState('');
+
+  // Restaurant Subscription edit fields
+  const [isSubEditModalOpen, setIsSubEditModalOpen] = useState(false);
+  const [editingRestaurant, setEditingRestaurant] = useState<any | null>(null);
+  const [subPlanId, setSubPlanId] = useState('');
+  const [subStatus, setSubStatus] = useState('');
+  const [subEndDate, setSubEndDate] = useState('');
 
   // Fetch data depending on activeTab
   const loadTabData = async () => {
@@ -137,7 +145,7 @@ export const SuperAdminDashboard: React.FC = () => {
       const mockOwnerUser: User = {
         id: 'mock-owner-id',
         name: res.ownerName,
-        email: 'owner@qrunto.com',
+        email: 'owner@ordio.in',
         role: 'RESTAURANT_OWNER',
         restaurants: [{ id: restId, name: res.restaurantName, slug: 'dummy-slug' }]
       };
@@ -157,27 +165,22 @@ export const SuperAdminDashboard: React.FC = () => {
   const handleCreatePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = {
+        name: planName,
+        price: planPrice,
+        price6Month: planPrice6Month,
+        price1Year: planPrice1Year,
+        durationDays: planDuration,
+        maxTables: planMaxTables,
+        maxMenuItems: planMaxMenuItems,
+        featuresJson: planFeatures.split('\n').map(f => f.trim()).filter(Boolean)
+      };
+
       if (editingPlan) {
-        await api.patch(`/superadmin/plans/${editingPlan.id}`, {
-          name: planName,
-          price: planPrice,
-          price6Month: planPrice6Month,
-          price1Year: planPrice1Year,
-          durationDays: planDuration,
-          maxTables: planMaxTables,
-          maxMenuItems: planMaxMenuItems,
-        });
+        await api.patch(`/superadmin/plans/${editingPlan.id}`, payload);
         toast.success('Subscription plan updated successfully!');
       } else {
-        await api.post('/superadmin/plans', {
-          name: planName,
-          price: planPrice,
-          price6Month: planPrice6Month,
-          price1Year: planPrice1Year,
-          durationDays: planDuration,
-          maxTables: planMaxTables,
-          maxMenuItems: planMaxMenuItems,
-        });
+        await api.post('/superadmin/plans', payload);
         toast.success('Subscription plan created successfully!');
       }
       setIsPlanModalOpen(false);
@@ -189,9 +192,32 @@ export const SuperAdminDashboard: React.FC = () => {
       setPlanDuration(30);
       setPlanMaxTables(10);
       setPlanMaxMenuItems(50);
+      setPlanFeatures('');
       loadTabData();
     } catch (err: any) {
       toast.error(err.message || 'Plan save failed');
+    }
+  };
+
+  // Submit restaurant subscription update
+  const handleUpdateRestaurantSubscription = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRestaurant) return;
+    try {
+      await api.patch(`/superadmin/restaurants/${editingRestaurant.id}/subscription`, {
+        planId: subPlanId,
+        status: subStatus,
+        endDate: subEndDate ? new Date(subEndDate).toISOString() : null,
+      });
+      toast.success('Restaurant subscription updated successfully!');
+      setIsSubEditModalOpen(false);
+      setEditingRestaurant(null);
+      setSubPlanId('');
+      setSubStatus('');
+      setSubEndDate('');
+      loadTabData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update subscription');
     }
   };
 
@@ -202,7 +228,7 @@ export const SuperAdminDashboard: React.FC = () => {
     }
     try {
       const res = await api.delete(`/superadmin/restaurants/${id}`);
-      toast.success(res.message || 'Restaurant deleted successfully');
+      toast.success(res.message);
       loadTabData();
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete restaurant');
@@ -276,10 +302,10 @@ export const SuperAdminDashboard: React.FC = () => {
         <div>
           <div className="flex items-center justify-between px-6 py-6 border-b border-slate-100 dark:border-[#374151]/35">
             <div className="flex items-center gap-3">
-              <img src="/favicon.png" alt="Qrunto Logo" className="w-10 h-10 object-contain rounded-xl" />
+              <img src="/favicon.png" alt="Ordio Logo" className="w-10 h-10 object-contain rounded-xl" />
               <div className="flex flex-col">
                 <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
-                  QRUNTO
+                  ORDIO
                 </span>
                 <span className="text-[10px] font-bold text-[#FF6B35] tracking-wider uppercase">
                   Super Admin
@@ -335,7 +361,7 @@ export const SuperAdminDashboard: React.FC = () => {
         <header className="mb-6 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-black text-slate-800 dark:text-white capitalize">{activeTab} Console</h1>
-            <p className="text-xs text-slate-500 dark:text-[#9ca3af]">Qrunto platform statistics and configurations.</p>
+            <p className="text-xs text-slate-500 dark:text-[#9ca3af]">Ordio platform statistics and configurations.</p>
           </div>
           <span className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/60 px-4 py-2 rounded-xl text-xs font-bold text-amber-500 dark:text-amber-400 shadow-sm dark:shadow-none">
             Platform System: Active
@@ -481,6 +507,29 @@ export const SuperAdminDashboard: React.FC = () => {
                           </td>
                           <td className="p-4 text-right space-x-2">
                             <button
+                              onClick={() => {
+                                setEditingRestaurant(rest);
+                                setSubPlanId('');
+                                const matchedPlan = plansList.find(p => p.name === rest.planName);
+                                if (matchedPlan) {
+                                  setSubPlanId(matchedPlan.id);
+                                }
+                                setSubStatus(rest.isActive ? 'ACTIVE' : 'EXPIRED');
+                                if (rest.expiryDate) {
+                                  const d = new Date(rest.expiryDate);
+                                  const formatted = d.toISOString().split('T')[0];
+                                  setSubEndDate(formatted);
+                                } else {
+                                  setSubEndDate('');
+                                }
+                                setIsSubEditModalOpen(true);
+                              }}
+                              className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 rounded-xl text-[10px] font-bold text-blue-600 dark:text-blue-400 transition-all inline-flex items-center gap-1 shadow"
+                            >
+                              <CreditCard className="w-3 h-3" />
+                              Edit Sub
+                            </button>
+                            <button
                               onClick={() => handleToggleStatus(rest.id)}
                               className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-colors ${
                                 rest.isActive
@@ -560,6 +609,7 @@ export const SuperAdminDashboard: React.FC = () => {
                               setPlanDuration(plan.durationDays);
                               setPlanMaxTables(plan.maxTables);
                               setPlanMaxMenuItems(plan.maxMenuItems);
+                              setPlanFeatures(plan.featuresJson?.join('\n') || '');
                               setIsPlanModalOpen(true);
                             }}
                             className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-[#374151]/30 dark:hover:bg-[#374151] rounded-xl text-slate-600 dark:text-gray-300 transition-all border border-slate-200 dark:border-none"
@@ -810,7 +860,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     <input
                       type="text"
                       disabled
-                      value="Qrunto SaaS Systems"
+                      value="Ordio SaaS Systems"
                       className="w-full bg-slate-50 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/60 rounded-xl py-3 px-4 text-slate-800 dark:text-white opacity-60 cursor-not-allowed"
                     />
                   </div>
@@ -851,6 +901,7 @@ export const SuperAdminDashboard: React.FC = () => {
               setPlanDuration(30);
               setPlanMaxTables(10);
               setPlanMaxMenuItems(50);
+              setPlanFeatures('');
             }} 
             className="absolute inset-0 bg-black/75 backdrop-blur-sm" 
           />
@@ -935,6 +986,17 @@ export const SuperAdminDashboard: React.FC = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase mb-1">Checklist Features (One per line)</label>
+                <textarea
+                  placeholder="e.g. Online Payments&#10;Up to 30 Tables&#10;Email Support"
+                  rows={4}
+                  value={planFeatures}
+                  onChange={(e) => setPlanFeatures(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] rounded-xl p-3 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#FF6B35] font-sans"
+                />
+              </div>
+
               <div className="flex gap-3 pt-3">
                 <button
                   type="button"
@@ -948,6 +1010,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     setPlanDuration(30);
                     setPlanMaxTables(10);
                     setPlanMaxMenuItems(50);
+                    setPlanFeatures('');
                   }}
                   className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-[#374151] dark:hover:bg-[#4b5563] text-slate-800 dark:text-white font-semibold rounded-xl text-sm border border-slate-200 dark:border-none"
                 >
@@ -1045,6 +1108,92 @@ export const SuperAdminDashboard: React.FC = () => {
                   className="flex-1 py-3 bg-[#FF6B35] hover:bg-orange-600 text-white font-bold rounded-xl text-sm"
                 >
                   Generate Code
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* RESTAURANT SUBSCRIPTION EDIT MODAL */}
+      {isSubEditModalOpen && editingRestaurant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            onClick={() => {
+              setIsSubEditModalOpen(false);
+              setEditingRestaurant(null);
+              setSubPlanId('');
+              setSubStatus('');
+              setSubEndDate('');
+            }} 
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm" 
+          />
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/80 rounded-[24px] shadow-2xl p-6 z-10 animate-in zoom-in-95 duration-200">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Edit Subscription</h2>
+            <p className="text-xs text-slate-500 dark:text-[#9ca3af] mb-4">Modify pricing plan and expiry details for **{editingRestaurant.name}**.</p>
+            <form onSubmit={handleUpdateRestaurantSubscription} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase mb-1">Subscription Plan</label>
+                <select
+                  required
+                  value={subPlanId}
+                  onChange={(e) => setSubPlanId(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] rounded-xl p-3 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#FF6B35]"
+                >
+                  <option value="" disabled>Select a Plan</option>
+                  {plansList.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({fmt(p.price)}/mo)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase mb-1">Status</label>
+                <select
+                  required
+                  value={subStatus}
+                  onChange={(e) => setSubStatus(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] rounded-xl p-3 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#FF6B35]"
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="EXPIRED">Expired</option>
+                  <option value="CANCELLED">Cancelled</option>
+                  <option value="PENDING">Pending</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase mb-1">Expiry Date</label>
+                <input
+                  type="date"
+                  required
+                  value={subEndDate}
+                  onChange={(e) => setSubEndDate(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] rounded-xl p-3 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#FF6B35]"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSubEditModalOpen(false);
+                    setEditingRestaurant(null);
+                    setSubPlanId('');
+                    setSubStatus('');
+                    setSubEndDate('');
+                  }}
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-[#374151] dark:hover:bg-[#4b5563] text-slate-800 dark:text-white font-semibold rounded-xl text-sm border border-slate-200 dark:border-none"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-[#FF6B35] hover:bg-orange-600 text-white font-bold rounded-xl text-sm"
+                >
+                  Save Changes
                 </button>
               </div>
             </form>

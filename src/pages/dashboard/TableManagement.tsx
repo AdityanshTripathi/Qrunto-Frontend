@@ -70,7 +70,7 @@ const downloadQR = async (value: string, tableNumber: string) => {
     });
     const link = document.createElement('a');
     link.href = dataUrl;
-    link.download = `qrunto-table-${tableNumber}.png`;
+    link.download = `ordio-table-${tableNumber}.png`;
     link.click();
     toast.success(`QR code for Table ${tableNumber} downloaded!`);
   } catch (err) {

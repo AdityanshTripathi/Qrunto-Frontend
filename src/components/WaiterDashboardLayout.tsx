@@ -43,10 +43,10 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
       <header className="lg:hidden flex items-center justify-between border-b border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl px-4 py-3 sticky top-0 z-30">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-[#FF6B35] rounded-xl flex items-center justify-center font-black text-white text-sm">
-            Q
+            O
           </div>
           <div>
-            <h1 className="font-black text-xs leading-none text-slate-800 dark:text-white">QRUNTO Waiter</h1>
+            <h1 className="font-black text-xs leading-none text-slate-800 dark:text-white">Ordio Waiter</h1>
             <p className="text-[9px] text-slate-500 dark:text-gray-400 mt-0.5">Table Operational Service</p>
           </div>
         </div>
@@ -81,9 +81,9 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
               <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-[#374151]/35">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-[#FF6B35] rounded-xl flex items-center justify-center font-black text-white text-sm">
-                    Q
+                    O
                   </div>
-                  <h2 className="text-sm font-black text-slate-800 dark:text-white">QRUNTO Staff</h2>
+                  <h2 className="text-sm font-black text-slate-800 dark:text-white">Ordio Staff</h2>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
@@ -156,10 +156,10 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
             {/* Sidebar Logo */}
             <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-[#374151]/35">
               <div className="w-9 h-9 bg-[#FF6B35] rounded-xl flex items-center justify-center font-black text-white text-base">
-                Q
+                O
               </div>
               <div className="text-left">
-                <h1 className="font-black text-sm leading-none text-slate-800 dark:text-white">QRUNTO Staff</h1>
+                <h1 className="font-black text-sm leading-none text-slate-800 dark:text-white">Ordio Staff</h1>
                 <p className="text-[10px] text-[#FF6B35] font-black tracking-widest uppercase mt-0.5">Waiter Desk</p>
               </div>
             </div>

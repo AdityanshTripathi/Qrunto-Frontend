@@ -326,7 +326,7 @@ export const Subscription: React.FC = () => {
             {/* Header */}
             <div className="bg-[#111827] px-6 py-5 border-b border-[#374151] flex justify-between items-center">
               <div>
-                <h3 className="font-extrabold text-white text-base">Qrunto Subscriptions</h3>
+                <h3 className="font-extrabold text-white text-base">Ordio Subscriptions</h3>
                 <p className="text-[11px] text-gray-400">Order Ref: SaaS-Plan-Checkout</p>
               </div>
               <button 
@@ -435,7 +435,7 @@ export const Subscription: React.FC = () => {
                   ) : (
                     <div className="pt-2 text-center py-4 bg-[#111827]/30 border border-[#374151]/40 rounded-2xl">
                       <p className="text-xs text-gray-300 font-semibold">UPI Integration Simulator</p>
-                      <p className="text-[10px] text-gray-500 mt-1">Simulated via secure payment link. ID: qrunto.pay@upi</p>
+                      <p className="text-[10px] text-gray-500 mt-1">Simulated via secure payment link. ID: ordio.pay@upi</p>
                     </div>
                   )}
                 </div>

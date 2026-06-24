@@ -61,7 +61,7 @@ export const Landing: React.FC = () => {
               <Link to="/" className="flex items-center gap-2">
                 <img 
                   src="/logo-black.png" 
-                  alt="QRUNTO" 
+                  alt="ORDIO" 
                   className="h-8 w-auto object-contain transform hover:scale-[1.02] transition-transform"
                 />
               </Link>
@@ -359,7 +359,7 @@ export const Landing: React.FC = () => {
               Why Traditional Dining is Slowing You Down
             </h2>
             <p className="text-sm text-[#4B5563]">
-              Comparing the friction of manual table service against the speed of QRUNTO digital automation.
+              Comparing the friction of manual table service against the speed of Ordio digital automation.
             </p>
           </div>
 
@@ -411,13 +411,13 @@ export const Landing: React.FC = () => {
               </ul>
             </div>
 
-            {/* Right Box: QRUNTO Solutions */}
+            {/* Right Box: Ordio Solutions */}
             <div className="bg-white border border-[#FF6B35]/25 rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF6B35]/5 rounded-full blur-3xl pointer-events-none"></div>
               
               <h3 className="text-base font-black text-[#FF6B35] flex items-center gap-2 mb-5">
                 <span className="w-2 h-2 rounded-full bg-[#FF6B35] animate-pulse"></span>
-                The QRUNTO Solution
+                The Ordio Solution
               </h3>
 
               <ul className="space-y-4">
@@ -474,7 +474,7 @@ export const Landing: React.FC = () => {
               Seamless Dining in 5 Steps
             </h2>
             <p className="text-sm text-[#4B5563]">
-              From seating to billing, trace how simple table ordering becomes with QRUNTO. Swipe left on mobile.
+              From seating to billing, trace how simple table ordering becomes with Ordio. Swipe left on mobile.
             </p>
           </div>
 
@@ -625,7 +625,7 @@ export const Landing: React.FC = () => {
                 Interactive Menus built for Conversions
               </h3>
               <p className="text-sm sm:text-base text-[#4B5563] leading-relaxed mb-6 max-w-xl mx-auto sm:mx-0">
-                Qrunto's customer interface is a lightweight, blazing-fast web application. There are no apps to install or accounts to register. Diners scan, choose add-ons, add items, and pay instantly.
+                Ordio's customer interface is a lightweight, blazing-fast web application. There are no apps to install or accounts to register. Diners scan, choose add-ons, add items, and pay instantly.
               </p>
 
               {/* Bento micro benefits */}
@@ -696,7 +696,7 @@ export const Landing: React.FC = () => {
                 <div className="bg-[#111827] text-white p-3.5 flex items-center justify-between border-b border-stone-850">
                   <div className="flex items-center gap-1.5">
                     <Laptop className="w-3.5 h-3.5 text-[#FF6B35]" />
-                    <span className="text-[10px] font-black tracking-wider uppercase">Qrunto Control Panel</span>
+                    <span className="text-[10px] font-black tracking-wider uppercase">Ordio Control Panel</span>
                   </div>
                   <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
                     Connected
@@ -935,7 +935,7 @@ export const Landing: React.FC = () => {
               Modern Restaurant Bento Architecture
             </h2>
             <p className="text-sm text-[#4B5563]">
-              Discover why modern restaurants trust QRUNTO to automate KOTs and maximize daily table turnover.
+              Discover why modern restaurants trust Ordio to automate KOTs and maximize daily table turnover.
             </p>
           </div>
 
@@ -1105,7 +1105,7 @@ export const Landing: React.FC = () => {
               Loved by Restaurant Operators
             </h2>
             <p className="text-sm text-[#4B5563]">
-              Read how Qrunto helps establishments automate menus, manage staff, and increase earnings.
+              Read how Ordio helps establishments automate menus, manage staff, and increase earnings.
             </p>
           </div>
 
@@ -1113,7 +1113,7 @@ export const Landing: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-stone-50 border border-stone-150 rounded-3xl p-6 sm:p-8 flex flex-col justify-between">
               <p className="text-xs sm:text-sm text-[#4B5563] italic leading-relaxed mb-6 font-medium">
-                "QRUNTO completely redefined how our bistro functions during Sunday rush hours. Table clearance times dropped by 18 minutes because customers check out and pay directly from their phones. Waiter stress has reduced noticeably!"
+                "Ordio completely redefined how our bistro functions during Sunday rush hours. Table clearance times dropped by 18 minutes because customers check out and pay directly from their phones. Waiter stress has reduced noticeably!"
               </p>
               <div className="flex items-center gap-3 pt-3.5 border-t border-stone-200">
                 <div className="w-8 h-8 rounded-full bg-[#FF6B35]/15 text-[#FF6B35] flex items-center justify-center font-bold text-xs">
@@ -1128,7 +1128,7 @@ export const Landing: React.FC = () => {
 
             <div className="bg-stone-50 border border-stone-150 rounded-3xl p-6 sm:p-8 flex flex-col justify-between">
               <p className="text-xs sm:text-sm text-[#4B5563] italic leading-relaxed mb-6 font-medium">
-                "Our previous system was a complex POS that crashed frequently. Setting up QRUNTO took less than 5 minutes. The digital KOT monitor sounds alerts in the kitchen when guests click submit. Perfect operations accuracy."
+                "Our previous system was a complex POS that crashed frequently. Setting up Ordio took less than 5 minutes. The digital KOT monitor sounds alerts in the kitchen when guests click submit. Perfect operations accuracy."
               </p>
               <div className="flex items-center gap-3 pt-3.5 border-t border-stone-200">
                 <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs">
@@ -1169,7 +1169,7 @@ export const Landing: React.FC = () => {
             Ready to Modernize Your Restaurant?
           </h2>
           <p className="text-sm sm:text-base text-gray-300 leading-relaxed mb-8 max-w-xl mx-auto">
-            Join restaurants using QRUNTO to simplify ordering, automate KOTs, and improve customer dining experience.
+            Join restaurants using Ordio to simplify ordering, automate KOTs, and improve customer dining experience.
           </p>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full sm:w-auto">
@@ -1180,7 +1180,7 @@ export const Landing: React.FC = () => {
               Start Free Trial
             </Link>
             <a 
-              href="mailto:demo@qrunto.com" 
+              href="mailto:demo@ordio.in" 
               className="w-full sm:w-auto text-center font-semibold text-white bg-transparent border border-gray-700 hover:border-gray-500 px-8 py-4.5 rounded-xl transition-all min-h-[48px] flex items-center justify-center"
             >
               Book Demo
@@ -1197,7 +1197,7 @@ export const Landing: React.FC = () => {
               <Link to="/">
                 <img 
                   src="/logo-black.png" 
-                  alt="QRUNTO Logo" 
+                  alt="ORDIO Logo" 
                   className="h-8 w-auto object-contain mb-3"
                 />
               </Link>
@@ -1209,17 +1209,17 @@ export const Landing: React.FC = () => {
             <div>
               <h4 className="text-[10px] font-black text-stone-900 tracking-wider uppercase mb-3">Legal</h4>
               <ul className="space-y-1.5">
-                <li><a href="#" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Terms & Conditions</a></li>
-                <li><a href="#" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Refund Policy</a></li>
+                <li><Link to="/terms" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Terms & Conditions</Link></li>
+                <li><Link to="/privacy" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/refund" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Refund Policy</Link></li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-[10px] font-black text-stone-900 tracking-wider uppercase mb-3">Support</h4>
               <ul className="space-y-1.5">
-                <li><a href="mailto:support@qrunto.com" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Contact Us</a></li>
-                <li><a href="#" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Help Center</a></li>
+                <li><Link to="/contact" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Contact Us</Link></li>
+                <li><Link to="/help" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Help Center</Link></li>
                 <li><a href="#" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Documentation</a></li>
               </ul>
             </div>
@@ -1227,7 +1227,7 @@ export const Landing: React.FC = () => {
 
           <div className="pt-6 border-t border-stone-150 flex flex-col md:flex-row items-center justify-between gap-3 text-center">
             <p className="text-[9px] text-[#9CA3AF]">
-              © {new Date().getFullYear()} QRUNTO. All rights reserved. Designed for modern hospitality operators worldwide.
+              © {new Date().getFullYear()} ORDIO. All rights reserved. Designed for modern hospitality operators worldwide.
             </p>
             <p className="text-[9px] text-stone-400 font-bold uppercase tracking-wide">
               Scan. Order. Pay.

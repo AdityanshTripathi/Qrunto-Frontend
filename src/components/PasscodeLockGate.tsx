@@ -34,7 +34,7 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
       const res = await api.get('/settings/passcode/status');
 
       // Check if verified in current tab session
-      const isVerified = sessionStorage.getItem('qrunto_passcode_verified') === 'true';
+      const isVerified = sessionStorage.getItem('ordio_passcode_verified') === 'true';
 
       if (!res.isPasscodeEnabled || !res.hasPasscodeSet || isVerified) {
         setIsLocked(false);
@@ -61,7 +61,7 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
     try {
       const res = await api.post('/settings/passcode/verify', { passcode });
       if (res.success) {
-        sessionStorage.setItem('qrunto_passcode_verified', 'true');
+        sessionStorage.setItem('ordio_passcode_verified', 'true');
         setIsLocked(false);
         toast.success('Access unlocked successfully!');
       }
@@ -100,7 +100,7 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
     try {
       const res = await api.post('/settings/passcode/set', { passcode: newPasscode });
       toast.success(res.message || 'Passcode reset successfully!');
-      sessionStorage.setItem('qrunto_passcode_verified', 'true');
+      sessionStorage.setItem('ordio_passcode_verified', 'true');
       setIsLocked(false);
       // Refresh passcode state
       checkPasscodeStatus();
