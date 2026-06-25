@@ -24,6 +24,7 @@ import { Privacy } from './pages/Privacy';
 import { Refund } from './pages/Refund';
 import { Contact } from './pages/Contact';
 import { Help } from './pages/Help';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -31,6 +32,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       {/* Toast provider */}
       <Toaster position="top-right" theme="dark" richColors closeButton />
       
