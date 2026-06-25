@@ -746,7 +746,7 @@ export const CustomerMenu: React.FC = () => {
               </div>
 
               {/* Printable Area */}
-              <div id="print-modal-container" className={`flex-1 overflow-y-auto p-6 ${t.header} ${t.text} space-y-6`}>
+              <div id="print-modal-container" className={`flex-1 overflow-y-auto p-4 sm:p-6 ${t.header} ${t.text} space-y-6`}>
                 <style>{`
                   @media print {
                     body * {
@@ -774,7 +774,7 @@ export const CustomerMenu: React.FC = () => {
                 `}</style>
 
                 {/* Premium Invoice Header */}
-                <div className="keep-color bg-slate-800 text-white p-5 rounded-t-2xl flex justify-between items-center -mx-6 -mt-6 mb-6 shadow-sm">
+                <div className="keep-color bg-slate-800 text-white p-4 sm:p-5 rounded-t-2xl flex justify-between items-center -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 mb-4 sm:mb-6 shadow-sm">
                   <div>
                     <h2 className="text-lg font-black tracking-tight">{restaurant.name}</h2>
                     <p className="text-[10px] text-slate-300 mt-0.5">Tax Invoice / Bill Statement</p>
@@ -787,7 +787,7 @@ export const CustomerMenu: React.FC = () => {
                 </div>
 
                 {/* Structured Meta details */}
-                <div className="grid grid-cols-2 gap-6 text-xs border-b border-slate-200 dark:border-slate-800 pb-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-xs border-b border-slate-200 dark:border-slate-800 pb-4 sm:pb-5">
                   <div>
                     <span className="block font-extrabold uppercase tracking-wider text-[9px] text-slate-400 mb-1">INVOICE TO:</span>
                     {trackingOrder?.customerName ? (
@@ -805,8 +805,8 @@ export const CustomerMenu: React.FC = () => {
                     )}
                     <p className="text-slate-500 mt-2 text-[11px]">Table No: <strong className="text-slate-700 dark:text-slate-200">{trackingOrder?.tableNumber ?? placedOrder.tableNumber}</strong></p>
                   </div>
-                  <div className="text-right flex flex-col items-end">
-                    <span className="block font-extrabold uppercase tracking-wider text-[9px] text-slate-400 mb-1 w-full text-right">DETAILS:</span>
+                  <div className="text-left sm:text-right flex flex-col items-start sm:items-end mt-2 sm:mt-0">
+                    <span className="block font-extrabold uppercase tracking-wider text-[9px] text-slate-400 mb-1 w-full text-left sm:text-right">DETAILS:</span>
                     <p className="font-black text-slate-800 dark:text-white text-sm">
                       Invoice No: <span className="text-[#D97757]">{(trackingOrder?.orderNumber ?? placedOrder.orderNumber ?? '').replace('ORD-', 'INV-')}</span>
                     </p>
@@ -824,23 +824,23 @@ export const CustomerMenu: React.FC = () => {
                     <table className="w-full text-xs text-left border-collapse">
                       <thead>
                         <tr className="keep-color bg-slate-800 dark:bg-slate-900 text-white font-bold">
-                          <th className="py-2.5 px-3">Item</th>
-                          <th className="py-2.5 px-3 text-center w-12">Qty</th>
-                          <th className="py-2.5 px-3 text-right w-20">Rate</th>
-                          <th className="py-2.5 px-3 text-right w-24">Total</th>
+                          <th className="py-2 px-2.5 sm:py-2.5 sm:px-3">Item</th>
+                          <th className="py-2 px-2.5 sm:py-2.5 sm:px-3 text-center w-12">Qty</th>
+                          <th className="py-2 px-2.5 sm:py-2.5 sm:px-3 text-right w-20">Rate</th>
+                          <th className="py-2 px-2.5 sm:py-2.5 sm:px-3 text-right w-24">Total</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-200">
                         {trackingOrder?.items?.map((item: any, idx: number) => (
                           <tr key={item.id} className={`align-middle ${idx % 2 === 1 ? 'bg-slate-50 dark:bg-slate-800/10' : ''}`}>
-                            <td className="py-2.5 px-3 font-bold text-slate-800 dark:text-white">{item.name}</td>
-                            <td className="py-2.5 px-3 text-center text-slate-600 dark:text-slate-400">{item.quantity}</td>
-                            <td className="py-2.5 px-3 text-right text-slate-600 dark:text-slate-400">{fmt(item.unitPrice, settings.currency)}</td>
-                            <td className="py-2.5 px-3 text-right font-bold text-slate-800 dark:text-white">{fmt(item.totalPrice, settings.currency)}</td>
+                            <td className="py-2 px-2.5 sm:py-2.5 sm:px-3 font-bold text-slate-800 dark:text-white">{item.name}</td>
+                            <td className="py-2 px-2.5 sm:py-2.5 sm:px-3 text-center text-slate-600 dark:text-slate-400">{item.quantity}</td>
+                            <td className="py-2 px-2.5 sm:py-2.5 sm:px-3 text-right text-slate-600 dark:text-slate-400">{fmt(item.unitPrice, settings.currency)}</td>
+                            <td className="py-2 px-2.5 sm:py-2.5 sm:px-3 text-right font-bold text-slate-800 dark:text-white">{fmt(item.totalPrice, settings.currency)}</td>
                           </tr>
                         )) ?? (
                           <tr>
-                            <td className="py-2.5 px-3 text-slate-400 italic text-center" colSpan={4}>Loading item details...</td>
+                            <td className="py-2 px-2.5 sm:py-2.5 sm:px-3 text-slate-400 italic text-center" colSpan={4}>Loading item details...</td>
                           </tr>
                         )}
                       </tbody>
