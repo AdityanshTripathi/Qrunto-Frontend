@@ -421,8 +421,8 @@ export const CustomerMenu: React.FC = () => {
       textElements.forEach((el, index) => {
         const htmlEl = el as HTMLElement;
         originalColors[index] = htmlEl.style.color;
-        // Don't change orange colored highlight totals
-        if (!htmlEl.className.includes('text-[#D97757]')) {
+        // Don't change orange colored highlight totals and text inside elements with keep-color class
+        if (!htmlEl.className.includes('text-[#D97757]') && !htmlEl.closest('.keep-color')) {
           htmlEl.style.setProperty('color', '#1f2937', 'important');
         }
       });
@@ -464,7 +464,7 @@ export const CustomerMenu: React.FC = () => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`invoice-${placedOrder?.orderNumber ?? 'order'}.pdf`);
+      pdf.save(`invoice-${(placedOrder?.orderNumber ?? 'order').replace('ORD-', 'INV-')}.pdf`);
       toast.success('Invoice downloaded successfully!', { id: toastId });
     } catch (err) {
       console.error('Failed to generate invoice PDF', err);
@@ -773,96 +773,113 @@ export const CustomerMenu: React.FC = () => {
                   }
                 `}</style>
 
-                {/* Restaurant Info */}
-                <div className="text-center border-b border-dashed border-[#D97757]/30 pb-6">
-                  <h2 className={`text-2xl font-black ${t.text} tracking-tight`}>{restaurant.name}</h2>
-                  <p className={`text-xs ${t.subtext} mt-1`}>Tax Invoice / Bill Statement</p>
-                  <p className={`text-xs ${t.subtext} mt-0.5`}>Date: {new Date(trackingOrder?.createdAt ?? placedOrder.createdAt).toLocaleString('en-IN')}</p>
+                {/* Premium Invoice Header */}
+                <div className="keep-color bg-slate-800 text-white p-5 rounded-t-2xl flex justify-between items-center -mx-6 -mt-6 mb-6 shadow-sm">
+                  <div>
+                    <h2 className="text-lg font-black tracking-tight">{restaurant.name}</h2>
+                    <p className="text-[10px] text-slate-300 mt-0.5">Tax Invoice / Bill Statement</p>
+                    <p className="text-[9px] text-slate-400 mt-0.5">{restaurant.slug}.ordio.in</p>
+                  </div>
+                  <div className="text-right">
+                    <h1 className="text-xl font-black tracking-wider text-slate-100">INVOICE</h1>
+                    <p className="text-[10px] text-slate-300 mt-0.5">Date: {new Date(trackingOrder?.createdAt ?? placedOrder.createdAt).toLocaleDateString('en-IN')}</p>
+                  </div>
                 </div>
 
-                {/* Meta details */}
-                <div className={`grid grid-cols-2 gap-4 text-xs border-b ${t.divider} pb-4`}>
+                {/* Structured Meta details */}
+                <div className="grid grid-cols-2 gap-6 text-xs border-b border-slate-200 dark:border-slate-800 pb-5">
                   <div>
-                    <span className={`block font-semibold uppercase tracking-wider text-[10px] ${t.subtext}`}>Order Details</span>
-                    <p className={`font-bold mt-0.5 ${t.text}`}>#{trackingOrder?.orderNumber ?? placedOrder.orderNumber}</p>
-                    <p className={t.subtext}>Table: {trackingOrder?.tableNumber ?? placedOrder.tableNumber}</p>
-                  </div>
-                  <div>
-                    <span className={`block font-semibold uppercase tracking-wider text-[10px] ${t.subtext}`}>Customer Details</span>
+                    <span className="block font-extrabold uppercase tracking-wider text-[9px] text-slate-400 mb-1">INVOICE TO:</span>
                     {trackingOrder?.customerName ? (
                       <>
-                        <p className={`font-bold mt-0.5 ${t.text}`}>{trackingOrder.customerName}</p>
-                        {trackingOrder.customerPhone && <p className={t.subtext}>{trackingOrder.customerPhone}</p>}
+                        <p className="font-bold text-slate-800 dark:text-white text-sm">{trackingOrder.customerName}</p>
+                        {trackingOrder.customerPhone && <p className="text-slate-500 mt-0.5">{trackingOrder.customerPhone}</p>}
                       </>
                     ) : placedOrder.customerName ? (
                       <>
-                        <p className={`font-bold mt-0.5 ${t.text}`}>{placedOrder.customerName}</p>
-                        {placedOrder.customerPhone && <p className={t.subtext}>{placedOrder.customerPhone}</p>}
+                        <p className="font-bold text-slate-800 dark:text-white text-sm">{placedOrder.customerName}</p>
+                        {placedOrder.customerPhone && <p className="text-slate-500 mt-0.5">{placedOrder.customerPhone}</p>}
                       </>
                     ) : (
-                      <p className={`italic mt-0.5 ${t.subtext}`}>Walk-in Guest</p>
+                      <p className="italic text-slate-500 text-sm">Walk-in Guest</p>
                     )}
+                    <p className="text-slate-500 mt-2 text-[11px]">Table No: <strong className="text-slate-700 dark:text-slate-200">{trackingOrder?.tableNumber ?? placedOrder.tableNumber}</strong></p>
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                    <span className="block font-extrabold uppercase tracking-wider text-[9px] text-slate-400 mb-1 w-full text-right">DETAILS:</span>
+                    <p className="font-black text-slate-800 dark:text-white text-sm">
+                      Invoice No: <span className="text-[#D97757]">{(trackingOrder?.orderNumber ?? placedOrder.orderNumber ?? '').replace('ORD-', 'INV-')}</span>
+                    </p>
+                    <p className="text-slate-500 mt-0.5">
+                      Invoice Date: {new Date(trackingOrder?.createdAt ?? placedOrder.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </p>
+                    <p className="text-slate-500 mt-1.5 text-[11px]">Order No: #{trackingOrder?.orderNumber ?? placedOrder.orderNumber}</p>
                   </div>
                 </div>
 
                 {/* Items Table */}
-                <div className="space-y-3">
-                  <span className={`block font-semibold uppercase tracking-wider text-[10px] ${t.subtext}`}>Itemized Details</span>
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className={`border-b ${t.divider} ${t.subtext} font-semibold text-left`}>
-                        <th className="py-2">Item</th>
-                        <th className="py-2 text-center w-12">Qty</th>
-                        <th className="py-2 text-right w-20">Rate</th>
-                        <th className="py-2 text-right w-24">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className={`divide-y ${t.divider} font-medium ${t.text}`}>
-                      {trackingOrder?.items?.map((item: any) => (
-                        <tr key={item.id} className="align-middle">
-                          <td className={`py-2.5 pr-2 font-bold ${t.text}`}>{item.name}</td>
-                          <td className="py-2.5 text-center">{item.quantity}</td>
-                          <td className="py-2.5 text-right">{fmt(item.unitPrice, settings.currency)}</td>
-                          <td className={`py-2.5 text-right font-bold ${t.text}`}>{fmt(item.totalPrice, settings.currency)}</td>
+                <div className="space-y-2 pt-1">
+                  <span className="block font-extrabold uppercase tracking-wider text-[9px] text-slate-400">PRODUCT DESCRIPTION</span>
+                  <div className="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="keep-color bg-slate-800 dark:bg-slate-900 text-white font-bold">
+                          <th className="py-2.5 px-3">Item</th>
+                          <th className="py-2.5 px-3 text-center w-12">Qty</th>
+                          <th className="py-2.5 px-3 text-right w-20">Rate</th>
+                          <th className="py-2.5 px-3 text-right w-24">Total</th>
                         </tr>
-                      )) ?? (
-                        <tr>
-                          <td className={`py-2.5 ${t.subtext} italic`} colSpan={4}>Loading item details...</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-200">
+                        {trackingOrder?.items?.map((item: any, idx: number) => (
+                          <tr key={item.id} className={`align-middle ${idx % 2 === 1 ? 'bg-slate-50 dark:bg-slate-800/10' : ''}`}>
+                            <td className="py-2.5 px-3 font-bold text-slate-800 dark:text-white">{item.name}</td>
+                            <td className="py-2.5 px-3 text-center text-slate-600 dark:text-slate-400">{item.quantity}</td>
+                            <td className="py-2.5 px-3 text-right text-slate-600 dark:text-slate-400">{fmt(item.unitPrice, settings.currency)}</td>
+                            <td className="py-2.5 px-3 text-right font-bold text-slate-800 dark:text-white">{fmt(item.totalPrice, settings.currency)}</td>
+                          </tr>
+                        )) ?? (
+                          <tr>
+                            <td className="py-2.5 px-3 text-slate-400 italic text-center" colSpan={4}>Loading item details...</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Totals Section */}
-                <div className={`border-t ${t.divider} pt-4 space-y-2 text-xs`}>
-                  <div className={`flex justify-between ${t.subtext}`}>
-                    <span>Subtotal</span>
-                    <span className="font-medium">{fmt(trackingOrder?.subtotal ?? placedOrder.subtotal, settings.currency)}</span>
-                  </div>
-                  {settings.taxPercentage > 0 && (
-                    <>
-                      <div className={`flex justify-between ${t.subtext} pl-2 border-l ${t.divider}`}>
-                        <span>CGST ({(settings.taxPercentage / 2).toFixed(2)}%)</span>
-                        <span className="font-medium">{fmt((trackingOrder?.taxAmount ?? placedOrder.taxAmount) / 2, settings.currency)}</span>
+                <div className="flex justify-end pt-2">
+                  <div className="w-full sm:w-64 space-y-2 text-xs">
+                    <div className="flex justify-between text-slate-500 px-1">
+                      <span>Subtotal</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-350">{fmt(trackingOrder?.subtotal ?? placedOrder.subtotal, settings.currency)}</span>
+                    </div>
+                    {settings.taxPercentage > 0 && (
+                      <div className="space-y-1.5 border-l-2 border-slate-200 dark:border-slate-700 pl-3">
+                        <div className="flex justify-between text-slate-500 text-[11px]">
+                          <span>CGST ({(settings.taxPercentage / 2).toFixed(2)}%)</span>
+                          <span>{fmt((trackingOrder?.taxAmount ?? placedOrder.taxAmount) / 2, settings.currency)}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-500 text-[11px]">
+                          <span>SGST ({(settings.taxPercentage / 2).toFixed(2)}%)</span>
+                          <span>{fmt((trackingOrder?.taxAmount ?? placedOrder.taxAmount) / 2, settings.currency)}</span>
+                        </div>
                       </div>
-                      <div className={`flex justify-between ${t.subtext} pl-2 border-l ${t.divider}`}>
-                        <span>SGST ({(settings.taxPercentage / 2).toFixed(2)}%)</span>
-                        <span className="font-medium">{fmt((trackingOrder?.taxAmount ?? placedOrder.taxAmount) / 2, settings.currency)}</span>
-                      </div>
-                    </>
-                  )}
-                  <div className={`flex justify-between text-base font-black ${t.text} pt-2 border-t ${t.divider}`}>
-                    <span>Total Amount</span>
-                    <span className="text-[#D97757]">{fmt(trackingOrder?.totalAmount ?? placedOrder.totalAmount, settings.currency)}</span>
+                    )}
+                    {/* Gold Highlighted Grand Total Box */}
+                    <div className="keep-color bg-[#FFFAF0] dark:bg-[#2A1F1A] border border-[#F3E1D3] dark:border-[#523A28] rounded-xl p-3 flex justify-between items-center text-sm font-black text-[#D97757] shadow-sm">
+                      <span className="uppercase tracking-wider text-[10px]">Grand Total</span>
+                      <span className="text-base">{fmt(trackingOrder?.totalAmount ?? placedOrder.totalAmount, settings.currency)}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Payment & Footer */}
                 <div className="border-t border-dashed border-[#D97757]/30 pt-4 text-center space-y-4">
-                  <div className={`inline-block ${t.qtyBg} border ${t.cardBorder} rounded-xl px-4 py-2`}>
-                    <span className={`text-[10px] ${t.subtext} block font-semibold uppercase tracking-wider`}>Payment Status</span>
-                    <span className={`text-xs font-bold ${t.text} flex items-center justify-center gap-1.5 mt-0.5`}>
+                  <div className="inline-block bg-[#FAF3EB] dark:bg-[#2a2a2a] border border-[#D97757]/20 dark:border-[#2a2a2a] rounded-xl px-4 py-2">
+                    <span className="text-[9px] text-slate-400 block font-semibold uppercase tracking-wider">Payment Status</span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-white flex items-center justify-center gap-1.5 mt-0.5">
                       {isPaid ? (
                         <>
                           <span className="w-1.5 h-1.5 rounded-full bg-[#2E7D32] animate-pulse" />
@@ -877,9 +894,9 @@ export const CustomerMenu: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="space-y-1">
-                    <p className={`text-xs font-bold ${t.text}`}>Thank you for dining with us!</p>
-                    <p className={`text-[10px] ${t.subtext}`}>Please visit again. Powered by Ordio.</p>
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-slate-800 dark:text-white">Thank you for dining with us!</p>
+                    <p className="text-[10px] text-slate-400">Please visit again. Powered by Ordio.</p>
                   </div>
                 </div>
               </div>

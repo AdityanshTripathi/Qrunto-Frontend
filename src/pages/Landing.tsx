@@ -194,7 +194,7 @@ export const Landing: React.FC = () => {
             {/* Left Column: Text and CTAs */}
             <div className="col-span-7 lg:col-span-6 flex flex-col items-start text-left w-full">
               <div className="flex justify-start">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FF6B35]/8 text-[#FF6B35] text-[8px] xs:text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-3 sm:mb-5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FF6B35]/8 text-[#FF6B35] text-[10px] xs:text-xs sm:text-sm font-black uppercase tracking-wider mb-3 sm:mb-5">
                   Mobile-First Table Automation
                 </span>
               </div>
@@ -203,10 +203,10 @@ export const Landing: React.FC = () => {
                 Order.<br className="hidden sm:block" />
                 <span className="bg-gradient-to-r from-[#FF6B35] via-orange-500 to-[#FF8C35] bg-clip-text text-transparent">Pay.</span>
               </h1>
-              <h2 className="text-[11px] xs:text-xs sm:text-lg lg:text-xl font-bold text-[#111827] mb-2 sm:mb-3">
+              <h2 className="text-sm xs:text-base sm:text-lg lg:text-xl font-bold text-[#111827] mb-2 sm:mb-3">
                 Turn every table into a self-ordering experience.
               </h2>
-              <p className="text-[10px] xs:text-[11px] sm:text-base text-[#4B5563] leading-normal sm:leading-relaxed mb-4 sm:mb-6 max-w-lg">
+              <p className="text-xs xs:text-sm sm:text-base text-[#4B5563] leading-normal sm:leading-relaxed mb-4 sm:mb-6 max-w-lg">
                 Customers scan a QR code, browse the menu, place orders, and pay instantly without waiting for a waiter.
               </p>
               
@@ -214,14 +214,14 @@ export const Landing: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <Link 
                   to="/register" 
-                  className="w-full sm:w-auto text-center font-bold text-white bg-[#FF6B35] hover:bg-[#E55A24] px-3 sm:px-8 py-2.5 sm:py-4.5 text-[10px] xs:text-xs sm:text-base rounded-xl shadow-lg shadow-orange-500/10 active:scale-[0.98] transition-all min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-1.5 sm:gap-2"
+                  className="w-full sm:w-auto text-center font-bold text-white bg-[#FF6B35] hover:bg-[#E55A24] px-3 sm:px-8 py-2.5 sm:py-4.5 text-xs xs:text-sm sm:text-base rounded-xl shadow-lg shadow-orange-500/10 active:scale-[0.98] transition-all min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-1.5 sm:gap-2"
                 >
                   Start Free Trial
                   <ArrowRight className="w-4.5 h-4.5 sm:w-4 sm:h-4" />
                 </Link>
                 <a 
                   href="#how-it-works" 
-                  className="w-full sm:w-auto text-center font-semibold text-[#4B5563] hover:text-[#111827] bg-white border border-stone-200 hover:border-stone-300 px-3 sm:px-8 py-2.5 sm:py-4.5 text-[10px] xs:text-xs sm:text-base rounded-xl shadow-sm hover:shadow-md transition-all min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-1.5 sm:gap-2"
+                  className="w-full sm:w-auto text-center font-semibold text-[#4B5563] hover:text-[#111827] bg-white border border-stone-200 hover:border-stone-300 px-3 sm:px-8 py-2.5 sm:py-4.5 text-xs xs:text-sm sm:text-base rounded-xl shadow-sm hover:shadow-md transition-all min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-1.5 sm:gap-2"
                 >
                   Book Demo
                 </a>
@@ -375,8 +375,8 @@ export const Landing: React.FC = () => {
                 <li className="flex gap-3">
                   <div className="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0 text-xs font-bold">1</div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Long Waiting Times</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Long Waiting Times</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Customers wait 10-15 minutes just to get the waiter's attention, receive physical menus, and place order details.
                     </p>
                   </div>
@@ -384,8 +384,8 @@ export const Landing: React.FC = () => {
                 <li className="flex gap-3">
                   <div className="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0 text-xs font-bold">2</div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Order Mistakes</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Order Mistakes</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Wrong orders written down during busy hours lead to kitchen waste, food delays, and dissatisfied diners.
                     </p>
                   </div>
@@ -393,8 +393,8 @@ export const Landing: React.FC = () => {
                 <li className="flex gap-3">
                   <div className="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0 text-xs font-bold">3</div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Slow Billing & Checkout</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Slow Billing & Checkout</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Asking for the bill, waiting for the card machine, or counting cash tables slows down table turnaround by 15 minutes.
                     </p>
                   </div>
@@ -402,8 +402,8 @@ export const Landing: React.FC = () => {
                 <li className="flex gap-3">
                   <div className="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0 text-xs font-bold">4</div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Staff Dependency</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Staff Dependency</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Your revenue is limited by waiter availability. Staff shortages directly hurt customer service quality.
                     </p>
                   </div>
@@ -424,8 +424,8 @@ export const Landing: React.FC = () => {
                 <li className="flex gap-3">
                   <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center shrink-0"><Check className="w-4 h-4" /></div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Instant QR Ordering</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Instant QR Ordering</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Scan code, browse visual menu, and place order directly to the kitchen. Zero wait times.
                     </p>
                   </div>
@@ -433,8 +433,8 @@ export const Landing: React.FC = () => {
                 <li className="flex gap-3">
                   <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center shrink-0"><Check className="w-4 h-4" /></div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Flawless Accuracy</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Flawless Accuracy</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Customers verify their cart selections and custom options themselves. No transcription errors.
                     </p>
                   </div>
@@ -442,8 +442,8 @@ export const Landing: React.FC = () => {
                 <li className="flex gap-3">
                   <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center shrink-0"><Check className="w-4 h-4" /></div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Online Split-Bill Payments</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Online Split-Bill Payments</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Customers pay directly from their phones using UPI, credit cards, or split bills. Tables clear immediately.
                     </p>
                   </div>
@@ -451,8 +451,8 @@ export const Landing: React.FC = () => {
                 <li className="flex gap-3">
                   <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center shrink-0"><Check className="w-4 h-4" /></div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Smart Waiter Allocation</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Smart Waiter Allocation</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Waiters receive focused call requests (e.g., "Water" or "Service") on their dedicated dashboards.
                     </p>
                   </div>
@@ -486,8 +486,8 @@ export const Landing: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
                 1
               </div>
-              <h3 className="font-bold text-[#111827] text-xs sm:text-sm mb-2">Scan QR</h3>
-              <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed mb-4">
+              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Scan QR</h3>
+              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
                 Customer scans the unique QR sticker placed on the table with their default mobile camera.
               </p>
               <div className="bg-white border border-stone-100 rounded-lg p-2.5 flex items-center justify-center">
@@ -500,11 +500,11 @@ export const Landing: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
                 2
               </div>
-              <h3 className="font-bold text-[#111827] text-xs sm:text-sm mb-2">Browse Menu</h3>
-              <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed mb-4">
+              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Browse Menu</h3>
+              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
                 A beautiful, interactive visual menu loads instantly on their phone. No app install required.
               </p>
-              <div className="bg-white border border-stone-100 rounded-lg p-2.5 flex items-center justify-center font-bold text-[9px] text-[#FF6B35] uppercase">
+              <div className="bg-white border border-stone-100 rounded-lg p-2.5 flex items-center justify-center font-bold text-[10px] sm:text-xs text-[#FF6B35] uppercase">
                 🍕 View Pizzas
               </div>
             </div>
@@ -514,11 +514,11 @@ export const Landing: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
                 3
               </div>
-              <h3 className="font-bold text-[#111827] text-xs sm:text-sm mb-2">Place Order</h3>
-              <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed mb-4">
+              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Place Order</h3>
+              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
                 Add customizations, choose table addons, and send the order directly to the kitchen dashboard.
               </p>
-              <div className="bg-white border border-stone-100 rounded-lg p-2.5 text-center text-[9px] text-emerald-600 font-bold">
+              <div className="bg-white border border-stone-100 rounded-lg p-2.5 text-center text-[10px] sm:text-xs text-emerald-600 font-bold">
                 ✓ Order Sent to KOT
               </div>
             </div>
@@ -528,11 +528,11 @@ export const Landing: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
                 4
               </div>
-              <h3 className="font-bold text-[#111827] text-xs sm:text-sm mb-2">Pay Online</h3>
-              <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed mb-4">
+              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Pay Online</h3>
+              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
                 Review bill breakdown, split with friends, and checkout instantly using cards or UPI options.
               </p>
-              <div className="bg-white border border-stone-100 rounded-lg p-2.5 text-center font-mono text-[9px] text-stone-800 font-bold">
+              <div className="bg-white border border-stone-100 rounded-lg p-2.5 text-center font-mono text-[10px] sm:text-xs text-stone-800 font-bold">
                 💳 Pay (UPI/Card)
               </div>
             </div>
@@ -542,11 +542,11 @@ export const Landing: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
                 5
               </div>
-              <h3 className="font-bold text-[#111827] text-xs sm:text-sm mb-2">Enjoy Food</h3>
-              <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed mb-4">
+              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Enjoy Food</h3>
+              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
                 Kitchen prepares and waiters serve the meals directly. Enjoy a friction-free dining experience.
               </p>
-              <div className="bg-white border border-stone-100 rounded-lg p-2.5 text-center text-[9px] text-stone-600 font-bold">
+              <div className="bg-white border border-stone-100 rounded-lg p-2.5 text-center text-[10px] sm:text-xs text-stone-600 font-bold">
                 🍜 Food Served!
               </div>
             </div>
@@ -635,8 +635,8 @@ export const Landing: React.FC = () => {
                     <Smartphone className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Visual Menu Cards</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Visual Menu Cards</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Beautiful layouts with high-quality descriptions, vegetarian indicators, and price tags.
                     </p>
                   </div>
@@ -647,8 +647,8 @@ export const Landing: React.FC = () => {
                     <Layers className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Add-on Selections</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Add-on Selections</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Drive up-sells with cheese toppings, custom base options, and beverage combos.
                     </p>
                   </div>
@@ -659,8 +659,8 @@ export const Landing: React.FC = () => {
                     <CreditCard className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Online Payments Drawer</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Online Payments Drawer</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Integrated checkout flows supporting UPI apps, credit/debit cards, and Google Pay.
                     </p>
                   </div>
@@ -671,8 +671,8 @@ export const Landing: React.FC = () => {
                     <Clock className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Live Order Status</h4>
-                    <p className="text-[11px] sm:text-xs text-[#6B7280] mt-0.5 leading-relaxed">
+                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Live Order Status</h4>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
                       Customers track their kitchen order status (cooking, ready, served) directly in their web browser.
                     </p>
                   </div>
@@ -816,15 +816,15 @@ export const Landing: React.FC = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-stone-150 pb-3 mb-4">
                   <div>
-                    <h3 className="font-extrabold text-stone-950 text-xs sm:text-sm uppercase tracking-wider">Waiter Crew Management</h3>
-                    <p className="text-[10px] sm:text-xs text-[#6B7280] mt-0.5">Control waiter accounts and active alerts.</p>
+                    <h3 className="font-extrabold text-stone-950 text-sm sm:text-base uppercase tracking-wider">Waiter Crew Management</h3>
+                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5">Control waiter accounts and active alerts.</p>
                   </div>
                   <Users className="w-5 h-5 text-[#FF6B35]" />
                 </div>
 
                 {/* Alert Notifications */}
                 <div className="mb-5 space-y-2">
-                  <h4 className="text-[9px] font-black text-[#FF6B35] uppercase tracking-wider">Active Staff Alerts</h4>
+                  <h4 className="text-[10px] sm:text-xs font-bold text-[#FF6B35] uppercase tracking-wider">Active Staff Alerts</h4>
                   
                   {/* Alert 1 (Height >= 48px) */}
                   <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs min-h-[48px]">
@@ -833,7 +833,7 @@ export const Landing: React.FC = () => {
                       <span className="font-black text-stone-900">Table 4</span>
                       <span className="text-[#6B7280]">Requested Service</span>
                     </div>
-                    <button className="h-9 px-3 bg-[#FF6B35] text-white font-bold text-[9px] rounded-lg shadow-sm w-full sm:w-auto flex items-center justify-center shrink-0">
+                    <button className="h-9 px-3 bg-[#FF6B35] text-white font-bold text-xs rounded-lg shadow-sm w-full sm:w-auto flex items-center justify-center shrink-0">
                       Assign Waiter
                     </button>
                   </div>
@@ -845,7 +845,7 @@ export const Landing: React.FC = () => {
                       <span className="font-black text-stone-900">Table 2</span>
                       <span className="text-[#6B7280]">Requested Bill Checkout</span>
                     </div>
-                    <button className="h-9 px-3 bg-red-500 text-white font-bold text-[9px] rounded-lg shadow-sm w-full sm:w-auto flex items-center justify-center shrink-0">
+                    <button className="h-9 px-3 bg-red-500 text-white font-bold text-xs rounded-lg shadow-sm w-full sm:w-auto flex items-center justify-center shrink-0">
                       Process Bill
                     </button>
                   </div>
@@ -853,7 +853,7 @@ export const Landing: React.FC = () => {
 
                 {/* Waiter accounts list */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
                     <span>Active Crew Logs</span>
                     <span className="text-stone-400 font-semibold">{demoWaiters.length} Online</span>
                   </div>
@@ -863,9 +863,9 @@ export const Landing: React.FC = () => {
                       <div key={index} className="p-3 flex items-center justify-between text-xs bg-stone-50/50">
                         <div>
                           <p className="font-bold text-stone-950">{w.name}</p>
-                          <span className="text-[9px] text-[#6B7280]">{w.role} • {w.tables}</span>
+                          <span className="text-xs text-[#6B7280]">{w.role} • {w.tables}</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-emerald-100 text-emerald-800">
+                        <span className="px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold bg-emerald-100 text-emerald-800">
                           {w.status}
                         </span>
                       </div>
@@ -946,13 +946,13 @@ export const Landing: React.FC = () => {
             <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 md:col-span-2 flex flex-col justify-between hover:border-[#FF6B35]/30 transition-colors">
               <div>
                 <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">No App Installations Required</h4>
-                <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed max-w-lg">
+                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed max-w-lg">
                   Customers scan QR codes using default camera apps. They don't need to register, remember passwords, or download bulky applications. It is 100% web-based.
                 </p>
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
-                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[9px] font-bold text-stone-600">⚡ WebApp Load Time: ~0.8s</span>
-                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[9px] font-bold text-stone-600">📲 No App Stores</span>
+                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[10px] sm:text-xs font-bold text-stone-600">⚡ WebApp Load Time: ~0.8s</span>
+                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[10px] sm:text-xs font-bold text-stone-600">📲 No App Stores</span>
               </div>
             </div>
 
@@ -960,12 +960,12 @@ export const Landing: React.FC = () => {
             <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 hover:border-[#FF6B35]/30 transition-colors flex flex-col justify-between">
               <div>
                 <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">5-Minute Express Setup</h4>
-                <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
                   Import menu structures, configure tables, generate QR codes, and begin accepting guest orders in under 5 minutes.
                 </p>
               </div>
               <div className="mt-6">
-                <span className="text-[10px] font-black text-[#FF6B35] flex items-center gap-1">Fast Onboarding <Clock className="w-3 h-3" /></span>
+                <span className="text-xs font-bold text-[#FF6B35] flex items-center gap-1">Fast Onboarding <Clock className="w-3 h-3" /></span>
               </div>
             </div>
 
@@ -973,12 +973,12 @@ export const Landing: React.FC = () => {
             <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 hover:border-[#FF6B35]/30 transition-colors flex flex-col justify-between">
               <div>
                 <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">Unlimited Table Layouts</h4>
-                <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
                   Support setup for 5 tables or 500. Generate customized KOT routing parameters for each location automatically.
                 </p>
               </div>
               <div className="mt-6">
-                <span className="text-[9px] font-mono font-bold text-stone-700 bg-white px-2 py-0.5 border border-stone-200 rounded">TABLE_SLUG_ROUTER</span>
+                <span className="text-[10px] sm:text-xs font-mono font-bold text-stone-700 bg-white px-2 py-0.5 border border-stone-200 rounded">TABLE_SLUG_ROUTER</span>
               </div>
             </div>
 
@@ -986,13 +986,13 @@ export const Landing: React.FC = () => {
             <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 md:col-span-2 flex flex-col justify-between hover:border-[#FF6B35]/30 transition-colors">
               <div>
                 <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">Real-Time Kitchen KOT Feeds</h4>
-                <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed max-w-lg">
+                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed max-w-lg">
                   Order updates flow dynamically into kitchen terminals. Sounds alert chefs when new tickets arrive, reducing delayed notifications to zero.
                 </p>
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
-                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[9px] font-bold text-[#FF6B35]">● Live Feed Connected</span>
-                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[9px] font-bold text-stone-500">⚡ Latency: &lt; 50ms</span>
+                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[10px] sm:text-xs font-bold text-[#FF6B35]">● Live Feed Connected</span>
+                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[10px] sm:text-xs font-bold text-stone-500">⚡ Latency: &lt; 50ms</span>
               </div>
             </div>
 
@@ -1000,12 +1000,12 @@ export const Landing: React.FC = () => {
             <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 hover:border-[#FF6B35]/30 transition-colors flex flex-col justify-between">
               <div>
                 <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">Instant UPI Payments</h4>
-                <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
                   Accept split bills or complete order checkouts directly. Funds route securely to your bank merchant accounts.
                 </p>
               </div>
               <div className="mt-6">
-                <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">Settlements Active</span>
+                <span className="text-[10px] sm:text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">Settlements Active</span>
               </div>
             </div>
 
@@ -1013,12 +1013,12 @@ export const Landing: React.FC = () => {
             <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 hover:border-[#FF6B35]/30 transition-colors flex flex-col justify-between">
               <div>
                 <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">Multi-Restaurant Operations</h4>
-                <p className="text-[11px] sm:text-xs text-[#6B7280] leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
                   Manage multiple franchise locations, separate menu configurations, and centralized billing dashboards.
                 </p>
               </div>
               <div className="mt-6">
-                <span className="text-[10px] font-bold text-stone-700">All Branches Consolidated</span>
+                <span className="text-xs font-bold text-stone-700">All Branches Consolidated</span>
               </div>
             </div>
 
@@ -1121,7 +1121,7 @@ export const Landing: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-stone-900">Arjun Nair</h4>
-                  <span className="text-[9.5px] text-[#6B7280]">Owner, The Spice Bistro</span>
+                  <span className="text-xs text-[#6B7280]">Owner, The Spice Bistro</span>
                 </div>
               </div>
             </div>
@@ -1136,7 +1136,7 @@ export const Landing: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-stone-900">Kiran Deshmukh</h4>
-                  <span className="text-[9.5px] text-[#6B7280]">Operations Manager, Food Court Plaza</span>
+                  <span className="text-xs text-[#6B7280]">Operations Manager, Food Court Plaza</span>
                 </div>
               </div>
             </div>
@@ -1201,35 +1201,35 @@ export const Landing: React.FC = () => {
                   className="h-8 w-auto object-contain mb-3"
                 />
               </Link>
-              <p className="text-[11px] sm:text-xs text-[#6B7280] max-w-sm leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#6B7280] max-w-sm leading-relaxed">
                 Scan. Order. Pay. QR code table ordering platform designed to simplify restaurant menu management, automate waiter workflows, and fast-track checkout transactions.
               </p>
             </div>
 
             <div>
-              <h4 className="text-[10px] font-black text-stone-900 tracking-wider uppercase mb-3">Legal</h4>
+              <h4 className="text-xs font-black text-stone-900 tracking-wider uppercase mb-3">Legal</h4>
               <ul className="space-y-1.5">
-                <li><Link to="/terms" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Terms & Conditions</Link></li>
-                <li><Link to="/privacy" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/refund" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Refund Policy</Link></li>
+                <li><Link to="/terms" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Terms & Conditions</Link></li>
+                <li><Link to="/privacy" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/refund" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Refund Policy</Link></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="text-[10px] font-black text-stone-900 tracking-wider uppercase mb-3">Support</h4>
+              <h4 className="text-xs font-black text-stone-900 tracking-wider uppercase mb-3">Support</h4>
               <ul className="space-y-1.5">
-                <li><Link to="/contact" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Contact Us</Link></li>
-                <li><Link to="/help" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Help Center</Link></li>
-                <li><a href="#" className="text-[11px] text-[#6B7280] hover:text-[#FF6B35] transition-colors">Documentation</a></li>
+                <li><Link to="/contact" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Contact Us</Link></li>
+                <li><Link to="/help" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Help Center</Link></li>
+                <li><a href="#" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Documentation</a></li>
               </ul>
             </div>
           </div>
 
           <div className="pt-6 border-t border-stone-150 flex flex-col md:flex-row items-center justify-between gap-3 text-center">
-            <p className="text-[9px] text-[#9CA3AF]">
+            <p className="text-[10px] sm:text-xs text-[#9CA3AF]">
               © {new Date().getFullYear()} ORDIO. All rights reserved. Designed for modern hospitality operators worldwide.
             </p>
-            <p className="text-[9px] text-stone-400 font-bold uppercase tracking-wide">
+            <p className="text-[10px] sm:text-xs text-stone-400 font-bold uppercase tracking-wide">
               Scan. Order. Pay.
             </p>
           </div>

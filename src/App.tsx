@@ -18,7 +18,6 @@ import { Settings } from './pages/dashboard/Settings';
 import { CustomerMenu } from './pages/CustomerMenu';
 import { useAuthStore } from './store/authStore';
 import { WaitersPage } from './pages/dashboard/WaitersPage';
-import { WaiterDashboardLayout } from './components/WaiterDashboardLayout';
 import { WaiterDashboard } from './pages/waiter/WaiterDashboard';
 import { Terms } from './pages/Terms';
 import { Privacy } from './pages/Privacy';
@@ -79,11 +78,8 @@ function App() {
           </Route>
         </Route>
 
-        {/* Protected waiter routes */}
         <Route element={<ProtectedRoute allowedRoles={['WAITER']} />}>
-          <Route path="/waiter-dashboard" element={<WaiterDashboardLayout />}>
-            <Route index element={<WaiterDashboard />} />
-          </Route>
+          <Route path="/waiter-dashboard" element={<WaiterDashboard />} />
         </Route>
 
         {/* Public QR ordering route — no auth required */}

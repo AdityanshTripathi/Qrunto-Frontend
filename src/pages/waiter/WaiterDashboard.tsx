@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { api } from '../../lib/api';
@@ -9,6 +9,7 @@ import {
   Bell, BellRing, ClipboardList, Clock, Coffee, Plus, Search,
   ShoppingCart, User, Loader2, X, AlertTriangle, ShieldCheck, QrCode, Minus
 } from 'lucide-react';
+import { OrderManagement } from '../dashboard/OrderManagement';
 
 // Interfaces
 interface Table {
@@ -66,14 +67,24 @@ interface Category {
 const fmt = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
-const SOCKET_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:5000'
-  : 'https://backend-steel-seven-97.vercel.app';
+const getSocketUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    return apiUrl.replace(/\/api\/?$/, '');
+  }
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000'
+    : 'https://backend-steel-seven-97.vercel.app';
+};
+
+const SOCKET_URL = getSocketUrl();
 
 export const WaiterDashboard: React.FC = () => {
   const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'dashboard';
+
+
 
   // Data states
   const [tables, setTables] = useState<Table[]>([]);
@@ -98,6 +109,46 @@ export const WaiterDashboard: React.FC = () => {
   const restaurantSlug = user?.restaurants[0]?.slug || '';
   const restaurantId = user?.restaurants[0]?.id || '';
 
+  // Refs for tracking changes and avoiding stale closure bugs in polling intervals & sockets
+  const requestsRef = useRef<CustomerRequest[]>([]);
+  const ordersRef = useRef<Order[]>([]);
+
+  useEffect(() => {
+    requestsRef.current = requests;
+  }, [requests]);
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
+
+  // Tone synthesis for alerts
+  const playAlertSound = (type: 'order' | 'request') => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const playTone = (freq: number, duration: number, delay: number) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + delay + duration);
+        osc.start(audioCtx.currentTime + delay);
+        osc.stop(audioCtx.currentTime + delay + duration);
+      };
+      if (type === 'order') {
+        playTone(523.25, 0.15, 0); // C5
+        playTone(659.25, 0.25, 0.12); // E5
+      } else {
+        playTone(880.00, 0.1, 0); // A5
+        playTone(880.00, 0.1, 0.15); // A5
+      }
+    } catch (err) {
+      console.log('Audio playback blocked');
+    }
+  };
+
   // 1. Fetch Core Data
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -108,7 +159,7 @@ export const WaiterDashboard: React.FC = () => {
 
       // Fetch Active Orders
       const ordersRes = await api.get('/orders');
-      const mappedOrders = (ordersRes.orders || []).map((order: any) => ({
+      const mappedOrders: Order[] = (ordersRes.orders || []).map((order: any) => ({
         id: order.id,
         orderNumber: order.orderNumber,
         status: order.status,
@@ -128,16 +179,56 @@ export const WaiterDashboard: React.FC = () => {
           totalPrice: item.totalPrice,
         })),
       }));
-      setOrders(mappedOrders);
 
       // Fetch Requests (Unread Notifications)
       const notifRes = await api.get('/notifications');
       const allNotifs: CustomerRequest[] = notifRes.notifications || [];
       const unreadHelpRequests = allNotifs.filter(n => !n.isRead && n.type === 'HELP_REQUEST');
+
+      // Change detection for new data when fetching silently (via polling or sockets)
+      if (silent) {
+        // 1. Check for new requests
+        const currentReqIds = new Set(requestsRef.current.map(r => r.id));
+        const newReqs = unreadHelpRequests.filter(r => !currentReqIds.has(r.id));
+        if (newReqs.length > 0) {
+          newReqs.forEach(req => {
+            toast.warning(`🔔 ${req.title}: ${req.message}`, { duration: 8000 });
+          });
+          playAlertSound('request');
+        }
+
+        // 2. Check for new orders or status transitions
+        const currentOrderIds = new Set(ordersRef.current.map(o => o.id));
+        const newOrders = mappedOrders.filter(o => !currentOrderIds.has(o.id) && o.status === 'NEW');
+        if (newOrders.length > 0) {
+          newOrders.forEach(order => {
+            toast.info(`New Order #${order.orderNumber} placed at Table ${order.tableNumber}!`, { duration: 5000 });
+          });
+          playAlertSound('order');
+        }
+
+        // Check for items added to existing order
+        ordersRef.current.forEach(oldOrder => {
+          const newOrderObj = mappedOrders.find(o => o.id === oldOrder.id);
+          if (newOrderObj && newOrderObj.items.length > oldOrder.items.length) {
+            toast.info(`Items added to Order #${newOrderObj.orderNumber} at Table ${newOrderObj.tableNumber}!`, { duration: 5000 });
+            playAlertSound('order');
+          }
+          if (newOrderObj && oldOrder.status !== 'READY' && newOrderObj.status === 'READY') {
+            toast.info(`🍽️ Order #${newOrderObj.orderNumber} is READY to serve to Table ${newOrderObj.tableNumber}!`, { duration: 6000 });
+            playAlertSound('order');
+          }
+        });
+      }
+
+      setOrders(mappedOrders);
       setRequests(unreadHelpRequests);
+
     } catch (err: any) {
       console.error(err);
-      toast.error('Failed to load server data');
+      if (!silent) {
+        toast.error('Failed to load server data');
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -161,6 +252,13 @@ export const WaiterDashboard: React.FC = () => {
   useEffect(() => {
     fetchData();
     fetchMenu();
+
+    // Fallback polling for serverless (Vercel) hosting where socket connections are unstable/unsupported
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 8000);
+
+    return () => clearInterval(interval);
   }, [restaurantSlug]);
 
   // 3. Socket.io Real-time Setup
@@ -172,67 +270,13 @@ export const WaiterDashboard: React.FC = () => {
     // Join Restaurant Room
     socket.emit('join_restaurant', restaurantId);
 
-    // Tone synthesis for alerts
-    const playAlertSound = (type: 'order' | 'request') => {
-      try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const playTone = (freq: number, duration: number, delay: number) => {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.frequency.value = freq;
-          osc.type = 'sine';
-          gain.gain.setValueAtTime(0.1, audioCtx.currentTime + delay);
-          gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + delay + duration);
-          osc.start(audioCtx.currentTime + delay);
-          osc.stop(audioCtx.currentTime + delay + duration);
-        };
-        if (type === 'order') {
-          playTone(523.25, 0.15, 0); // C5
-          playTone(659.25, 0.25, 0.12); // E5
-        } else {
-          playTone(880.00, 0.1, 0); // A5
-          playTone(880.00, 0.1, 0.15); // A5
-        }
-      } catch (err) {
-        console.log('Audio playback blocked');
-      }
-    };
-
-    // Socket events
-    socket.on('NEW_ORDER', (data) => {
-      toast.info(`New Order #${data.orderNumber} placed at Table ${data.tableNumber}!`, { duration: 5000 });
-      playAlertSound('order');
-      fetchData(true);
-    });
-
-    socket.on('ITEM_ADDED', (data) => {
-      toast.info(`Items added to Order #${data.orderNumber} at Table ${data.tableNumber}!`);
-      playAlertSound('order');
-      fetchData(true);
-    });
-
-    socket.on('CALL_WAITER', (data) => {
-      toast.warning(`🔔 Table ${data.tableNumber}: Customer is calling a waiter!`, { duration: 8000 });
-      playAlertSound('request');
-      fetchData(true);
-    });
-
-    socket.on('REQUEST_BILL', (data) => {
-      toast.success(`💳 Table ${data.tableNumber}: Bill settlement requested!`, { duration: 8000 });
-      playAlertSound('request');
-      fetchData(true);
-    });
-
-    socket.on('ORDER_UPDATED', () => {
-      fetchData(true);
-    });
-
-    socket.on('ORDER_READY', (data) => {
-      toast.info(`🍽️ Order #${data.orderNumber} is READY to serve to Table ${data.tableNumber}!`);
-      fetchData(true);
-    });
+    // Socket events (delegated to delta-aware fetchData)
+    socket.on('NEW_ORDER', () => fetchData(true));
+    socket.on('ITEM_ADDED', () => fetchData(true));
+    socket.on('CALL_WAITER', () => fetchData(true));
+    socket.on('REQUEST_BILL', () => fetchData(true));
+    socket.on('ORDER_UPDATED', () => fetchData(true));
+    socket.on('ORDER_READY', () => fetchData(true));
 
     return () => {
       socket.disconnect();
@@ -577,86 +621,7 @@ export const WaiterDashboard: React.FC = () => {
 
       {/* ORDERS TAB */}
       {!loading && activeTab === 'orders' && (
-        <div className="space-y-6 text-left">
-          {/* Quick tab filter */}
-          <div className="bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/50 rounded-2xl p-4 shadow-sm space-y-4">
-            <h3 className="font-black text-sm flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-[#FF6B35]" />
-              Staff Order Monitoring
-            </h3>
-            
-            <div className="space-y-4">
-              {orders.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 text-xs">
-                  No orders registered yet.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {orders.map(order => (
-                    <div key={order.id} className="p-4 bg-slate-50 dark:bg-[#111827]/40 border border-slate-100 dark:border-[#374151]/30 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2.5">
-                          <span className="font-black text-sm text-slate-800 dark:text-white">Order #{order.orderNumber}</span>
-                          <span className="text-xs text-slate-400">· Table {order.tableNumber}</span>
-                        </div>
-                        
-                        {/* Item Names */}
-                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                          {order.items?.map(i => `${i.name} x${i.quantity}`).join(', ')}
-                        </p>
-                        
-                        <div className="flex items-center gap-4 mt-2">
-                          <span className="text-xs font-bold text-[#FF6B35]">{fmt(order.totalAmount)}</span>
-                          <span className="text-[10px] text-slate-400">
-                            {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Status Action Buttons */}
-                      <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        {order.status === 'NEW' && (
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, 'PREPARING')}
-                            className="px-4 py-2 bg-[#FF6B35] hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition-all"
-                          >
-                            Start Cooking 🍳
-                          </button>
-                        )}
-                        {order.status === 'PREPARING' && (
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, 'READY')}
-                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl text-xs transition-all"
-                          >
-                            Mark Ready 🍽️
-                          </button>
-                        )}
-                        {order.status === 'READY' && (
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, 'SERVED')}
-                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-all"
-                          >
-                            Mark Served 🎉
-                          </button>
-                        )}
-                        
-                        <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase ${
-                          order.status === 'SERVED'
-                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            : order.status === 'CANCELLED'
-                              ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                              : 'bg-slate-200 dark:bg-gray-800 text-slate-400'
-                        }`}>
-                          {order.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <OrderManagement />
       )}
 
       {/* REQUESTS TAB */}
