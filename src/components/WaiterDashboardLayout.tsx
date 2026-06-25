@@ -38,7 +38,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
       {/* 1. Mobile Top Header Bar */}
       <header className="lg:hidden flex items-center justify-between border-b border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl px-4 py-3 sticky top-0 z-30">
         <div className="flex items-center gap-2">

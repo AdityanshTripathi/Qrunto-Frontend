@@ -236,7 +236,7 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
       {/* ⚠️ Admin Bypass Banner */}
       {localStorage.getItem('admin_access_token') && (
         <div className="w-full bg-amber-500 text-black py-2 px-4 text-center text-xs font-black flex items-center justify-center gap-2 z-50 shrink-0">
