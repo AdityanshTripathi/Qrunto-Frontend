@@ -38,7 +38,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
   };
 
   return (
-    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
       {/* 1. Mobile Top Header Bar */}
       <header className="lg:hidden flex items-center justify-between border-b border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl px-4 py-3 sticky top-0 z-30">
         <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
 
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* 3. Desktop Sidebar Container */}
-        <aside className="hidden lg:flex flex-col justify-between border-r border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl w-64 shrink-0">
+        <aside className="hidden lg:flex flex-col justify-between border-r border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl w-64 shrink-0 sticky top-0 h-screen">
           <div>
             {/* Sidebar Logo */}
             <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-[#374151]/35">

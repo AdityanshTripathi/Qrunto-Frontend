@@ -75,6 +75,42 @@ export const OrderManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>('ALL');
   const [pollInterval, setPollInterval] = useState<number>(10000);
 
+  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | '7_DAYS' | '1_MONTH' | '1_YEAR' | 'CUSTOM'>('ALL');
+  const [customDate, setCustomDate] = useState<string>('');
+
+  const getFilteredOrders = () => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sevenDaysAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const oneYearAgo = new Date(todayStart.getTime() - 365 * 24 * 60 * 60 * 1000);
+
+    return orders.filter(order => {
+      const orderDate = new Date(order.createdAt);
+      switch (dateFilter) {
+        case 'TODAY':
+          return orderDate >= todayStart;
+        case '7_DAYS':
+          return orderDate >= sevenDaysAgo;
+        case '1_MONTH':
+          return orderDate >= thirtyDaysAgo;
+        case '1_YEAR':
+          return orderDate >= oneYearAgo;
+        case 'CUSTOM':
+          if (!customDate) return true;
+          const [year, month, day] = customDate.split('-').map(Number);
+          const start = new Date(year, month - 1, day);
+          const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+          return orderDate >= start && orderDate <= end;
+        case 'ALL':
+        default:
+          return true;
+      }
+    });
+  };
+
+  const filteredOrders = getFilteredOrders();
+
   const fetchOrdersAndStats = useCallback(async (silent = false) => {
     if (!token) return;
     if (!silent) setLoading(true);
@@ -367,22 +403,67 @@ export const OrderManagement: React.FC = () => {
         })}
       </div>
 
+      {/* Date Filter Bar */}
+      <div className="bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Filter Date:</span>
+          {[
+            { id: 'ALL', label: 'All time' },
+            { id: 'TODAY', label: 'Today' },
+            { id: '7_DAYS', label: '7 days' },
+            { id: '1_MONTH', label: '1 month' },
+            { id: '1_YEAR', label: '1 year' },
+            { id: 'CUSTOM', label: 'By date' },
+          ].map((filter) => (
+            <button
+              key={filter.id}
+              onClick={() => {
+                setDateFilter(filter.id as any);
+                if (filter.id !== 'CUSTOM') setCustomDate('');
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                dateFilter === filter.id
+                  ? 'bg-[#FF6B35] text-white shadow-md shadow-[#FF6B35]/15'
+                  : 'bg-slate-55 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/60 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        {dateFilter === 'CUSTOM' && (
+          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-3 duration-200">
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Select date:</span>
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+              className="bg-slate-55 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/60 rounded-xl text-xs font-semibold text-slate-800 dark:text-white px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#FF6B35]"
+            />
+          </div>
+        )}
+      </div>
+
       {/* Orders Grid/List */}
       {loading ? (
         <SkeletonLoader type="grid" count={6} />
-      ) : orders.length === 0 ? (
+      ) : filteredOrders.length === 0 ? (
         <div className="bg-white dark:bg-[#1f2937]/15 border border-slate-200 dark:border-[#374151]/30 rounded-[28px] p-10 sm:p-16 text-center backdrop-blur-md flex flex-col items-center justify-center min-h-[280px] sm:min-h-[350px]">
           <div className="w-14 sm:w-16 h-14 sm:h-16 bg-slate-100 dark:bg-[#374151]/30 rounded-2xl flex items-center justify-center mb-4 text-slate-400 dark:text-[#9ca3af]">
             <Coffee className="w-7 sm:w-8 h-7 sm:h-8" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-gray-200">No orders here</h3>
+          <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-gray-200">No orders found</h3>
           <p className="text-sm text-slate-500 dark:text-[#9ca3af] max-w-xs mt-1">
-            There are currently no orders in the status filter: <strong className="text-slate-900 dark:text-white">{activeTab}</strong>.
+            {orders.length === 0 
+              ? `There are currently no orders in the status filter: ${activeTab}.`
+              : `No orders matching your selected date filter in status: ${activeTab}.`
+            }
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <div
               key={order.id}
               className="bg-white dark:bg-[#1f2937]/30 border border-slate-200 dark:border-[#374151]/40 rounded-[22px] p-4 sm:p-5 backdrop-blur-md flex flex-col justify-between hover:border-slate-300 dark:hover:border-[#374151]/70 hover:shadow-md transition-all group"

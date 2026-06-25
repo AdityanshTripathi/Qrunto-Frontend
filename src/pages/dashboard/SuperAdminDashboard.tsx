@@ -296,9 +296,9 @@ export const SuperAdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-slate-50 dark:bg-[#111827] text-slate-800 dark:text-white flex flex-col lg:flex-row transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#111827] text-slate-800 dark:text-white flex flex-col lg:flex-row transition-colors duration-300">
       {/* Sidebar navigation */}
-      <aside className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl flex flex-col justify-between shrink-0">
+      <aside className="w-full lg:w-64 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl flex flex-col justify-between shrink-0 lg:sticky lg:top-0 lg:h-screen">
         <div>
           <div className="flex items-center justify-between px-6 py-6 border-b border-slate-100 dark:border-[#374151]/35">
             <div className="flex items-center gap-3">

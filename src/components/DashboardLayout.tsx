@@ -236,7 +236,7 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
       {/* ⚠️ Admin Bypass Banner */}
       {localStorage.getItem('admin_access_token') && (
         <div className="w-full bg-amber-500 text-black py-2 px-4 text-center text-xs font-black flex items-center justify-center gap-2 z-50 shrink-0">
@@ -252,7 +252,7 @@ export const DashboardLayout: React.FC = () => {
       <div className="flex-1 flex flex-col lg:flex-row">
         {/* 1. Desktop Sidebar Container */}
       <aside 
-        className={`hidden lg:flex flex-col justify-between border-r border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl transition-all duration-300 relative ${
+        className={`hidden lg:flex flex-col justify-between border-r border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl transition-all duration-300 sticky top-0 h-screen shrink-0 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         }`}
       >
