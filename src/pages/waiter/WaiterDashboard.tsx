@@ -431,7 +431,7 @@ export const WaiterDashboard: React.FC = () => {
   };
 
   // Helper variables
-  const activeOrders = orders.filter(o => o.status !== 'SERVED' && o.status !== 'CANCELLED');
+  const activeOrders = orders.filter(o => o.status !== 'PAID' && o.status !== 'CANCELLED');
   
   // Mapping Table ID to its Active Order
   const tableOrderMap = activeOrders.reduce<Record<string, Order>>((acc, order) => {
