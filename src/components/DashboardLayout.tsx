@@ -17,8 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
-  BellRing,
-  Receipt
+  BellRing
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/api';
@@ -204,7 +203,6 @@ export const DashboardLayout: React.FC = () => {
   const navLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
     { name: 'Active Orders', path: '/dashboard/orders', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
-    { name: 'Bill Requests', path: '/dashboard/bills', icon: Receipt, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
     { name: 'Menu Items', path: '/dashboard/menu', icon: Utensils, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
     { name: 'Categories', path: '/dashboard/categories', icon: Tags, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
     { name: 'Tables & QRs', path: '/dashboard/tables', icon: QrCode, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },

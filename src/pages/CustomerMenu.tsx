@@ -194,7 +194,7 @@ export const CustomerMenu: React.FC = () => {
               if (statusRes.ok) {
                 const statusData = await statusRes.json();
                 const currentStatus = statusData.order?.status;
-                const isOrderPaid = statusData.order?.paymentStatus === 'SUCCESS';
+                const isOrderPaid = statusData.order?.paymentStatus === 'SUCCESS' || currentStatus === 'PAID';
                 if (currentStatus && !isOrderPaid && currentStatus !== 'CANCELLED') {
                   setPlacedOrder(parsedOrder);
                   setTrackingOrder(statusData.order);
@@ -293,7 +293,7 @@ export const CustomerMenu: React.FC = () => {
           const data = await res.json();
           setTrackingOrder(data.order);
           const currentStatus = data.order?.status;
-          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
+          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS' || currentStatus === 'PAID';
           if (isOrderPaid || currentStatus === 'CANCELLED') {
             deleteCookie(`ordio_active_order_${slug}`);
             setActiveCookieOrder(null);
@@ -315,7 +315,7 @@ export const CustomerMenu: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           const currentStatus = data.order?.status;
-          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
+          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS' || currentStatus === 'PAID';
           if (isOrderPaid || currentStatus === 'CANCELLED') {
             deleteCookie(`ordio_active_order_${slug}`);
             setActiveCookieOrder(null);
@@ -466,6 +466,16 @@ export const CustomerMenu: React.FC = () => {
 
       pdf.save(`invoice-${(placedOrder?.orderNumber ?? 'order').replace('ORD-', 'INV-')}.pdf`);
       toast.success('Invoice downloaded successfully!', { id: toastId });
+
+      // Clear order and reset state for new orders
+      if (slug) {
+        deleteCookie(`ordio_active_order_${slug}`);
+      }
+      setPlacedOrder(null);
+      setActiveCookieOrder(null);
+      setTrackingOrder(null);
+      setIsInvoiceModalOpen(false);
+      setIsSettleBillRequested(false);
     } catch (err) {
       console.error('Failed to generate invoice PDF', err);
       toast.error('Failed to download invoice. Please try again.', { id: toastId });
@@ -508,9 +518,9 @@ export const CustomerMenu: React.FC = () => {
   // ─── Order Tracking Screen ─────────────────────────────────────────────────
   if (placedOrder) {
     const currentStatus = trackingOrder?.status ?? placedOrder.status;
-    const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS';
+    const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS' || currentStatus === 'PAID';
     const paymentPref = localStorage.getItem(`ordio_payment_method_${placedOrder.id}`) || 'WAITER';
-    const getStep = (s: string) => ({ 'NEW': 0, 'PREPARING': 1, 'READY': 2, 'SERVED': 3 }[s] ?? 0);
+    const getStep = (s: string) => ({ 'NEW': 0, 'PREPARING': 1, 'READY': 2, 'SERVED': 3, 'PAID': 3 }[s] ?? 0);
     const stepIndex = getStep(currentStatus);
     const steps = [
       { label: 'Order Placed', icon: '🧾', desc: 'Restaurant confirmed your order' },
@@ -542,19 +552,19 @@ export const CustomerMenu: React.FC = () => {
         <div className="max-w-md mx-auto px-4 pt-6 space-y-4">
           {/* Status Hero */}
           <div className={`${t.card} rounded-3xl overflow-hidden border ${t.cardBorder} shadow-sm`}>
-            <div className={`${currentStatus === 'SERVED' ? 'bg-[#2E7D32]' : currentStatus === 'READY' ? 'bg-blue-500' : currentStatus === 'PREPARING' ? 'bg-[#2E7D32]/70' : 'bg-[#D97757]'} p-6 text-white text-center`}>
+            <div className={`${(currentStatus === 'SERVED' || currentStatus === 'PAID') ? 'bg-[#2E7D32]' : currentStatus === 'READY' ? 'bg-blue-500' : currentStatus === 'PREPARING' ? 'bg-[#2E7D32]/70' : 'bg-[#D97757]'} p-6 text-white text-center`}>
               <div className="text-4xl mb-2">
                 {currentStatus === 'NEW' && '🧾'}
                 {currentStatus === 'PREPARING' && '🍳'}
                 {currentStatus === 'READY' && '🍽️'}
-                {currentStatus === 'SERVED' && '🎉'}
+                {(currentStatus === 'SERVED' || currentStatus === 'PAID') && '🎉'}
                 {currentStatus === 'CANCELLED' && '❌'}
               </div>
               <h2 className="text-xl font-black">
                 {currentStatus === 'NEW' && 'Order Confirmed!'}
                 {currentStatus === 'PREPARING' && 'Cooking in Progress...'}
                 {currentStatus === 'READY' && 'Ready to Serve!'}
-                {currentStatus === 'SERVED' && 'Enjoy Your Meal!'}
+                {(currentStatus === 'SERVED' || currentStatus === 'PAID') && 'Enjoy Your Meal!'}
                 {currentStatus === 'CANCELLED' && 'Order Cancelled'}
               </h2>
               <p className="text-white/80 text-sm mt-1">Order #{placedOrder.orderNumber}</p>
@@ -699,7 +709,7 @@ export const CustomerMenu: React.FC = () => {
           </div>
 
           {/* Invoice Summary Card */}
-          {currentStatus === 'SERVED' && isPaid && (
+          {isPaid && (
             <div className={`${t.card} rounded-3xl border border-emerald-500/30 p-5 shadow-sm space-y-4`}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600">
@@ -715,7 +725,7 @@ export const CustomerMenu: React.FC = () => {
                 className="w-full py-3 bg-[#2E7D32] hover:bg-[#235F26] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#2E7D32]/15"
               >
                 <Receipt className="w-4 h-4" />
-                View & Download Invoice
+                Download Bill
               </button>
             </div>
           )}

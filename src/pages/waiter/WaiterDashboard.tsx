@@ -29,7 +29,7 @@ interface OrderItem {
 interface Order {
   id: string;
   orderNumber: string;
-  status: 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED';
+  status: 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'PAID' | 'CANCELLED';
   subtotal: number;
   taxAmount: number;
   totalAmount: number;
@@ -307,7 +307,7 @@ export const WaiterDashboard: React.FC = () => {
     if (match && match[1]) {
       const tableNum = match[1];
       return orders.find(
-        (o) => o.tableNumber === tableNum && o.status !== 'SERVED' && o.status !== 'CANCELLED'
+        (o) => o.tableNumber === tableNum && o.status !== 'PAID' && o.status !== 'CANCELLED'
       );
     }
     return undefined;
