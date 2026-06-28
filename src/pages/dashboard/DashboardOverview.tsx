@@ -70,6 +70,7 @@ export const DashboardOverview: React.FC = () => {
   const [topItems, setTopItems] = useState<TopItem[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [orderStats, setOrderStats] = useState({ active: 0, new: 0, preparing: 0, ready: 0 });
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -93,6 +94,16 @@ export const DashboardOverview: React.FC = () => {
           (o) => o.status === 'NEW' || o.status === 'PREPARING' || o.status === 'READY'
         );
         setActiveOrders(active.slice(0, 5));
+
+        const newCount = allOrders.filter(o => o.status === 'NEW').length;
+        const preparingCount = allOrders.filter(o => o.status === 'PREPARING').length;
+        const readyCount = allOrders.filter(o => o.status === 'READY').length;
+        setOrderStats({
+          active: active.length,
+          new: newCount,
+          preparing: preparingCount,
+          ready: readyCount,
+        });
       } catch (err: any) {
         toast.error('Failed to load dashboard data: ' + err.message);
       } finally {
@@ -123,7 +134,38 @@ export const DashboardOverview: React.FC = () => {
     return <SkeletonLoader type="kpis" count={4} />;
   }
 
-  const stats = [
+  const isStaff = user?.role === 'STAFF';
+
+  const stats = isStaff ? [
+    {
+      title: 'Active Orders',
+      value: orderStats.active.toString(),
+      change: 'Orders currently in progress',
+      icon: ShoppingBag,
+      color: 'from-blue-500 to-indigo-500',
+    },
+    {
+      title: 'New Orders',
+      value: orderStats.new.toString(),
+      change: 'Waiting to be prepared',
+      icon: Clock,
+      color: 'from-orange-500 to-amber-500',
+    },
+    {
+      title: 'Preparing Orders',
+      value: orderStats.preparing.toString(),
+      change: 'Orders in the kitchen',
+      icon: Utensils,
+      color: 'from-purple-500 to-pink-500',
+    },
+    {
+      title: 'Ready Orders',
+      value: orderStats.ready.toString(),
+      change: 'Waiting to be served',
+      icon: ChevronRight,
+      color: 'from-emerald-500 to-teal-500',
+    },
+  ] : [
     {
       title: 'Total Revenue',
       value: `₹${kpis.totalRevenue.toLocaleString('en-IN')}`,
@@ -293,9 +335,11 @@ export const DashboardOverview: React.FC = () => {
                     <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">{item.name}</p>
                     <p className="text-[10px] text-slate-500 dark:text-[#9ca3af]">{item.quantity} portions sold</p>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">₹{item.revenue.toLocaleString('en-IN')}</p>
-                  </div>
+                  {!isStaff && (
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">₹{item.revenue.toLocaleString('en-IN')}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -11,6 +11,7 @@ interface Waiter {
   email: string;
   phone: string;
   isActive: boolean;
+  role: 'STAFF' | 'WAITER';
   createdAt: string;
 }
 
@@ -32,6 +33,7 @@ export const WaitersPage: React.FC = () => {
   const [formPhone, setFormPhone] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formStatus, setFormStatus] = useState<'Active' | 'Disabled'>('Active');
+  const [formRole, setFormRole] = useState<'STAFF' | 'WAITER'>('WAITER');
   const [formShowPassword, setFormShowPassword] = useState(false);
   
   const [submitting, setSubmitting] = useState(false);
@@ -58,6 +60,7 @@ export const WaitersPage: React.FC = () => {
     setFormPhone('');
     setFormPassword('');
     setFormStatus('Active');
+    setFormRole('WAITER');
     setFormShowPassword(false);
     setSelectedWaiter(null);
   };
@@ -72,13 +75,14 @@ export const WaitersPage: React.FC = () => {
         phone: formPhone,
         password: formPassword,
         status: formStatus,
+        role: formRole,
       });
-      toast.success('Waiter account created successfully!');
+      toast.success('Account created successfully!');
       setIsCreateOpen(false);
       resetForm();
       fetchWaiters();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create waiter account');
+      toast.error(err.message || 'Failed to create account');
     } finally {
       setSubmitting(false);
     }
@@ -94,13 +98,14 @@ export const WaitersPage: React.FC = () => {
         email: formEmail,
         phone: formPhone,
         status: formStatus,
+        role: formRole,
       });
-      toast.success('Waiter account updated successfully!');
+      toast.success('Account updated successfully!');
       setIsEditOpen(false);
       resetForm();
       fetchWaiters();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update waiter account');
+      toast.error(err.message || 'Failed to update account');
     } finally {
       setSubmitting(false);
     }
@@ -112,7 +117,7 @@ export const WaitersPage: React.FC = () => {
       await api.patch(`/dashboard/waiters/${waiter.id}/status`, {
         isActive: newStatus,
       });
-      toast.success(`Waiter ${newStatus ? 'enabled' : 'disabled'} successfully!`);
+      toast.success(`${waiter.role === 'WAITER' ? 'Waiter' : 'Staff'} ${newStatus ? 'enabled' : 'disabled'} successfully!`);
       fetchWaiters();
     } catch (err: any) {
       toast.error(err.message || 'Failed to update status');
@@ -124,12 +129,12 @@ export const WaitersPage: React.FC = () => {
     setSubmitting(true);
     try {
       await api.delete(`/dashboard/waiters/${selectedWaiter.id}`);
-      toast.success('Waiter account deleted successfully!');
+      toast.success('Account deleted successfully!');
       setIsDeleteConfirmOpen(false);
       resetForm();
       fetchWaiters();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to delete waiter account');
+      toast.error(err.message || 'Failed to delete account');
     } finally {
       setSubmitting(false);
     }
@@ -143,7 +148,7 @@ export const WaitersPage: React.FC = () => {
       await api.post(`/dashboard/waiters/${selectedWaiter.id}/reset-password`, {
         password: formPassword,
       });
-      toast.success('Waiter password reset successfully!');
+      toast.success('Password reset successfully!');
       setIsResetOpen(false);
       resetForm();
     } catch (err: any) {
@@ -159,6 +164,7 @@ export const WaitersPage: React.FC = () => {
     setFormEmail(waiter.email);
     setFormPhone(waiter.phone);
     setFormStatus(waiter.isActive ? 'Active' : 'Disabled');
+    setFormRole(waiter.role);
     setIsEditOpen(true);
   };
 
@@ -200,7 +206,7 @@ export const WaitersPage: React.FC = () => {
           className="flex items-center justify-center gap-2 px-5 py-3 bg-[#FF6B35] hover:bg-orange-600 text-white font-bold rounded-2xl transition-all text-sm shadow-lg shadow-[#FF6B35]/15 shrink-0"
         >
           <Plus className="w-4 h-4" />
-          Create Waiter
+          Create Staff/Waiter
         </button>
       </div>
 
@@ -212,9 +218,9 @@ export const WaitersPage: React.FC = () => {
         </div>
       ) : filteredWaiters.length === 0 ? (
         <div className="bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/50 rounded-[24px] p-12 text-center">
-          <p className="text-lg font-bold text-slate-800 dark:text-white">No Waiters Found</p>
+          <p className="text-lg font-bold text-slate-800 dark:text-white">No Accounts Found</p>
           <p className="text-sm text-slate-400 mt-1">
-            {searchQuery ? 'Try matching another name or search term.' : 'Get started by creating your first waiter account.'}
+            {searchQuery ? 'Try matching another name or search term.' : 'Get started by creating your first staff or waiter account.'}
           </p>
         </div>
       ) : (
@@ -226,6 +232,7 @@ export const WaitersPage: React.FC = () => {
                   <th className="py-4 px-6">Name</th>
                   <th className="py-4 px-6">Email</th>
                   <th className="py-4 px-6">Phone</th>
+                  <th className="py-4 px-6">Role</th>
                   <th className="py-4 px-6 text-center">Status</th>
                   <th className="py-4 px-6">Created Date</th>
                   <th className="py-4 px-6 text-right">Actions</th>
@@ -237,6 +244,15 @@ export const WaitersPage: React.FC = () => {
                     <td className="py-4.5 px-6 font-bold text-slate-800 dark:text-white">{waiter.name}</td>
                     <td className="py-4.5 px-6 text-slate-500 dark:text-gray-300">{waiter.email}</td>
                     <td className="py-4.5 px-6 text-slate-500 dark:text-gray-300">{waiter.phone}</td>
+                    <td className="py-4.5 px-6 font-semibold">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black border ${
+                        waiter.role === 'WAITER' 
+                          ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' 
+                          : 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
+                      }`}>
+                        {waiter.role === 'WAITER' ? 'Waiter' : 'Staff'}
+                      </span>
+                    </td>
                     <td className="py-4.5 px-6 text-center">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
                         waiter.isActive 
@@ -254,7 +270,7 @@ export const WaitersPage: React.FC = () => {
                       <button
                         onClick={() => openEditModal(waiter)}
                         className="p-2 bg-slate-100 dark:bg-[#1f2937] hover:bg-slate-200 dark:hover:bg-[#374151] border border-slate-200 dark:border-[#374151] rounded-xl text-slate-700 dark:text-gray-300 transition-colors"
-                        title="Edit Waiter"
+                        title="Edit Account"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -265,7 +281,7 @@ export const WaitersPage: React.FC = () => {
                             ? 'bg-red-500/10 hover:bg-red-500/20 border-red-500/25 text-red-500' 
                             : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/25 text-emerald-500'
                         }`}
-                        title={waiter.isActive ? 'Disable Waiter' : 'Enable Waiter'}
+                        title={waiter.isActive ? 'Disable Account' : 'Enable Account'}
                       >
                         {waiter.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                       </button>
@@ -279,7 +295,7 @@ export const WaitersPage: React.FC = () => {
                       <button
                         onClick={() => openDeleteModal(waiter)}
                         className="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-500 rounded-xl transition-colors"
-                        title="Delete Waiter"
+                        title="Delete Account"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -298,7 +314,7 @@ export const WaitersPage: React.FC = () => {
           <div onClick={() => setIsCreateOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-6">
-              <h3 className="text-lg font-black text-slate-800 dark:text-white">Create Waiter Account</h3>
+              <h3 className="text-lg font-black text-slate-800 dark:text-white">Create Staff/Waiter Account</h3>
               <button onClick={() => setIsCreateOpen(false)} className="p-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-[#374151] rounded-xl text-slate-500 dark:text-gray-400 transition-all">
                 <X className="w-4 h-4" />
               </button>
@@ -310,7 +326,7 @@ export const WaitersPage: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="Waiter's Name"
+                  placeholder="Staff or Waiter's Name"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="w-full px-4 py-3 bg-[#f8fafc] dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B35] transition-all text-slate-800 dark:text-white"
@@ -334,7 +350,7 @@ export const WaitersPage: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder="waiter@restaurant.com"
+                  placeholder="staff@restaurant.com"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   className="w-full px-4 py-3 bg-[#f8fafc] dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B35] transition-all text-slate-800 dark:text-white"
@@ -358,6 +374,34 @@ export const WaitersPage: React.FC = () => {
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400"
                   >
                     {formShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Account Role</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormRole('WAITER')}
+                    className={`py-3 rounded-xl border text-xs font-bold transition-all ${
+                      formRole === 'WAITER' 
+                        ? 'bg-orange-500/10 border-orange-500 text-[#FF6B35] font-black' 
+                        : 'bg-[#f8fafc] border-slate-200 dark:bg-[#111827]/30 dark:border-[#374151] text-slate-500'
+                    }`}
+                  >
+                    Waiter
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormRole('STAFF')}
+                    className={`py-3 rounded-xl border text-xs font-bold transition-all ${
+                      formRole === 'STAFF' 
+                        ? 'bg-[#FF6B35]/10 border-[#FF6B35] text-[#FF6B35] font-black' 
+                        : 'bg-[#f8fafc] border-slate-200 dark:bg-[#111827]/30 dark:border-[#374151] text-slate-500'
+                    }`}
+                  >
+                    Staff
                   </button>
                 </div>
               </div>
@@ -417,7 +461,7 @@ export const WaitersPage: React.FC = () => {
           <div onClick={() => { setIsEditOpen(false); resetForm(); }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-6">
-              <h3 className="text-lg font-black text-slate-800 dark:text-white">Edit Waiter Account</h3>
+              <h3 className="text-lg font-black text-slate-800 dark:text-white">Edit Staff/Waiter Account</h3>
               <button onClick={() => { setIsEditOpen(false); resetForm(); }} className="p-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-[#374151] rounded-xl text-slate-500 dark:text-gray-400 transition-all">
                 <X className="w-4 h-4" />
               </button>
@@ -429,7 +473,7 @@ export const WaitersPage: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="Waiter's Name"
+                  placeholder="Staff or Waiter's Name"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="w-full px-4 py-3 bg-[#f8fafc] dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B35] transition-all text-slate-800 dark:text-white"
@@ -453,11 +497,39 @@ export const WaitersPage: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder="waiter@restaurant.com"
+                  placeholder="staff@restaurant.com"
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   className="w-full px-4 py-3 bg-[#f8fafc] dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151] rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B35] transition-all text-slate-800 dark:text-white"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Account Role</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormRole('WAITER')}
+                    className={`py-3 rounded-xl border text-xs font-bold transition-all ${
+                      formRole === 'WAITER' 
+                        ? 'bg-[#FF6B35]/10 border-[#FF6B35] text-[#FF6B35] font-black' 
+                        : 'bg-[#f8fafc] border-slate-200 dark:bg-[#111827]/30 dark:border-[#374151] text-slate-500'
+                    }`}
+                  >
+                    Waiter
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormRole('STAFF')}
+                    className={`py-3 rounded-xl border text-xs font-bold transition-all ${
+                      formRole === 'STAFF' 
+                        ? 'bg-[#FF6B35]/10 border-[#FF6B35] text-[#FF6B35] font-black' 
+                        : 'bg-[#f8fafc] border-slate-200 dark:bg-[#111827]/30 dark:border-[#374151] text-slate-500'
+                    }`}
+                  >
+                    Staff
+                  </button>
+                </div>
               </div>
 
               <div>

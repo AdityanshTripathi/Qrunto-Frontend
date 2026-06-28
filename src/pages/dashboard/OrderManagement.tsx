@@ -59,7 +59,7 @@ interface OrderStats {
 const fmt = (amount: number, _currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
-const BASE_URL = import.meta.env.VITE_API_URL || 
+const BASE_URL = import.meta.env.VITE_API_URL ||
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : 'https://backend-steel-seven-97.vercel.app/api');
@@ -125,7 +125,7 @@ export const OrderManagement: React.FC = () => {
       });
       const ordersData = await ordersRes.json();
       if (!ordersRes.ok) throw new Error(ordersData.error || 'Failed to fetch orders');
-      
+
       if (orders.length > 0 && ordersData.orders.length > orders.length) {
         const hasNew = ordersData.orders.some((o: Order) => o.status === 'NEW' && !orders.some(prev => prev.id === o.id));
         if (hasNew) {
@@ -191,10 +191,10 @@ export const OrderManagement: React.FC = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update order status');
-      
+
       toast.success(`Order status updated to ${nextStatus}`);
       setOrders((prev) => prev.map((o) => (o.id === orderId ? data.order : o)));
-      
+
       const statsRes = await fetch(`${BASE_URL}/orders/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -286,7 +286,7 @@ export const OrderManagement: React.FC = () => {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      
+
       {/* Upper bar with title & stats */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -356,9 +356,8 @@ export const OrderManagement: React.FC = () => {
             <div
               key={status}
               onClick={() => setActiveTab(status)}
-              className={`cursor-pointer rounded-2xl border bg-gradient-to-br p-3 sm:p-4 transition-all hover:scale-[1.02] ${bgColor} ${
-                activeTab === status ? 'border-[#FF6B35]/50 ring-1 ring-[#FF6B35]/30' : ''
-              }`}
+              className={`cursor-pointer rounded-2xl border bg-gradient-to-br p-3 sm:p-4 transition-all hover:scale-[1.02] ${bgColor} ${activeTab === status ? 'border-[#FF6B35]/50 ring-1 ring-[#FF6B35]/30' : ''
+                }`}
             >
               <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-semibold">{label}</p>
               <h3 className={`text-xl sm:text-2xl font-bold mt-1 ${iconColor}`}>{stats[status] ?? 0}</h3>
@@ -371,9 +370,8 @@ export const OrderManagement: React.FC = () => {
       <div className="border-b border-slate-200 dark:border-[#374151]/30 flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide pb-0.5">
         <button
           onClick={() => setActiveTab('ALL')}
-          className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${
-            activeTab === 'ALL' ? 'text-[#FF6B35]' : 'text-slate-500 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
-          }`}
+          className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${activeTab === 'ALL' ? 'text-[#FF6B35]' : 'text-slate-500 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
+            }`}
         >
           All ({Object.values(stats).reduce((a, b) => a + b, 0)})
           {activeTab === 'ALL' && (
@@ -386,15 +384,14 @@ export const OrderManagement: React.FC = () => {
             <button
               key={status}
               onClick={() => setActiveTab(status)}
-              className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${
-                activeTab === status ? 'text-[#FF6B35]' : 'text-slate-500 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
-              }`}
+              className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${activeTab === status ? 'text-[#FF6B35]' : 'text-slate-500 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
+                }`}
             >
               {status === 'NEW' ? `New (${count})`
                 : status === 'PREPARING' ? `Preparing (${count})`
-                : status === 'READY' ? `Ready (${count})`
-                : status === 'SERVED' ? `Served (${count})`
-                : `Cancelled (${count})`}
+                  : status === 'READY' ? `Ready (${count})`
+                    : status === 'SERVED' ? `Served (${count})`
+                      : `Cancelled (${count})`}
               {activeTab === status && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF6B35] rounded-full" />
               )}
@@ -421,11 +418,10 @@ export const OrderManagement: React.FC = () => {
                 setDateFilter(filter.id as any);
                 if (filter.id !== 'CUSTOM') setCustomDate('');
               }}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-                dateFilter === filter.id
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${dateFilter === filter.id
                   ? 'bg-[#FF6B35] text-white shadow-md shadow-[#FF6B35]/15'
                   : 'bg-slate-55 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/60 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
+                }`}
             >
               {filter.label}
             </button>
@@ -455,7 +451,7 @@ export const OrderManagement: React.FC = () => {
           </div>
           <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-gray-200">No orders found</h3>
           <p className="text-sm text-slate-500 dark:text-[#9ca3af] max-w-xs mt-1">
-            {orders.length === 0 
+            {orders.length === 0
               ? `There are currently no orders in the status filter: ${activeTab}.`
               : `No orders matching your selected date filter in status: ${activeTab}.`
             }

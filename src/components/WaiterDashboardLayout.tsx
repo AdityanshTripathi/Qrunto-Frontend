@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
-  LayoutDashboard, QrCode, ShoppingBag, Bell, User, LogOut, Menu, X
+  LayoutDashboard, QrCode, ShoppingBag, Bell, User, LogOut, Menu, X, Receipt
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { ThemeToggle } from './ThemeToggle';
 
 interface WaiterDashboardLayoutProps {
   children?: React.ReactNode;
-  requestCount?: number;
+  helpCount?: number;
+  billCount?: number;
 }
 
-export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ children, requestCount = 0 }) => {
+export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ 
+  children, 
+  helpCount = 0, 
+  billCount = 0 
+}) => {
   const { user, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,7 +28,8 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
     { name: 'Dashboard', tab: 'dashboard', icon: LayoutDashboard },
     { name: 'Tables', tab: 'tables', icon: QrCode },
     { name: 'Orders', tab: 'orders', icon: ShoppingBag },
-    { name: 'Customer Requests', tab: 'requests', icon: Bell, badge: true },
+    { name: 'Customer Requests', tab: 'requests', icon: Bell, badgeKey: 'requests' },
+    { name: 'Bill Requests', tab: 'bills', icon: Receipt, badgeKey: 'bills' },
     { name: 'Profile', tab: 'profile', icon: User },
   ];
 
@@ -58,7 +64,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
             className="p-2 bg-slate-100 dark:bg-[#374151]/50 border border-slate-200 dark:border-[#4b5563]/40 rounded-xl text-slate-700 dark:text-gray-200 relative"
           >
             <Menu className="w-4 h-4" />
-            {requestCount > 0 && (
+            {(helpCount > 0 || billCount > 0) && (
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping" />
             )}
           </button>
@@ -112,11 +118,18 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
                         <Icon className="w-5 h-5" />
                         <span className="text-sm">{link.name}</span>
                       </span>
-                      {link.badge && requestCount > 0 && (
+                      {link.badgeKey === 'requests' && helpCount > 0 && (
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                           isActive ? 'bg-white text-[#FF6B35]' : 'bg-red-500 text-white animate-pulse'
                         }`}>
-                          {requestCount}
+                          {helpCount}
+                        </span>
+                      )}
+                      {link.badgeKey === 'bills' && billCount > 0 && (
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                          isActive ? 'bg-white text-[#FF6B35]' : 'bg-red-500 text-white animate-pulse'
+                        }`}>
+                          {billCount}
                         </span>
                       )}
                     </button>
@@ -183,11 +196,18 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({ ch
                       <Icon className="w-5 h-5" />
                       <span className="text-sm">{link.name}</span>
                     </span>
-                    {link.badge && requestCount > 0 && (
+                    {link.badgeKey === 'requests' && helpCount > 0 && (
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                         isActive ? 'bg-white text-[#FF6B35]' : 'bg-red-500 text-white animate-pulse'
                       }`}>
-                        {requestCount}
+                        {helpCount}
+                      </span>
+                    )}
+                    {link.badgeKey === 'bills' && billCount > 0 && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                        isActive ? 'bg-white text-[#FF6B35]' : 'bg-red-500 text-white animate-pulse'
+                      }`}>
+                        {billCount}
                       </span>
                     )}
                   </button>

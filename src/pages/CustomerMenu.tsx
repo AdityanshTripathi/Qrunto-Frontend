@@ -124,7 +124,7 @@ export const CustomerMenu: React.FC = () => {
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'COUNTER' | 'WAITER'>('ONLINE');
+  const [paymentMethod] = useState<'ONLINE' | 'COUNTER' | 'WAITER'>('WAITER');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -509,7 +509,7 @@ export const CustomerMenu: React.FC = () => {
   if (placedOrder) {
     const currentStatus = trackingOrder?.status ?? placedOrder.status;
     const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS';
-    const paymentPref = localStorage.getItem(`ordio_payment_method_${placedOrder.id}`) || 'ONLINE';
+    const paymentPref = localStorage.getItem(`ordio_payment_method_${placedOrder.id}`) || 'WAITER';
     const getStep = (s: string) => ({ 'NEW': 0, 'PREPARING': 1, 'READY': 2, 'SERVED': 3 }[s] ?? 0);
     const stepIndex = getStep(currentStatus);
     const steps = [
@@ -650,34 +650,38 @@ export const CustomerMenu: React.FC = () => {
                 !isSettleBillRequested ? (
                   <div className="flex flex-col gap-2">
                     <button 
-                      onClick={() => setIsSettleBillRequested(true)} 
-                      className="w-full py-3 bg-[#2E7D32] hover:bg-[#235F26] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15"
+                      onClick={() => {
+                        handleRequestAssistance('BILL');
+                        setIsSettleBillRequested(true);
+                      }} 
+                      disabled={sendingAssistance}
+                      className="w-full py-3 bg-[#2E7D32] hover:bg-[#235F26] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15 disabled:opacity-50"
                     >
-                      <Receipt className="w-4 h-4" />
-                      Settle Bill & Pay
+                      {sendingAssistance ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Receipt className="w-4 h-4" />
+                      )}
+                      Request Bill Settlement
                     </button>
                     <span className={`text-[10px] ${t.subtext} italic text-center block`}>
-                      Enjoy your meal! You can still add more items from the menu.
+                      Click to notify the waiter/counter to bring your bill.
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex gap-2 items-center text-emerald-600">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="text-xs font-bold">Bill settlement request sent to waiter.</span>
+                    </div>
                     <button 
-                      onClick={() => setIsPaymentModalOpen(true)} 
-                      className="w-full py-3 bg-[#D97757] hover:bg-[#c87024] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2"
+                      onClick={() => handleRequestAssistance('BILL')}
+                      disabled={sendingAssistance}
+                      className={`w-full py-2.5 ${t.qtyBg} border ${t.cardBorder} ${t.text} font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 disabled:opacity-50`}
                     >
-                      <CreditCard className="w-4 h-4" />
-                      Pay Bill Online Now
+                      {sendingAssistance ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+                      Send Reminder
                     </button>
-                    {paymentPref !== 'ONLINE' && (
-                      <button 
-                        onClick={() => handleRequestAssistance('BILL')} 
-                        className={`w-full py-3 ${t.qtyBg} border ${t.cardBorder} ${t.text} font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2`}
-                      >
-                        <Receipt className="w-4 h-4" />
-                        Request Waiter/Counter Settle Bill
-                      </button>
-                    )}
                     <button 
                       onClick={() => setIsSettleBillRequested(false)} 
                       className={`w-full py-2 bg-transparent text-xs ${t.subtext} font-bold hover:underline`}
@@ -1793,19 +1797,10 @@ export const CustomerMenu: React.FC = () => {
 
                   {/* Payment method */}
                   {!activeCookieOrder && (
-                    <div className={`${isDark ? 'bg-[#2a2a2a]' : 'bg-[#F5EDE4]'} rounded-xl p-3 space-y-2`}>
-                      <p className={`text-xs font-bold ${t.subtext}`}>Payment Preference</p>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <button onClick={() => setPaymentMethod('ONLINE')} className={`py-2 px-1 rounded-xl border text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'ONLINE' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
-                          <CreditCard className="w-3.5 h-3.5" /> Pay Online
-                        </button>
-                        <button onClick={() => setPaymentMethod('COUNTER')} className={`py-2 px-1 rounded-xl border text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'COUNTER' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
-                          <Receipt className="w-3.5 h-3.5" /> Pay at Counter
-                        </button>
-                        <button onClick={() => setPaymentMethod('WAITER')} className={`py-2 px-1 rounded-xl border text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'WAITER' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
-                          <Utensils className="w-3.5 h-3.5" /> Pay via Waiter
-                        </button>
-                      </div>
+                    <div className={`${isDark ? 'bg-[#2a2a2a]' : 'bg-[#F5EDE4]'} rounded-xl p-3 text-center`}>
+                      <p className={`text-xs font-bold ${t.subtext} flex items-center justify-center gap-1.5`}>
+                        <Utensils className="w-3.5 h-3.5 text-[#D97757]" /> Payment Mode: Pay via Waiter 🙋
+                      </p>
                     </div>
                   )}
 

@@ -16,6 +16,7 @@ const MenuManagement = React.lazy(() => import('./pages/dashboard/MenuManagement
 const CategoryManagement = React.lazy(() => import('./pages/dashboard/CategoryManagement'));
 const TableManagement = React.lazy(() => import('./pages/dashboard/TableManagement'));
 const OrderManagement = React.lazy(() => import('./pages/dashboard/OrderManagement'));
+const BillsPage = React.lazy(() => import('./pages/dashboard/BillsPage'));
 const Analytics = React.lazy(() => import('./pages/dashboard/Analytics'));
 const SubscriptionManagement = React.lazy(() => import('./pages/dashboard/SubscriptionManagement'));
 const SuperAdminDashboard = React.lazy(() => import('./pages/dashboard/SuperAdminDashboard'));
@@ -95,6 +96,7 @@ function App() {
               <Route path="categories" element={<CategoryManagement />} />
               <Route path="tables" element={<TableManagement />} />
               <Route path="orders" element={<OrderManagement />} />
+              <Route path="bills" element={<BillsPage />} />
               <Route path="waiters" element={<WaitersPage />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="subscription" element={<SubscriptionManagement />} />
