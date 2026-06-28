@@ -21,6 +21,15 @@ import {
 import { api } from '../../lib/api';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 
+// Helper to rewrite URL to localhost if running in local environment
+const getTableUrl = (url: string | null): string => {
+  if (!url) return '';
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return url.replace(/https?:\/\/[^\/]+/, 'http://localhost:5173');
+  }
+  return url;
+};
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface RestaurantTable {
   id: string;
@@ -244,7 +253,7 @@ export const TableManagement: React.FC = () => {
               <div className="bg-slate-50 dark:bg-white/5 p-5 sm:p-6 flex items-center justify-center border-b border-slate-200 dark:border-[#374151]/25 relative">
                 {table.qrCodeUrl ? (
                   <div className="flex items-center justify-center">
-                    <QRCodeCanvas value={table.qrCodeUrl} size={130} />
+                    <QRCodeCanvas value={getTableUrl(table.qrCodeUrl)} size={130} />
                   </div>
                 ) : (
                   <div className="w-32 sm:w-36 h-32 sm:h-36 bg-slate-200 dark:bg-[#374151]/30 rounded-xl flex items-center justify-center text-slate-400 dark:text-[#9ca3af]">
@@ -281,14 +290,14 @@ export const TableManagement: React.FC = () => {
                 {/* QR URL */}
                 {table.qrCodeUrl && (
                   <a
-                    href={table.qrCodeUrl}
+                    href={getTableUrl(table.qrCodeUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-[#9ca3af] hover:text-[#FF6B35] transition-colors mb-3 truncate"
-                    title={table.qrCodeUrl}
+                    title={getTableUrl(table.qrCodeUrl)}
                   >
                     <ExternalLink className="w-3 h-3 shrink-0" />
-                    <span className="truncate">{table.qrCodeUrl}</span>
+                    <span className="truncate">{getTableUrl(table.qrCodeUrl)}</span>
                   </a>
                 )}
 
@@ -297,7 +306,7 @@ export const TableManagement: React.FC = () => {
                   {/* Download QR */}
                   {table.qrCodeUrl && (
                     <button
-                      onClick={() => downloadQR(table.qrCodeUrl!, table.tableNumber)}
+                      onClick={() => downloadQR(getTableUrl(table.qrCodeUrl), table.tableNumber)}
                       className="flex-1 flex items-center justify-center gap-1 py-2 bg-slate-100 dark:bg-[#374151]/30 hover:bg-slate-200 dark:hover:bg-[#374151] border border-slate-200 dark:border-[#374151]/40 rounded-xl text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white transition-all text-xs font-semibold"
                       title="Download QR Code"
                     >
@@ -485,16 +494,16 @@ export const TableManagement: React.FC = () => {
             </div>
 
             <div className="bg-white p-4 rounded-2xl shadow-xl">
-              {qrViewTable.qrCodeUrl && <QRCodeCanvas value={qrViewTable.qrCodeUrl} size={220} />}
+              {qrViewTable.qrCodeUrl && <QRCodeCanvas value={getTableUrl(qrViewTable.qrCodeUrl)} size={220} />}
             </div>
 
             <p className="text-[11px] text-slate-400 dark:text-[#9ca3af] text-center max-w-[200px] break-all">
-              {qrViewTable.qrCodeUrl}
+              {getTableUrl(qrViewTable.qrCodeUrl)}
             </p>
 
             {qrViewTable.qrCodeUrl && (
               <button
-                onClick={() => downloadQR(qrViewTable.qrCodeUrl!, qrViewTable.tableNumber)}
+                onClick={() => downloadQR(getTableUrl(qrViewTable.qrCodeUrl), qrViewTable.tableNumber)}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-[#FF6B35] hover:bg-orange-600 font-semibold text-sm text-white rounded-xl transition-all"
               >
                 <Download className="w-4 h-4" />
