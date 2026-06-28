@@ -72,7 +72,7 @@ const getSocketUrl = () => {
   if (apiUrl) {
     return apiUrl.replace(/\/api\/?$/, '');
   }
-  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
     ? 'http://localhost:5000'
     : 'https://backend-steel-seven-97.vercel.app';
 };

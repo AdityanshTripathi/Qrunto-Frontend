@@ -93,7 +93,7 @@ const compressLogo = (file: File, maxSize = 300, quality = 0.85): Promise<string
   });
 
 const BASE_URL = import.meta.env.VITE_API_URL ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
     ? 'http://localhost:5000/api'
     : '');
 
