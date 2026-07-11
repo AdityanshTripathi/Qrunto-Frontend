@@ -705,8 +705,8 @@ export const OrderManagement: React.FC = () => {
       </div>
 
       {/* Stats Counter Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        {(['NEW', 'ACCEPTED', 'PREPARING', 'READY', 'SERVED', 'PAID', 'CANCELLED'] as OrderStatus[]).map((status) => {
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {(['NEW', 'PREPARING', 'READY', 'SERVED', 'CANCELLED'] as (keyof OrderStats)[]).map((status) => {
           let label: string = status;
           let iconColor = 'text-blue-600 dark:text-blue-400';
           let bgColor = 'from-blue-500/10 to-transparent border-blue-500/20';
@@ -767,7 +767,7 @@ export const OrderManagement: React.FC = () => {
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF6B35] rounded-full" />
           )}
         </button>
-        {(['NEW', 'ACCEPTED', 'PREPARING', 'READY', 'SERVED', 'PAID', 'CANCELLED'] as OrderStatus[]).map((status) => {
+        {(['NEW', 'PREPARING', 'READY', 'SERVED', 'CANCELLED'] as (keyof OrderStats)[]).map((status) => {
           const count = stats[status] ?? 0;
           return (
             <button
