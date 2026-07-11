@@ -29,7 +29,7 @@ interface OrderItem {
 interface Order {
   id: string;
   orderNumber: string;
-  status: 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED';
+  status: 'NEW' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'SERVED' | 'PAID' | 'CANCELLED';
   subtotal: number;
   taxAmount: number;
   totalAmount: number;

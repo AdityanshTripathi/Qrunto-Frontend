@@ -52,7 +52,7 @@ const fmt = (amount: number, _currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
 const BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : 'https://backend-steel-seven-97.vercel.app/api');
 
@@ -124,7 +124,7 @@ export const CustomerMenu: React.FC = () => {
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'COUNTER' | 'WAITER'>('ONLINE');
+  const [paymentMethod] = useState<'ONLINE' | 'COUNTER' | 'WAITER'>('WAITER');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -509,7 +509,7 @@ export const CustomerMenu: React.FC = () => {
   if (placedOrder) {
     const currentStatus = trackingOrder?.status ?? placedOrder.status;
     const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS';
-    const paymentPref = localStorage.getItem(`ordio_payment_method_${placedOrder.id}`) || 'ONLINE';
+    const paymentPref = localStorage.getItem(`ordio_payment_method_${placedOrder.id}`) || 'WAITER';
     const getStep = (s: string) => ({ 'NEW': 0, 'PREPARING': 1, 'READY': 2, 'SERVED': 3 }[s] ?? 0);
     const stepIndex = getStep(currentStatus);
     const steps = [
@@ -1793,19 +1793,10 @@ export const CustomerMenu: React.FC = () => {
 
                   {/* Payment method */}
                   {!activeCookieOrder && (
-                    <div className={`${isDark ? 'bg-[#2a2a2a]' : 'bg-[#F5EDE4]'} rounded-xl p-3 space-y-2`}>
-                      <p className={`text-xs font-bold ${t.subtext}`}>Payment Preference</p>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <button onClick={() => setPaymentMethod('ONLINE')} className={`py-2 px-1 rounded-xl border text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'ONLINE' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
-                          <CreditCard className="w-3.5 h-3.5" /> Pay Online
-                        </button>
-                        <button onClick={() => setPaymentMethod('COUNTER')} className={`py-2 px-1 rounded-xl border text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'COUNTER' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
-                          <Receipt className="w-3.5 h-3.5" /> Pay at Counter
-                        </button>
-                        <button onClick={() => setPaymentMethod('WAITER')} className={`py-2 px-1 rounded-xl border text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'WAITER' ? 'bg-[#D97757]/10 border-[#D97757] text-[#D97757]' : `${t.chip}`}`}>
-                          <Utensils className="w-3.5 h-3.5" /> Pay via Waiter
-                        </button>
-                      </div>
+                    <div className={`${isDark ? 'bg-[#2a2a2a]' : 'bg-[#F5EDE4]'} rounded-xl p-3 text-center`}>
+                      <p className={`text-xs font-bold ${t.subtext} flex items-center justify-center gap-1.5`}>
+                        <Utensils className="w-3.5 h-3.5 text-[#D97757]" /> Payment Mode: Pay via Waiter 🙋
+                      </p>
                     </div>
                   )}
 

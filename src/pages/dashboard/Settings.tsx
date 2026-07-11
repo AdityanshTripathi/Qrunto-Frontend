@@ -34,6 +34,8 @@ interface SettingsInputs {
   gstNumber: string;
   currency: string;
   taxPercentage: number;
+  invoiceSeries: string;
+  kotSeries: string;
   logoUrl?: string | null;
 }
 
@@ -212,6 +214,8 @@ const SettingsContent: React.FC = () => {
       gstNumber: '',
       currency: 'INR',
       taxPercentage: 0,
+      invoiceSeries: 'INV',
+      kotSeries: 'KOT',
       logoUrl: '',
     },
   });
@@ -237,6 +241,8 @@ const SettingsContent: React.FC = () => {
         setValue('gstNumber', data.restaurant.gstNumber || '');
         setValue('currency', data.settings.currency || 'INR');
         setValue('taxPercentage', data.settings.taxPercentage ?? 0);
+        setValue('invoiceSeries', data.settings.invoiceSeries || 'INV');
+        setValue('kotSeries', data.settings.kotSeries || 'KOT');
         setLogoPreview(data.restaurant.logoUrl || null);
 
         // Load business hours if saved
@@ -318,6 +324,8 @@ const SettingsContent: React.FC = () => {
           logoUrl: logoPreview || null,
           currency: payload.currency,
           taxPercentage: Number(payload.taxPercentage),
+          invoiceSeries: payload.invoiceSeries,
+          kotSeries: payload.kotSeries,
           businessHours,
         }),
       });
@@ -544,6 +552,32 @@ const SettingsContent: React.FC = () => {
               </div>
             </div>
 
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-slate-100 dark:border-[#374151]/20">
+            {/* Invoice Prefix */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase tracking-wide">Invoice Prefix / Series</label>
+              <input
+                type="text"
+                placeholder="e.g. INV"
+                {...register('invoiceSeries', { required: 'Invoice prefix is required' })}
+                className="w-full bg-slate-55 dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-2xl py-3 px-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50 focus:border-[#FF6B35]/40 transition-all text-sm font-semibold"
+              />
+              {errors.invoiceSeries && <p className="text-rose-400 text-xs">{errors.invoiceSeries.message}</p>}
+            </div>
+
+            {/* KOT Prefix */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase tracking-wide">KOT Prefix / Series</label>
+              <input
+                type="text"
+                placeholder="e.g. KOT"
+                {...register('kotSeries', { required: 'KOT prefix is required' })}
+                className="w-full bg-slate-55 dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-2xl py-3 px-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50 focus:border-[#FF6B35]/40 transition-all text-sm font-semibold"
+              />
+              {errors.kotSeries && <p className="text-rose-400 text-xs">{errors.kotSeries.message}</p>}
+            </div>
           </div>
         </div>
 

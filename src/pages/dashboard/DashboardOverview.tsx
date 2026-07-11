@@ -41,7 +41,7 @@ interface Order {
   table: {
     tableNumber: string;
   };
-  status: 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED';
+  status: 'NEW' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'SERVED' | 'PAID' | 'CANCELLED';
   totalAmount: number;
   createdAt: string;
   orderItems: OrderItem[];
@@ -90,7 +90,7 @@ export const DashboardOverview: React.FC = () => {
         const ordersRes = await api.get('/orders');
         const allOrders: Order[] = ordersRes.orders || [];
         const active = allOrders.filter(
-          (o) => o.status === 'NEW' || o.status === 'PREPARING' || o.status === 'READY'
+          (o) => o.status === 'NEW' || o.status === 'ACCEPTED' || o.status === 'PREPARING' || o.status === 'READY'
         );
         setActiveOrders(active.slice(0, 5));
       } catch (err: any) {
