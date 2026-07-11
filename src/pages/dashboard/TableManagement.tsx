@@ -245,9 +245,8 @@ export const TableManagement: React.FC = () => {
           {tables.map((table) => (
             <div
               key={table.id}
-              className={`bg-white dark:bg-[#1f2937]/25 border border-slate-200 dark:border-[#374151]/35 hover:border-[#FF6B35]/30 rounded-[20px] overflow-hidden flex flex-col transition-all duration-200 group ${
-                !table.isActive ? 'opacity-55' : ''
-              }`}
+              className={`bg-white dark:bg-[#1f2937]/25 border border-slate-200 dark:border-[#374151]/35 hover:border-[#FF6B35]/30 rounded-[20px] overflow-hidden flex flex-col transition-all duration-200 group ${!table.isActive ? 'opacity-55' : ''
+                }`}
             >
               {/* QR Code Display */}
               <div className="bg-slate-50 dark:bg-white/5 p-5 sm:p-6 flex items-center justify-center border-b border-slate-200 dark:border-[#374151]/25 relative">
@@ -328,11 +327,10 @@ export const TableManagement: React.FC = () => {
                   <button
                     onClick={() => handleToggleActive(table)}
                     disabled={actionLoading}
-                    className={`p-2 rounded-xl border transition-all ${
-                      table.isActive
+                    className={`p-2 rounded-xl border transition-all ${table.isActive
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
                         : 'bg-slate-100 dark:bg-[#374151]/20 text-slate-500 dark:text-[#9ca3af] border-slate-200 dark:border-[#374151]/40 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                      }`}
                     title={table.isActive ? 'Deactivate' : 'Activate'}
                   >
                     {table.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -405,9 +403,8 @@ export const TableManagement: React.FC = () => {
                 <input
                   type="text"
                   placeholder="e.g. T1, T2, VIP-1, Patio-3"
-                  className={`w-full bg-slate-50 dark:bg-[#111827]/70 border ${
-                    addForm.formState.errors.tableNumber ? 'border-red-500' : 'border-slate-300 dark:border-[#374151] focus:ring-[#FF6B35]'
-                  } rounded-[12px] py-3 px-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                  className={`w-full bg-slate-50 dark:bg-[#111827]/70 border ${addForm.formState.errors.tableNumber ? 'border-red-500' : 'border-slate-300 dark:border-[#374151] focus:ring-[#FF6B35]'
+                    } rounded-[12px] py-3 px-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                   {...addForm.register('tableNumber')}
                 />
                 {addForm.formState.errors.tableNumber && (
@@ -452,9 +449,8 @@ export const TableManagement: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#d1d5db] mb-2">New Table Number / Name</label>
                 <input
                   type="text"
-                  className={`w-full bg-slate-50 dark:bg-[#111827]/70 border ${
-                    editForm.formState.errors.tableNumber ? 'border-red-500' : 'border-slate-300 dark:border-[#374151] focus:ring-[#FF6B35]'
-                  } rounded-[12px] py-3 px-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                  className={`w-full bg-slate-50 dark:bg-[#111827]/70 border ${editForm.formState.errors.tableNumber ? 'border-red-500' : 'border-slate-300 dark:border-[#374151] focus:ring-[#FF6B35]'
+                    } rounded-[12px] py-3 px-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                   {...editForm.register('tableNumber')}
                 />
                 {editForm.formState.errors.tableNumber && (
