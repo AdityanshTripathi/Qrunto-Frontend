@@ -20,6 +20,7 @@ import {
   Landmark,
   UtensilsCrossed
 } from 'lucide-react';
+import { Component as GlowBackground } from '@/components/ui/background-components';
 
 export const Landing: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -48,7 +49,8 @@ export const Landing: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#111827] font-sans antialiased selection:bg-[#FF6B35]/20 selection:text-[#FF6B35]">
+    <GlowBackground>
+      <div className="text-[#111827] font-sans antialiased selection:bg-[#FF6B35]/20 selection:text-[#FF6B35] relative">
       {/* Stripe-style Background Grid Lines */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_36px] pointer-events-none z-0"></div>
 
@@ -1236,5 +1238,6 @@ export const Landing: React.FC = () => {
         </div>
       </footer>
     </div>
+    </GlowBackground>
   );
 };

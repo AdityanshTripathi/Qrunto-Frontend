@@ -52,7 +52,7 @@ const fmt = (amount: number, _currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
 const BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
     ? 'http://localhost:5000/api'
     : 'https://backend-steel-seven-97.vercel.app/api');
 
@@ -136,6 +136,13 @@ export const CustomerMenu: React.FC = () => {
   const [cardCvv, setCardCvv] = useState('');
   const [trackingOrder, setTrackingOrder] = useState<any>(null);
 
+  // CRM Loyalty States
+  const [loyaltyPoints, setLoyaltyPoints] = useState<number>(0);
+  const [loyaltyTier, setLoyaltyTier] = useState<string | null>(null);
+  const [redeemPointsChecked, setRedeemPointsChecked] = useState<boolean>(false);
+  const [pointsToRedeemInput, setPointsToRedeemInput] = useState<number>(0);
+  const [fetchingLoyalty, setFetchingLoyalty] = useState<boolean>(false);
+
   // Theme CSS vars
   const t = {
     bg: isDark ? 'bg-[#121212]' : 'bg-[#FFF8F0]',
@@ -194,7 +201,7 @@ export const CustomerMenu: React.FC = () => {
               if (statusRes.ok) {
                 const statusData = await statusRes.json();
                 const currentStatus = statusData.order?.status;
-                const isOrderPaid = statusData.order?.paymentStatus === 'SUCCESS';
+                const isOrderPaid = statusData.order?.paymentStatus === 'SUCCESS' || currentStatus === 'PAID';
                 if (currentStatus && !isOrderPaid && currentStatus !== 'CANCELLED') {
                   setPlacedOrder(parsedOrder);
                   setTrackingOrder(statusData.order);
@@ -293,7 +300,7 @@ export const CustomerMenu: React.FC = () => {
           const data = await res.json();
           setTrackingOrder(data.order);
           const currentStatus = data.order?.status;
-          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
+          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS' || currentStatus === 'PAID';
           if (isOrderPaid || currentStatus === 'CANCELLED') {
             deleteCookie(`ordio_active_order_${slug}`);
             setActiveCookieOrder(null);
@@ -315,7 +322,7 @@ export const CustomerMenu: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           const currentStatus = data.order?.status;
-          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
+          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS' || currentStatus === 'PAID';
           if (isOrderPaid || currentStatus === 'CANCELLED') {
             deleteCookie(`ordio_active_order_${slug}`);
             setActiveCookieOrder(null);
@@ -333,6 +340,36 @@ export const CustomerMenu: React.FC = () => {
     return () => clearInterval(interval);
   }, [placedOrder, activeCookieOrder, slug]);
 
+  // CRM Loyalty Balance Check Debouncer
+  useEffect(() => {
+    if (!customerPhone || customerPhone.trim().length < 10 || !slug) {
+      setLoyaltyPoints(0);
+      setLoyaltyTier(null);
+      setRedeemPointsChecked(false);
+      setPointsToRedeemInput(0);
+      return;
+    }
+
+    const fetchBalance = async () => {
+      setFetchingLoyalty(true);
+      try {
+        const res = await fetch(`${BASE_URL}/public/${slug}/loyalty/balance?phone=${encodeURIComponent(customerPhone)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setLoyaltyPoints(data.pointsBalance || 0);
+          setLoyaltyTier(data.tierName || null);
+        }
+      } catch (err) {
+        console.error('Failed to fetch loyalty balance:', err);
+      } finally {
+        setFetchingLoyalty(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchBalance, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [customerPhone, slug]);
+
   const handlePlaceOrder = async () => {
     if (!slug || !tableNumber || cart.length === 0) return;
     setIsPlacingOrder(true);
@@ -345,6 +382,7 @@ export const CustomerMenu: React.FC = () => {
           customerName: customerName || undefined,
           customerPhone: customerPhone || undefined,
           existingOrderId: activeCookieOrder?.id || undefined,
+          redeemPoints: redeemPointsChecked ? pointsToRedeemInput : undefined,
         }),
       });
       const data = await res.json();
@@ -355,6 +393,8 @@ export const CustomerMenu: React.FC = () => {
       setCart([]);
       setCustomerName('');
       setCustomerPhone('');
+      setRedeemPointsChecked(false);
+      setPointsToRedeemInput(0);
       setIsCartOpen(false);
       setIsCheckoutConfirming(false);
       setIsSettleBillRequested(false);
@@ -466,6 +506,16 @@ export const CustomerMenu: React.FC = () => {
 
       pdf.save(`invoice-${(placedOrder?.orderNumber ?? 'order').replace('ORD-', 'INV-')}.pdf`);
       toast.success('Invoice downloaded successfully!', { id: toastId });
+
+      // Clear order and reset state for new orders
+      if (slug) {
+        deleteCookie(`ordio_active_order_${slug}`);
+      }
+      setPlacedOrder(null);
+      setActiveCookieOrder(null);
+      setTrackingOrder(null);
+      setIsInvoiceModalOpen(false);
+      setIsSettleBillRequested(false);
     } catch (err) {
       console.error('Failed to generate invoice PDF', err);
       toast.error('Failed to download invoice. Please try again.', { id: toastId });
@@ -508,9 +558,9 @@ export const CustomerMenu: React.FC = () => {
   // ─── Order Tracking Screen ─────────────────────────────────────────────────
   if (placedOrder) {
     const currentStatus = trackingOrder?.status ?? placedOrder.status;
-    const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS';
+    const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS' || currentStatus === 'PAID';
     const paymentPref = localStorage.getItem(`ordio_payment_method_${placedOrder.id}`) || 'WAITER';
-    const getStep = (s: string) => ({ 'NEW': 0, 'PREPARING': 1, 'READY': 2, 'SERVED': 3 }[s] ?? 0);
+    const getStep = (s: string) => ({ 'NEW': 0, 'PREPARING': 1, 'READY': 2, 'SERVED': 3, 'PAID': 3 }[s] ?? 0);
     const stepIndex = getStep(currentStatus);
     const steps = [
       { label: 'Order Placed', icon: '🧾', desc: 'Restaurant confirmed your order' },
@@ -542,19 +592,19 @@ export const CustomerMenu: React.FC = () => {
         <div className="max-w-md mx-auto px-4 pt-6 space-y-4">
           {/* Status Hero */}
           <div className={`${t.card} rounded-3xl overflow-hidden border ${t.cardBorder} shadow-sm`}>
-            <div className={`${currentStatus === 'SERVED' ? 'bg-[#2E7D32]' : currentStatus === 'READY' ? 'bg-blue-500' : currentStatus === 'PREPARING' ? 'bg-[#2E7D32]/70' : 'bg-[#D97757]'} p-6 text-white text-center`}>
+            <div className={`${(currentStatus === 'SERVED' || currentStatus === 'PAID') ? 'bg-[#2E7D32]' : currentStatus === 'READY' ? 'bg-blue-500' : currentStatus === 'PREPARING' ? 'bg-[#2E7D32]/70' : 'bg-[#D97757]'} p-6 text-white text-center`}>
               <div className="text-4xl mb-2">
                 {currentStatus === 'NEW' && '🧾'}
                 {currentStatus === 'PREPARING' && '🍳'}
                 {currentStatus === 'READY' && '🍽️'}
-                {currentStatus === 'SERVED' && '🎉'}
+                {(currentStatus === 'SERVED' || currentStatus === 'PAID') && '🎉'}
                 {currentStatus === 'CANCELLED' && '❌'}
               </div>
               <h2 className="text-xl font-black">
                 {currentStatus === 'NEW' && 'Order Confirmed!'}
                 {currentStatus === 'PREPARING' && 'Cooking in Progress...'}
                 {currentStatus === 'READY' && 'Ready to Serve!'}
-                {currentStatus === 'SERVED' && 'Enjoy Your Meal!'}
+                {(currentStatus === 'SERVED' || currentStatus === 'PAID') && 'Enjoy Your Meal!'}
                 {currentStatus === 'CANCELLED' && 'Order Cancelled'}
               </h2>
               <p className="text-white/80 text-sm mt-1">Order #{placedOrder.orderNumber}</p>
@@ -650,34 +700,38 @@ export const CustomerMenu: React.FC = () => {
                 !isSettleBillRequested ? (
                   <div className="flex flex-col gap-2">
                     <button 
-                      onClick={() => setIsSettleBillRequested(true)} 
-                      className="w-full py-3 bg-[#2E7D32] hover:bg-[#235F26] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15"
+                      onClick={() => {
+                        handleRequestAssistance('BILL');
+                        setIsSettleBillRequested(true);
+                      }} 
+                      disabled={sendingAssistance}
+                      className="w-full py-3 bg-[#2E7D32] hover:bg-[#235F26] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15 disabled:opacity-50"
                     >
-                      <Receipt className="w-4 h-4" />
-                      Settle Bill & Pay
+                      {sendingAssistance ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Receipt className="w-4 h-4" />
+                      )}
+                      Request Bill Settlement
                     </button>
                     <span className={`text-[10px] ${t.subtext} italic text-center block`}>
-                      Enjoy your meal! You can still add more items from the menu.
+                      Click to notify the waiter/counter to bring your bill.
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex gap-2 items-center text-emerald-600">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="text-xs font-bold">Bill settlement request sent to waiter.</span>
+                    </div>
                     <button 
-                      onClick={() => setIsPaymentModalOpen(true)} 
-                      className="w-full py-3 bg-[#D97757] hover:bg-[#c87024] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2"
+                      onClick={() => handleRequestAssistance('BILL')}
+                      disabled={sendingAssistance}
+                      className={`w-full py-2.5 ${t.qtyBg} border ${t.cardBorder} ${t.text} font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 disabled:opacity-50`}
                     >
-                      <CreditCard className="w-4 h-4" />
-                      Pay Bill Online Now
+                      {sendingAssistance ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+                      Send Reminder
                     </button>
-                    {paymentPref !== 'ONLINE' && (
-                      <button 
-                        onClick={() => handleRequestAssistance('BILL')} 
-                        className={`w-full py-3 ${t.qtyBg} border ${t.cardBorder} ${t.text} font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2`}
-                      >
-                        <Receipt className="w-4 h-4" />
-                        Request Waiter/Counter Settle Bill
-                      </button>
-                    )}
                     <button 
                       onClick={() => setIsSettleBillRequested(false)} 
                       className={`w-full py-2 bg-transparent text-xs ${t.subtext} font-bold hover:underline`}
@@ -695,7 +749,7 @@ export const CustomerMenu: React.FC = () => {
           </div>
 
           {/* Invoice Summary Card */}
-          {currentStatus === 'SERVED' && isPaid && (
+          {isPaid && (
             <div className={`${t.card} rounded-3xl border border-emerald-500/30 p-5 shadow-sm space-y-4`}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600">
@@ -711,7 +765,7 @@ export const CustomerMenu: React.FC = () => {
                 className="w-full py-3 bg-[#2E7D32] hover:bg-[#235F26] text-white font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#2E7D32]/15"
               >
                 <Receipt className="w-4 h-4" />
-                View & Download Invoice
+                Download Bill
               </button>
             </div>
           )}
@@ -1760,9 +1814,17 @@ export const CustomerMenu: React.FC = () => {
                     <span>Tax ({settings.taxPercentage}%)</span><span className={t.text}>{fmt(taxAmount, settings.currency)}</span>
                   </div>
                 )}
+                {redeemPointsChecked && pointsToRedeemInput > 0 && (
+                  <div className="flex justify-between text-xs text-[#2E7D32] dark:text-emerald-400 font-semibold">
+                    <span>Points Discount</span>
+                    <span>-{fmt(pointsToRedeemInput, settings.currency)}</span>
+                  </div>
+                )}
                 <div className={`border-t ${t.divider} pt-1.5 flex justify-between`}>
                   <span className={`font-bold text-sm ${t.text}`}>Total</span>
-                  <span className="font-extrabold text-[#D97757] text-base">{fmt(totalAmount, settings.currency)}</span>
+                  <span className="font-extrabold text-[#D97757] text-base">
+                    {fmt(Math.max(0, totalAmount - (redeemPointsChecked ? pointsToRedeemInput : 0)), settings.currency)}
+                  </span>
                 </div>
               </div>
 
@@ -1789,6 +1851,65 @@ export const CustomerMenu: React.FC = () => {
                         className={`w-full ${t.input} border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#D97757] transition-all`}
                       />
                     </div>
+
+                    {fetchingLoyalty && (
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#D97757]" /> Checking loyalty status...
+                      </div>
+                    )}
+
+                    {!fetchingLoyalty && customerPhone && customerPhone.trim().length >= 10 && (
+                      <div className={`p-3 rounded-xl border ${loyaltyPoints > 0 ? 'bg-orange-500/5 border-[#D97757]/30' : 'bg-slate-50 dark:bg-[#1e1e1e] border-slate-100 dark:border-[#2a2a2a]'} text-left text-xs space-y-2`}>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className={`font-bold block ${t.text}`}>
+                              {loyaltyTier ? `🏆 ${loyaltyTier} Member` : 'Loyalty Account'}
+                            </span>
+                            <span className={`text-[10px] ${t.subtext}`}>
+                              Balance: <strong>{loyaltyPoints} points</strong>
+                            </span>
+                          </div>
+                          {loyaltyPoints > 0 && (
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={redeemPointsChecked}
+                                onChange={(e) => {
+                                  setRedeemPointsChecked(e.target.checked);
+                                  if (e.target.checked) {
+                                    setPointsToRedeemInput(Math.min(loyaltyPoints, Math.floor(totalAmount)));
+                                  } else {
+                                    setPointsToRedeemInput(0);
+                                  }
+                                }}
+                                className="rounded border-[#D97757] text-[#D97757] focus:ring-[#D97757]/20"
+                              />
+                              <span className={`text-[10px] font-bold ${t.text}`}>Redeem</span>
+                            </label>
+                          )}
+                        </div>
+                        
+                        {redeemPointsChecked && loyaltyPoints > 0 && (
+                          <div className="pt-2 border-t border-dashed border-[#D97757]/25 space-y-1">
+                            <div className="flex items-center justify-between text-[10px] text-slate-400">
+                              <span>Points to redeem:</span>
+                              <span className={`font-bold ${t.text}`}>{pointsToRedeemInput} pts</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="1"
+                              max={Math.min(loyaltyPoints, Math.floor(totalAmount))}
+                              value={pointsToRedeemInput}
+                              onChange={(e) => setPointsToRedeemInput(parseInt(e.target.value) || 1)}
+                              className="w-full accent-[#D97757]"
+                            />
+                            <p className="text-[10px] text-[#2E7D32] dark:text-emerald-400 font-semibold italic text-center">
+                              You save: {fmt(pointsToRedeemInput)}!
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Payment method */}

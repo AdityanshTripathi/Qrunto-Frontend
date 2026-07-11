@@ -16,9 +16,12 @@ const MenuManagement = React.lazy(() => import('./pages/dashboard/MenuManagement
 const CategoryManagement = React.lazy(() => import('./pages/dashboard/CategoryManagement'));
 const TableManagement = React.lazy(() => import('./pages/dashboard/TableManagement'));
 const OrderManagement = React.lazy(() => import('./pages/dashboard/OrderManagement'));
+const BillsPage = React.lazy(() => import('./pages/dashboard/BillsPage'));
 const Analytics = React.lazy(() => import('./pages/dashboard/Analytics'));
 const SubscriptionManagement = React.lazy(() => import('./pages/dashboard/SubscriptionManagement'));
 const SuperAdminDashboard = React.lazy(() => import('./pages/dashboard/SuperAdminDashboard'));
+const CustomersDirectory = React.lazy(() => import('./pages/dashboard/crm/CustomersDirectory'));
+const CustomerDetail = React.lazy(() => import('./pages/dashboard/crm/CustomerDetail'));
 const Settings = React.lazy(() => import('./pages/dashboard/Settings'));
 const CustomerMenu = React.lazy(() => import('./pages/CustomerMenu'));
 const WaitersPage = React.lazy(() => import('./pages/dashboard/WaitersPage'));
@@ -95,8 +98,11 @@ function App() {
               <Route path="categories" element={<CategoryManagement />} />
               <Route path="tables" element={<TableManagement />} />
               <Route path="orders" element={<OrderManagement />} />
+              <Route path="bills" element={<BillsPage />} />
               <Route path="waiters" element={<WaitersPage />} />
               <Route path="analytics" element={<Analytics />} />
+              <Route path="crm" element={<CustomersDirectory />} />
+              <Route path="crm/customers/:id" element={<CustomerDetail />} />
               <Route path="subscription" element={<SubscriptionManagement />} />
               <Route path="settings" element={<Settings />} />
             </Route>

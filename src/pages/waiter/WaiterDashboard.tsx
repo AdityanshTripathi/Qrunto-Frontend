@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { WaiterDashboardLayout } from '../../components/WaiterDashboardLayout';
 import {
   Bell, BellRing, ClipboardList, Clock, Coffee, Plus, Search,
-  ShoppingCart, User, Loader2, X, AlertTriangle, ShieldCheck, QrCode, Minus
+  ShoppingCart, User, Loader2, X, AlertTriangle, ShieldCheck, QrCode, Minus, Receipt
 } from 'lucide-react';
 import { OrderManagement } from '../dashboard/OrderManagement';
 
@@ -72,7 +72,7 @@ const getSocketUrl = () => {
   if (apiUrl) {
     return apiUrl.replace(/\/api\/?$/, '');
   }
-  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
     ? 'http://localhost:5000'
     : 'https://backend-steel-seven-97.vercel.app';
 };
@@ -90,6 +90,7 @@ export const WaiterDashboard: React.FC = () => {
   const [tables, setTables] = useState<Table[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [requests, setRequests] = useState<CustomerRequest[]>([]);
+  const [billRequests, setBillRequests] = useState<CustomerRequest[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   
@@ -99,6 +100,10 @@ export const WaiterDashboard: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddItemsOpen, setIsAddItemsOpen] = useState(false);
   const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
+  
+  // Settle bill states
+  const [paymentMethods, setPaymentMethods] = useState<Record<string, 'CASH' | 'CARD' | 'UPI'>>({});
+  const [settlingId, setSettlingId] = useState<string | null>(null);
   
   // Searching & Adding Cart
   const [menuSearch, setMenuSearch] = useState('');
@@ -114,8 +119,8 @@ export const WaiterDashboard: React.FC = () => {
   const ordersRef = useRef<Order[]>([]);
 
   useEffect(() => {
-    requestsRef.current = requests;
-  }, [requests]);
+    requestsRef.current = [...requests, ...billRequests];
+  }, [requests, billRequests]);
 
   useEffect(() => {
     ordersRef.current = orders;
@@ -184,12 +189,13 @@ export const WaiterDashboard: React.FC = () => {
       const notifRes = await api.get('/notifications');
       const allNotifs: CustomerRequest[] = notifRes.notifications || [];
       const unreadHelpRequests = allNotifs.filter(n => !n.isRead && n.type === 'HELP_REQUEST');
+      const unreadBillRequests = allNotifs.filter(n => !n.isRead && n.type === 'BILLING');
 
       // Change detection for new data when fetching silently (via polling or sockets)
       if (silent) {
         // 1. Check for new requests
         const currentReqIds = new Set(requestsRef.current.map(r => r.id));
-        const newReqs = unreadHelpRequests.filter(r => !currentReqIds.has(r.id));
+        const newReqs = [...unreadHelpRequests, ...unreadBillRequests].filter(r => !currentReqIds.has(r.id));
         if (newReqs.length > 0) {
           newReqs.forEach(req => {
             toast.warning(`🔔 ${req.title}: ${req.message}`, { duration: 8000 });
@@ -223,6 +229,7 @@ export const WaiterDashboard: React.FC = () => {
 
       setOrders(mappedOrders);
       setRequests(unreadHelpRequests);
+      setBillRequests(unreadBillRequests);
 
     } catch (err: any) {
       console.error(err);
@@ -291,6 +298,34 @@ export const WaiterDashboard: React.FC = () => {
       fetchData(true);
     } catch (err: any) {
       toast.error('Failed to resolve request');
+    }
+  };
+
+  // Match billing notification to active order
+  const getOrderForRequest = (req: CustomerRequest): Order | undefined => {
+    const match = req.title.match(/Table\s+(\w+)/i) || req.message.match(/Table\s+(\w+)/i);
+    if (match && match[1]) {
+      const tableNum = match[1];
+      return orders.find(
+        (o) => o.tableNumber === tableNum && o.status !== 'PAID' && o.status !== 'CANCELLED'
+      );
+    }
+    return undefined;
+  };
+
+  // Mark bill as paid from the waiter panel
+  const handleMarkPaid = async (orderId: string, notifId: string) => {
+    const method = paymentMethods[orderId] || 'CASH';
+    setSettlingId(orderId);
+    try {
+      await api.post(`/orders/${orderId}/pay`, { paymentMethod: method });
+      toast.success(`Bill settled via ${method}! Order status updated to PAID.`);
+      await api.patch(`/notifications/${notifId}/read`);
+      fetchData(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Error registering payment');
+    } finally {
+      setSettlingId(null);
     }
   };
 
@@ -396,7 +431,7 @@ export const WaiterDashboard: React.FC = () => {
   };
 
   // Helper variables
-  const activeOrders = orders.filter(o => o.status !== 'SERVED' && o.status !== 'CANCELLED');
+  const activeOrders = orders.filter(o => o.status !== 'PAID' && o.status !== 'CANCELLED');
   
   // Mapping Table ID to its Active Order
   const tableOrderMap = activeOrders.reduce<Record<string, Order>>((acc, order) => {
@@ -435,7 +470,7 @@ export const WaiterDashboard: React.FC = () => {
   });
 
   return (
-    <WaiterDashboardLayout requestCount={requests.length}>
+    <WaiterDashboardLayout helpCount={requests.length} billCount={billRequests.length}>
       {/* LOADING */}
       {loading && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -656,6 +691,110 @@ export const WaiterDashboard: React.FC = () => {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* BILL REQUESTS TAB */}
+      {!loading && activeTab === 'bills' && (
+        <div className="space-y-6 text-left">
+          <div className="bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/50 rounded-2xl p-5 shadow-sm space-y-4">
+            <h3 className="font-black text-sm flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-orange-500 animate-pulse" />
+              Bill Settlement Requests
+            </h3>
+
+            {billRequests.length === 0 ? (
+              <div className="py-16 text-center text-slate-400 text-xs">
+                No active bill settlement requests.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {billRequests.map(req => {
+                  const matchedOrder = getOrderForRequest(req);
+                  return (
+                    <div key={req.id} className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl flex flex-col justify-between gap-3">
+                      <div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-orange-500 font-extrabold bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
+                            Bill Request
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-black mt-2">{req.title}</h4>
+                        <p className="text-xs text-slate-500 mt-1">{req.message}</p>
+
+                        {matchedOrder ? (
+                          <div className="mt-3 bg-slate-50 dark:bg-[#111827]/40 border border-slate-100 dark:border-[#374151]/20 rounded-xl p-3 space-y-1 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Order:</span>
+                              <span className="font-bold">#{matchedOrder.orderNumber}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Customer:</span>
+                              <span className="font-semibold">{matchedOrder.customerName || 'Walk-in'}</span>
+                            </div>
+                            <div className="flex justify-between pt-1 border-t border-dashed border-slate-200 dark:border-[#374151]/20">
+                              <span className="text-slate-450 font-bold">Total Amount:</span>
+                              <span className="font-extrabold text-[#FF6B35]">{fmt(matchedOrder.totalAmount)}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 bg-amber-500/5 border border-amber-500/15 rounded-xl p-2 text-[11px] text-amber-600">
+                            ⚠️ No active order found. Waiter can dismiss this alert.
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-100 dark:border-[#374151]/20 flex items-center justify-between gap-2">
+                        {matchedOrder ? (
+                          <>
+                            <select
+                              value={paymentMethods[matchedOrder.id] || 'CASH'}
+                              onChange={(e) => setPaymentMethods({ ...paymentMethods, [matchedOrder.id]: e.target.value as any })}
+                              className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-[#374151]/40 rounded-xl text-xs text-slate-800 dark:text-white px-2 py-1.5 focus:outline-none"
+                            >
+                              <option value="CASH">💵 Cash</option>
+                              <option value="CARD">💳 Card</option>
+                              <option value="UPI">📱 UPI</option>
+                            </select>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleResolveRequest(req.id)}
+                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-650 dark:text-gray-300 rounded-xl text-xs font-bold transition-all"
+                              >
+                                Dismiss
+                              </button>
+                              <button
+                                onClick={() => handleMarkPaid(matchedOrder.id, req.id)}
+                                disabled={settlingId === matchedOrder.id}
+                                className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1 disabled:opacity-50"
+                              >
+                                {settlingId === matchedOrder.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  'Settle'
+                                )}
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleResolveRequest(req.id)}
+                            className="w-full py-2 bg-slate-100 dark:bg-[#374151]/30 hover:bg-slate-200 text-slate-600 dark:text-gray-300 text-xs font-bold rounded-xl transition-all"
+                          >
+                            Dismiss Alert
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
