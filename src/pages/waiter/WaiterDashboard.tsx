@@ -319,7 +319,7 @@ export const WaiterDashboard: React.FC = () => {
     setSettlingId(orderId);
     try {
       await api.post(`/orders/${orderId}/pay`, { paymentMethod: method });
-      toast.success(`Bill settled via ${method}! Order status updated to SERVED.`);
+      toast.success(`Bill settled via ${method}! Order status updated to PAID.`);
       await api.patch(`/notifications/${notifId}/read`);
       fetchData(true);
     } catch (err: any) {

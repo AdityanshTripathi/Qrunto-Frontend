@@ -12,12 +12,14 @@ import {
   FileText,
   Coffee,
   Printer,
+  Award,
+  Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type OrderStatus = 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED';
+type OrderStatus = 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED' | 'PAID';
 
 interface Table {
   id: string;
@@ -78,6 +80,83 @@ export const OrderManagement: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | '7_DAYS' | '1_MONTH' | '1_YEAR' | 'CUSTOM'>('ALL');
   const [customDate, setCustomDate] = useState<string>('');
 
+  // POS Loyalty lookup states
+  const [customerLoyalty, setCustomerLoyalty] = useState<{
+    pointsBalance: number;
+    lifetimePoints: number;
+    tierName: string | null;
+    multiplier: number;
+  } | null>(null);
+  const [loadingLoyalty, setLoadingLoyalty] = useState(false);
+  const [redeemPointsAmount, setRedeemPointsAmount] = useState<number>(0);
+  const [redeemSubmitting, setRedeemSubmitting] = useState(false);
+
+  // Fetch customer loyalty status inside POS Detail Modal
+  useEffect(() => {
+    if (!selectedOrder || !selectedOrder.customerPhone || !token) {
+      setCustomerLoyalty(null);
+      setRedeemPointsAmount(0);
+      return;
+    }
+
+    const fetchLoyaltyBalance = async () => {
+      setLoadingLoyalty(true);
+      try {
+        const res = await fetch(`${BASE_URL}/crm/loyalty/balance?phone=${encodeURIComponent(selectedOrder.customerPhone!)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setCustomerLoyalty(data);
+          setRedeemPointsAmount(Math.min(data.pointsBalance, Math.floor(selectedOrder.totalAmount)));
+        }
+      } catch (err) {
+        console.error('Failed to fetch loyalty details:', err);
+      } finally {
+        setLoadingLoyalty(false);
+      }
+    };
+
+    fetchLoyaltyBalance();
+  }, [selectedOrder, token]);
+
+  const handleApplyLoyaltyDiscount = async () => {
+    if (!selectedOrder || !token || redeemPointsAmount <= 0) return;
+    setRedeemSubmitting(true);
+    try {
+      const res = await fetch(`${BASE_URL}/orders/${selectedOrder.id}/loyalty-discount`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ pointsToRedeem: redeemPointsAmount }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to apply discount');
+
+      toast.success(`Applied loyalty discount of ₹${redeemPointsAmount}`);
+      
+      // Update selected order and list
+      setSelectedOrder(data.order);
+      setOrders((prev) => prev.map((o) => (o.id === selectedOrder.id ? data.order : o)));
+      
+      // Re-fetch loyalty balance to show new points balance
+      const balanceRes = await fetch(`${BASE_URL}/crm/loyalty/balance?phone=${encodeURIComponent(selectedOrder.customerPhone!)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const balanceData = await balanceRes.json();
+      if (balanceRes.ok) {
+        setCustomerLoyalty(balanceData);
+        setRedeemPointsAmount(0);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to apply discount');
+    } finally {
+      setRedeemSubmitting(false);
+    }
+  };
+
   const getFilteredOrders = () => {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -130,7 +209,6 @@ export const OrderManagement: React.FC = () => {
         const hasNew = ordersData.orders.some((o: Order) => o.status === 'NEW' && !orders.some(prev => prev.id === o.id));
         if (hasNew) {
           toast.success('🔔 New Order Received!', { duration: 5000 });
-          // Play notification chime sound using synthesized Web Audio API for maximum reliability
           try {
             const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
             const playTone = (freq: number, duration: number, delay: number) => {
@@ -145,7 +223,6 @@ export const OrderManagement: React.FC = () => {
               osc.start(audioCtx.currentTime + delay);
               osc.stop(audioCtx.currentTime + delay + duration);
             };
-            // Double chime: E5 (659.25Hz) then G5 (783.99Hz)
             playTone(659.25, 0.15, 0);
             playTone(783.99, 0.25, 0.12);
           } catch (soundErr) {
@@ -218,6 +295,7 @@ export const OrderManagement: React.FC = () => {
       case 'READY': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25';
       case 'SERVED': return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/25';
       case 'CANCELLED': return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25';
+      case 'PAID': return 'bg-emerald-500/10 text-emerald-605 dark:text-emerald-400 border-emerald-500/25';
     }
   };
 
@@ -277,7 +355,7 @@ export const OrderManagement: React.FC = () => {
         );
       default:
         return (
-          <span className="text-xs text-slate-500 dark:text-gray-500 font-medium italic">
+          <span className="text-xs text-slate-505 dark:text-gray-500 font-medium italic">
             Completed
           </span>
         );
@@ -297,12 +375,12 @@ export const OrderManagement: React.FC = () => {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-[#9ca3af]">Accept, prepare, and track orders in real time.</p>
+          <p className="text-sm text-slate-505 dark:text-[#9ca3af]">Accept, prepare, and track orders in real time.</p>
         </div>
 
         {/* Polling & Refresh Controls */}
         <div className="flex items-center gap-3 bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/30 rounded-2xl px-4 py-2 self-start sm:self-auto">
-          <span className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium flex items-center gap-1.5">
+          <span className="text-xs text-slate-505 dark:text-[#9ca3af] font-medium flex items-center gap-1.5">
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Auto-refresh
           </span>
@@ -317,7 +395,7 @@ export const OrderManagement: React.FC = () => {
           </select>
           <button
             onClick={() => fetchOrdersAndStats()}
-            className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#374151]/50 rounded-lg text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all"
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#374151]/50 rounded-lg text-slate-505 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all"
             title="Manual sync"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -342,7 +420,7 @@ export const OrderManagement: React.FC = () => {
             bgColor = 'from-emerald-500/10 to-transparent border-emerald-500/20';
           } else if (status === 'SERVED') {
             label = 'Served';
-            iconColor = 'text-slate-500 dark:text-gray-400';
+            iconColor = 'text-slate-505 dark:text-gray-400';
             bgColor = 'from-slate-500/10 to-transparent border-slate-500/20';
           } else if (status === 'CANCELLED') {
             label = 'Cancelled';
@@ -359,7 +437,7 @@ export const OrderManagement: React.FC = () => {
               className={`cursor-pointer rounded-2xl border bg-gradient-to-br p-3 sm:p-4 transition-all hover:scale-[1.02] ${bgColor} ${activeTab === status ? 'border-[#FF6B35]/50 ring-1 ring-[#FF6B35]/30' : ''
                 }`}
             >
-              <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-semibold">{label}</p>
+              <p className="text-xs text-slate-550 dark:text-[#9ca3af] font-semibold">{label}</p>
               <h3 className={`text-xl sm:text-2xl font-bold mt-1 ${iconColor}`}>{stats[status] ?? 0}</h3>
             </div>
           );
@@ -370,7 +448,7 @@ export const OrderManagement: React.FC = () => {
       <div className="border-b border-slate-200 dark:border-[#374151]/30 flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide pb-0.5">
         <button
           onClick={() => setActiveTab('ALL')}
-          className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${activeTab === 'ALL' ? 'text-[#FF6B35]' : 'text-slate-500 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
+          className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${activeTab === 'ALL' ? 'text-[#FF6B35]' : 'text-slate-505 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
             }`}
         >
           All ({Object.values(stats).reduce((a, b) => a + b, 0)})
@@ -384,7 +462,7 @@ export const OrderManagement: React.FC = () => {
             <button
               key={status}
               onClick={() => setActiveTab(status)}
-              className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${activeTab === status ? 'text-[#FF6B35]' : 'text-slate-500 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
+              className={`pb-3 text-sm font-semibold relative transition-all whitespace-nowrap ${activeTab === status ? 'text-[#FF6B35]' : 'text-slate-550 dark:text-[#9ca3af] hover:text-slate-900 dark:hover:text-white'
                 }`}
             >
               {status === 'NEW' ? `New (${count})`
@@ -403,7 +481,7 @@ export const OrderManagement: React.FC = () => {
       {/* Date Filter Bar */}
       <div className="bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Filter Date:</span>
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider mr-1">Filter Date:</span>
           {[
             { id: 'ALL', label: 'All time' },
             { id: 'TODAY', label: 'Today' },
@@ -430,7 +508,7 @@ export const OrderManagement: React.FC = () => {
 
         {dateFilter === 'CUSTOM' && (
           <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-3 duration-200">
-            <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Select date:</span>
+            <span className="text-xs text-slate-400 dark:text-slate-550 font-bold uppercase tracking-wider">Select date:</span>
             <input
               type="date"
               value={customDate}
@@ -450,7 +528,7 @@ export const OrderManagement: React.FC = () => {
             <Coffee className="w-7 sm:w-8 h-7 sm:h-8" />
           </div>
           <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-gray-200">No orders found</h3>
-          <p className="text-sm text-slate-500 dark:text-[#9ca3af] max-w-xs mt-1">
+          <p className="text-sm text-slate-505 dark:text-[#9ca3af] max-w-xs mt-1">
             {orders.length === 0
               ? `There are currently no orders in the status filter: ${activeTab}.`
               : `No orders matching your selected date filter in status: ${activeTab}.`
@@ -477,7 +555,7 @@ export const OrderManagement: React.FC = () => {
                     {order.customerName && (
                       <p className="text-xs text-slate-600 dark:text-gray-400 mt-1 flex flex-wrap items-center gap-1 font-medium">
                         <span>👤 {order.customerName}</span>
-                        {order.customerPhone && <span className="text-slate-400 dark:text-gray-500 font-normal">({order.customerPhone})</span>}
+                        {order.customerPhone && <span className="text-slate-400 dark:text-gray-550 font-normal">({order.customerPhone})</span>}
                       </p>
                     )}
                   </div>
@@ -489,8 +567,8 @@ export const OrderManagement: React.FC = () => {
                 </div>
 
                 {/* Order Time */}
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#9ca3af] mb-4">
-                  <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-gray-500" />
+                <div className="flex items-center gap-1.5 text-xs text-slate-505 dark:text-[#9ca3af] mb-4">
+                  <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-gray-550" />
                   {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(order.createdAt).toLocaleDateString()})
                 </div>
 
@@ -501,12 +579,12 @@ export const OrderManagement: React.FC = () => {
                       <span className="text-slate-700 dark:text-gray-300 font-medium">
                         <strong className="text-[#FF6B35] mr-1">{item.quantity}×</strong> {item.itemName}
                       </span>
-                      <span className="text-slate-500 dark:text-[#9ca3af] font-semibold">{fmt(item.totalPrice)}</span>
+                      <span className="text-slate-505 dark:text-[#9ca3af] font-semibold">{fmt(item.totalPrice)}</span>
                     </div>
                   ))}
                   {order.notes && (
                     <div className="mt-2 bg-amber-50 dark:bg-[#111827]/40 border border-amber-200 dark:border-[#374151]/20 rounded-xl p-2.5 text-[11px] text-amber-700 dark:text-amber-400/90 leading-relaxed italic">
-                      <strong className="text-amber-600 dark:text-amber-500 font-bold block mb-0.5 not-italic">Notes:</strong>
+                      <strong className="text-amber-600 dark:text-amber-550 font-bold block mb-0.5 not-italic">Notes:</strong>
                       "{order.notes}"
                     </div>
                   )}
@@ -517,7 +595,7 @@ export const OrderManagement: React.FC = () => {
               <div className="border-t border-slate-100 dark:border-[#374151]/20 pt-4 flex items-center justify-between gap-4">
                 <button
                   onClick={() => setSelectedOrder(order)}
-                  className="p-2 bg-slate-100 dark:bg-[#374151]/30 hover:bg-slate-200 dark:hover:bg-[#374151]/60 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all flex items-center gap-1 text-xs font-semibold border border-slate-200 dark:border-transparent"
+                  className="p-2 bg-slate-100 dark:bg-[#374151]/30 hover:bg-slate-200 dark:hover:bg-[#374151]/60 text-slate-650 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all flex items-center gap-1 text-xs font-semibold border border-slate-200 dark:border-transparent"
                   title="View details"
                 >
                   <Eye className="w-4 h-4" />
@@ -559,13 +637,13 @@ export const OrderManagement: React.FC = () => {
               {/* Order Status & Time */}
               <div className="flex justify-between items-center bg-slate-50 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/30 rounded-2xl p-4">
                 <div>
-                  <p className="text-[10px] text-slate-500 dark:text-[#9ca3af] uppercase font-bold tracking-wider">Status</p>
+                  <p className="text-[10px] text-slate-505 dark:text-[#9ca3af] uppercase font-bold tracking-wider">Status</p>
                   <span className={`text-xs font-bold inline-block border px-2 py-0.5 rounded-full mt-1 ${getStatusBadgeStyles(selectedOrder.status)}`}>
                     {selectedOrder.status}
                   </span>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-slate-500 dark:text-[#9ca3af] uppercase font-bold tracking-wider">Order Time</p>
+                  <p className="text-[10px] text-slate-505 dark:text-[#9ca3af] uppercase font-bold tracking-wider">Order Time</p>
                   <p className="text-xs text-slate-800 dark:text-white font-semibold mt-1">
                     {new Date(selectedOrder.createdAt).toLocaleTimeString()} · {new Date(selectedOrder.createdAt).toLocaleDateString()}
                   </p>
@@ -593,6 +671,71 @@ export const OrderManagement: React.FC = () => {
                 </div>
               )}
 
+              {/* POS Loyalty Widget */}
+              {selectedOrder.customerPhone && (
+                <div>
+                  <h4 className="text-xs text-[#FF6B35] font-extrabold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5" />
+                    Loyalty Status
+                  </h4>
+                  {loadingLoyalty ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-450 py-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#FF6B35]" /> Checking loyalty account...
+                    </div>
+                  ) : customerLoyalty ? (
+                    <div className="bg-slate-50 dark:bg-[#111827]/25 border border-slate-200 dark:border-[#374151]/20 rounded-2xl p-4 space-y-3.5 text-sm">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-white">
+                            {customerLoyalty.tierName ? `🏆 ${customerLoyalty.tierName} Member` : 'Loyalty Account'}
+                          </p>
+                          <p className="text-xs text-slate-505 dark:text-gray-400 mt-0.5">
+                            Points: <strong className="text-slate-700 dark:text-gray-200">{customerLoyalty.pointsBalance}</strong> (Multiplier: {customerLoyalty.multiplier}x)
+                          </p>
+                        </div>
+                        {selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED' && customerLoyalty.pointsBalance > 0 && (
+                          <span className="text-[10px] font-black uppercase text-[#2E7D32] bg-[#2E7D32]/10 px-2.5 py-0.5 rounded-full border border-[#2E7D32]/20">
+                            Discount Available
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Redeem slider and action for Cashier */}
+                      {selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED' && customerLoyalty.pointsBalance > 0 && (
+                        <div className="pt-3 border-t border-slate-200/50 dark:border-[#374151]/20 space-y-3">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-slate-550 dark:text-gray-400">Redeem points:</span>
+                            <span className="font-extrabold text-[#FF6B35]">{redeemPointsAmount} pts (₹{redeemPointsAmount})</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            <input
+                              type="range"
+                              min="1"
+                              max={Math.min(customerLoyalty.pointsBalance, Math.floor(selectedOrder.totalAmount))}
+                              value={redeemPointsAmount}
+                              onChange={(e) => setRedeemPointsAmount(parseInt(e.target.value) || 0)}
+                              className="flex-1 accent-[#FF6B35] h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <button
+                              onClick={handleApplyLoyaltyDiscount}
+                              disabled={redeemSubmitting || redeemPointsAmount <= 0}
+                              className="px-4 py-2 bg-[#2E7D32] hover:bg-[#235F26] text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-emerald-500/15 disabled:opacity-50"
+                            >
+                              {redeemSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Apply'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 dark:bg-[#111827]/25 border border-slate-200 dark:border-[#374151]/20 rounded-2xl p-4 text-xs text-slate-500 text-center">
+                      No active loyalty profile.
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Items List */}
               <div>
                 <h4 className="text-xs text-[#FF6B35] font-extrabold uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -604,7 +747,7 @@ export const OrderManagement: React.FC = () => {
                     <div key={item.id} className="flex justify-between items-center text-sm border-b border-slate-100 dark:border-[#374151]/20 pb-2.5 last:border-0 last:pb-0">
                       <div>
                         <p className="font-semibold text-slate-900 dark:text-white">{item.itemName}</p>
-                        <p className="text-xs text-slate-500 dark:text-[#9ca3af] mt-0.5">
+                        <p className="text-xs text-slate-505 dark:text-[#9ca3af] mt-0.5">
                           {fmt(item.unitPrice)} × {item.quantity}
                         </p>
                       </div>
@@ -628,23 +771,23 @@ export const OrderManagement: React.FC = () => {
 
               {/* Summary calculations */}
               <div>
-                <h4 className="text-xs text-slate-500 dark:text-[#9ca3af] font-extrabold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <h4 className="text-xs text-slate-505 dark:text-[#9ca3af] font-extrabold uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <Receipt className="w-3.5 h-3.5" />
                   Receipt Summary
                 </h4>
                 <div className="bg-slate-50 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/30 rounded-2xl p-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 dark:text-[#9ca3af]">Subtotal</span>
+                    <span className="text-slate-550 dark:text-[#9ca3af]">Subtotal</span>
                     <span className="text-slate-900 dark:text-white font-semibold">{fmt(selectedOrder.subtotal)}</span>
                   </div>
                   {selectedOrder.taxAmount > 0 && (
                     <>
                       <div className="flex justify-between text-xs pl-2 border-l border-slate-200 dark:border-[#374151]/30">
-                        <span className="text-slate-500 dark:text-[#9ca3af]">CGST (50%)</span>
+                        <span className="text-slate-550 dark:text-[#9ca3af]">CGST (50%)</span>
                         <span className="text-slate-900 dark:text-white font-medium">{fmt(selectedOrder.taxAmount / 2)}</span>
                       </div>
                       <div className="flex justify-between text-xs pl-2 border-l border-slate-200 dark:border-[#374151]/30">
-                        <span className="text-slate-500 dark:text-[#9ca3af]">SGST (50%)</span>
+                        <span className="text-slate-550 dark:text-[#9ca3af]">SGST (50%)</span>
                         <span className="text-slate-900 dark:text-white font-medium">{fmt(selectedOrder.taxAmount / 2)}</span>
                       </div>
                     </>
