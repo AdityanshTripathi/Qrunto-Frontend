@@ -1,9 +1,6 @@
-import { cn } from "@/lib/utils";
-import { useState } from "react";
+import React from "react";
 
 export const Component = ({ children }: { children?: React.ReactNode }) => {
-  const [count, setCount] = useState(0);
-
   return (
     <div className="min-h-screen w-full relative bg-white">
       {/* Soft Yellow Glow */}

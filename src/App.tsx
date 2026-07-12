@@ -23,6 +23,7 @@ const SuperAdminDashboard = React.lazy(() => import('./pages/dashboard/SuperAdmi
 const CustomersDirectory = React.lazy(() => import('./pages/dashboard/crm/CustomersDirectory'));
 const CustomerDetail = React.lazy(() => import('./pages/dashboard/crm/CustomerDetail'));
 const Settings = React.lazy(() => import('./pages/dashboard/Settings'));
+const InventoryDashboard = React.lazy(() => import('./pages/dashboard/inventory/InventoryDashboard'));
 const CustomerMenu = React.lazy(() => import('./pages/CustomerMenu'));
 const WaitersPage = React.lazy(() => import('./pages/dashboard/WaitersPage'));
 const WaiterDashboard = React.lazy(() => import('./pages/waiter/WaiterDashboard'));
@@ -102,6 +103,7 @@ function App() {
               <Route path="waiters" element={<WaitersPage />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="crm" element={<CustomersDirectory />} />
+              <Route path="inventory" element={<InventoryDashboard />} />
               <Route path="crm/customers/:id" element={<CustomerDetail />} />
               <Route path="subscription" element={<SubscriptionManagement />} />
               <Route path="settings" element={<Settings />} />

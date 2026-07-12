@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useCRMStore, type Ticket } from '../../../store/crmStore';
-import { AlertCircle, CheckCircle, Clock, Loader2, ArrowRight, UserCheck } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { useCRMStore } from '../../../store/crmStore';
+import { CheckCircle, Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const TicketsBoard: React.FC = () => {
@@ -9,7 +9,6 @@ export const TicketsBoard: React.FC = () => {
     ticketsLoading,
     fetchTickets,
     updateTicketStatus,
-    loading
   } = useCRMStore();
 
   useEffect(() => {
