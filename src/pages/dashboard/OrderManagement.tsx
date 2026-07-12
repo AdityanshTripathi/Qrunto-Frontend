@@ -55,6 +55,7 @@ interface OrderStats {
   READY: number;
   SERVED: number;
   CANCELLED: number;
+  PAID: number;
 }
 
 // ─── Format Currency ──────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ export const OrderManagement: React.FC = () => {
   const token = useAuthStore((state) => state.accessToken);
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [stats, setStats] = useState<OrderStats>({ NEW: 0, PREPARING: 0, READY: 0, SERVED: 0, CANCELLED: 0 });
+  const [stats, setStats] = useState<OrderStats>({ NEW: 0, PREPARING: 0, READY: 0, SERVED: 0, CANCELLED: 0, PAID: 0 });
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);

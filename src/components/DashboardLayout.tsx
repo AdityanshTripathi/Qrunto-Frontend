@@ -18,7 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
-  BellRing
+  BellRing,
+  Package
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/api';
@@ -155,7 +156,12 @@ export const DashboardLayout: React.FC = () => {
         }
       } catch (err: any) {
         console.error('Subscription check failed:', err);
-        setConnectionError(true);
+        const errMsg = err.message?.toLowerCase() || '';
+        if (errMsg.includes('token') || errMsg.includes('unauthorized') || errMsg.includes('auth')) {
+          navigate('/login', { replace: true });
+        } else {
+          setConnectionError(true);
+        }
       } finally {
         setCheckingSub(false);
       }
@@ -207,6 +213,7 @@ export const DashboardLayout: React.FC = () => {
     { name: 'Menu Items', path: '/dashboard/menu', icon: Utensils, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
     { name: 'Categories', path: '/dashboard/categories', icon: Tags, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
     { name: 'Tables & QRs', path: '/dashboard/tables', icon: QrCode, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
+    { name: 'Inventory', path: '/dashboard/inventory', icon: Package, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },
     { name: 'Waiters', path: '/dashboard/waiters', icon: Users, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },
     { name: 'CRM Hub', path: '/dashboard/crm', icon: Smile, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useCRMStore, type Campaign } from '../../../store/crmStore';
-import { Plus, Trash2, Loader2, X, AlertTriangle, Calendar, Mail, MessageSquare, Megaphone, Eye, BarChart, Send } from 'lucide-react';
+import { Plus, Trash2, Loader2, X, Calendar, Mail, MessageSquare, Megaphone, Eye, BarChart } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../../lib/api';
 
@@ -17,7 +17,6 @@ export const CampaignsConfig: React.FC = () => {
   } = useCRMStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   
@@ -81,9 +80,15 @@ export const CampaignsConfig: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const openDeleteModal = (campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setIsDeleteOpen(true);
+  const handleDeleteCampaign = async (campaignId: string) => {
+    if (!window.confirm('Are you sure you want to delete this campaign?')) return;
+    try {
+      await deleteCampaign(campaignId);
+      toast.success('Campaign deleted successfully');
+      fetchStatsData(); // refresh stats
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete campaign');
+    }
   };
 
   const openLogsModal = async (campaign: Campaign) => {
@@ -130,21 +135,7 @@ export const CampaignsConfig: React.FC = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedCampaign) return;
-    setSubmitting(true);
-    try {
-      await deleteCampaign(selectedCampaign.id);
-      toast.success('Campaign deleted successfully');
-      setIsDeleteOpen(false);
-      resetForm();
-      fetchStatsData(); // refresh stats
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete campaign');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // Delete handler removed in favor of handleDeleteCampaign
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -297,7 +288,7 @@ export const CampaignsConfig: React.FC = () => {
                 </button>
                 
                 <button
-                  onClick={() => openDeleteModal(campaign)}
+                  onClick={() => handleDeleteCampaign(campaign.id)}
                   className="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-500 rounded-xl transition-colors focus:outline-none"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
