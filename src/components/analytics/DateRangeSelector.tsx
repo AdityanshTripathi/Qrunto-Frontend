@@ -135,12 +135,13 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({ onRangeCha
             <input
               type="checkbox"
               checked={comparePrevious}
-              onChange={(e) => {
-                setComparePrevious(e.target.checked);
+              onChange={(evt) => {
+                const isChecked = evt.target.checked;
+                setComparePrevious(isChecked);
                 const match = ranges.find((r) => r.name === selectedRange);
                 if (match) {
                   const { s, e } = match.getValue();
-                  onRangeChange(s, e, e.target.checked);
+                  onRangeChange(s, e, isChecked);
                 }
               }}
               className="w-4 h-4 text-[#FF6B35] rounded focus:ring-[#FF6B35]"

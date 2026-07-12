@@ -28,7 +28,6 @@ export const Analytics: React.FC = () => {
 
 const AnalyticsContent: React.FC = () => {
   const token = useAuthStore((state) => state.accessToken);
-  const restaurantId = useAuthStore((state) => state.user?.restaurantId) || '';
 
   const [activeTab, setActiveTab] = useState<'executive' | 'sales' | 'orders' | 'customers' | 'inventory' | 'menu' | 'financial'>('executive');
   const [startDate, setStartDate] = useState<Date>(() => {
@@ -168,7 +167,6 @@ const AnalyticsContent: React.FC = () => {
           {activeTab === 'financial' && (
             <FinanceTab
               data={activeData}
-              restaurantId={restaurantId}
               token={token}
               baseUrl={BASE_URL}
             />

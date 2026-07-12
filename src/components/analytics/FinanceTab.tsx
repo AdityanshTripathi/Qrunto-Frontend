@@ -35,7 +35,6 @@ interface FinanceData {
 
 interface FinanceTabProps {
   data: FinanceData;
-  restaurantId: string;
   token: string | null;
   baseUrl: string;
 }
