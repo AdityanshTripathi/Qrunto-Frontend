@@ -42,6 +42,13 @@ import { useAuthStore } from '../../store/authStore';
 import { api } from '../../lib/api';
 import { toast } from 'sonner';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
+import { io, Socket } from 'socket.io-client';
+
+const SOCKET_URL = import.meta.env.VITE_API_URL 
+  ? import.meta.env.VITE_API_URL.replace('/api', '')
+  : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000'
+    : 'https://backend-steel-seven-97.vercel.app');
 import {
   AreaChart,
   Area,
@@ -77,14 +84,21 @@ interface OrderItem {
   unitPrice: number;
 }
 
+interface Payment {
+  id: string;
+  paymentMethod: string;
+  status: string;
+}
+
 interface Order {
   id: string;
   orderNumber: string;
-  table: { tableNumber: string };
+  table: { tableNumber: string } | null;
   status: 'NEW' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'SERVED' | 'PAID' | 'CANCELLED';
   totalAmount: number;
   createdAt: string;
   orderItems: OrderItem[];
+  payments?: Payment[];
 }
 
 interface Subscription {
@@ -248,57 +262,235 @@ export const DashboardOverview: React.FC = () => {
   const [kpis, setKpis] = useState<KPIStats>({ totalRevenue: 0, totalOrdersCount: 0, averageOrderValue: 0, activeTablesCount: 0 });
   const [topItems, setTopItems] = useState<TopItem[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [inventoryMetrics, setInventoryMetrics] = useState<any>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [orderStats, setOrderStats] = useState({ active: 0, new: 0, accepting: 0, preparing: 0, ready: 0, served: 0, cancelled: 0, paid: 0 });
   const [salesPeriod, setSalesPeriod] = useState<'today' | 'week' | 'month'>('today');
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
+  const fetchDashboardData = async () => {
+    try {
+      const analyticsRes = await api.get('/analytics/overview');
+      setKpis(analyticsRes.kpis || { totalRevenue: 0, totalOrdersCount: 0, averageOrderValue: 0, activeTablesCount: 0 });
+      setTopItems(analyticsRes.topSellingItems || []);
+
+      const subRes = await api.get('/subscriptions/current');
+      setSubscription(subRes.subscription || null);
+
+      const ordersRes = await api.get('/orders');
+      const orders: Order[] = ordersRes.orders || [];
+      setAllOrders(orders);
+      const active = orders.filter(o => ['NEW', 'ACCEPTED', 'PREPARING', 'READY'].includes(o.status));
+      setActiveOrders(active.slice(0, 6));
+
       try {
-        setLoading(true);
-        const analyticsRes = await api.get('/analytics/overview');
-        setKpis(analyticsRes.kpis || { totalRevenue: 0, totalOrdersCount: 0, averageOrderValue: 0, activeTablesCount: 0 });
-        setTopItems(analyticsRes.topSellingItems || []);
-
-        const subRes = await api.get('/subscriptions/current');
-        setSubscription(subRes.subscription || null);
-
-        const ordersRes = await api.get('/orders');
-        const orders: Order[] = ordersRes.orders || [];
-        const active = orders.filter(o => ['NEW', 'ACCEPTED', 'PREPARING', 'READY'].includes(o.status));
-        setActiveOrders(active.slice(0, 6));
-
-        setOrderStats({
-          active: active.length,
-          new: orders.filter(o => o.status === 'NEW').length,
-          accepting: orders.filter(o => o.status === 'ACCEPTED').length,
-          preparing: orders.filter(o => o.status === 'PREPARING').length,
-          ready: orders.filter(o => o.status === 'READY').length,
-          served: orders.filter(o => o.status === 'SERVED').length,
-          cancelled: orders.filter(o => o.status === 'CANCELLED').length,
-          paid: orders.filter(o => o.status === 'PAID').length,
-        });
-      } catch (err: any) {
-        toast.error('Failed to load dashboard data: ' + err.message);
-      } finally {
-        setLoading(false);
+        const invRes = await api.get('/inventory/reports/dashboard-metrics');
+        setInventoryMetrics(invRes);
+      } catch (err) {
+        console.error('Failed to load inventory metrics:', err);
       }
-    };
 
+      setOrderStats({
+        active: active.length,
+        new: orders.filter(o => o.status === 'NEW').length,
+        accepting: orders.filter(o => o.status === 'ACCEPTED').length,
+        preparing: orders.filter(o => o.status === 'PREPARING').length,
+        ready: orders.filter(o => o.status === 'READY').length,
+        served: orders.filter(o => o.status === 'SERVED').length,
+        cancelled: orders.filter(o => o.status === 'CANCELLED').length,
+        paid: orders.filter(o => o.status === 'PAID').length,
+      });
+    } catch (err: any) {
+      toast.error('Failed to load dashboard data: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setLoading(true);
     fetchDashboardData();
   }, []);
 
+  useEffect(() => {
+    const restaurantId = user?.restaurants?.[0]?.id;
+    if (!restaurantId) return;
+
+    const socket: Socket = io(SOCKET_URL);
+    socket.emit('join_restaurant', restaurantId);
+
+    const handleUpdate = () => {
+      fetchDashboardData();
+    };
+
+    socket.on('NEW_ORDER', handleUpdate);
+    socket.on('ITEM_ADDED', handleUpdate);
+    socket.on('ORDER_UPDATED', handleUpdate);
+    socket.on('ORDER_READY', handleUpdate);
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user]);
+
+  const getSalesChartData = () => {
+    const paidServedOrders = allOrders.filter(o => o && o.status && ['SERVED', 'PAID'].includes(o.status));
+    if (paidServedOrders.length === 0) {
+      return salesPeriod === 'today'
+        ? MOCK_SALES_DATA
+        : salesPeriod === 'week'
+        ? [
+            { time: 'Mon', revenue: 32000, orders: 212, aov: 151 },
+            { time: 'Tue', revenue: 28000, orders: 190, aov: 147 },
+            { time: 'Wed', revenue: 35000, orders: 230, aov: 152 },
+            { time: 'Thu', revenue: 41000, orders: 270, aov: 151 },
+            { time: 'Fri', revenue: 48000, orders: 310, aov: 154 },
+            { time: 'Sat', revenue: 54000, orders: 360, aov: 150 },
+            { time: 'Sun', revenue: 50000, orders: 330, aov: 151 },
+          ]
+        : [
+            { time: 'W1', revenue: 180000, orders: 1200, aov: 150 },
+            { time: 'W2', revenue: 210000, orders: 1380, aov: 152 },
+            { time: 'W3', revenue: 195000, orders: 1280, aov: 152 },
+            { time: 'W4', revenue: 245000, orders: 1600, aov: 153 },
+          ];
+    }
+    
+    if (salesPeriod === 'today') {
+      const todayHours = ['8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'];
+      const today = new Date();
+      
+      return todayHours.map(hourStr => {
+        let targetHour = parseInt(hourStr);
+        if (hourStr.endsWith('pm') && targetHour !== 12) targetHour += 12;
+        if (hourStr.endsWith('am') && targetHour === 12) targetHour = 0;
+        
+        const hourOrders = paidServedOrders.filter(o => {
+          const oDate = new Date(o.createdAt);
+          return oDate.getDate() === today.getDate() &&
+                 oDate.getMonth() === today.getMonth() &&
+                 oDate.getFullYear() === today.getFullYear() &&
+                 oDate.getHours() === targetHour;
+        });
+        
+        const revenue = hourOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+        const count = hourOrders.length;
+        const aov = count > 0 ? parseFloat((revenue / count).toFixed(2)) : 0;
+        
+        return { time: hourStr, revenue, orders: count, aov };
+      });
+    }
+    
+    if (salesPeriod === 'week') {
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const weekDays = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        weekDays.push(d);
+      }
+      
+      return weekDays.map(date => {
+        const dayName = daysOfWeek[date.getDay()]!;
+        const dayOrders = paidServedOrders.filter(o => {
+          const oDate = new Date(o.createdAt);
+          return oDate.getDate() === date.getDate() &&
+                 oDate.getMonth() === date.getMonth() &&
+                 oDate.getFullYear() === date.getFullYear();
+        });
+        
+        const revenue = dayOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+        const count = dayOrders.length;
+        const aov = count > 0 ? parseFloat((revenue / count).toFixed(2)) : 0;
+        
+        return { time: dayName, revenue, orders: count, aov };
+      });
+    }
+    
+    const monthData = [];
+    for (let i = 3; i >= 0; i--) {
+      const start = new Date();
+      start.setDate(start.getDate() - (i + 1) * 7);
+      const end = new Date();
+      end.setDate(end.getDate() - i * 7);
+      
+      const weekOrders = paidServedOrders.filter(o => {
+        const oDate = new Date(o.createdAt);
+        return oDate >= start && oDate <= end;
+      });
+      
+      const revenue = weekOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+      const count = weekOrders.length;
+      const aov = count > 0 ? parseFloat((revenue / count).toFixed(2)) : 0;
+      
+      monthData.push({ time: `W${4-i}`, revenue, orders: count, aov });
+    }
+    return monthData;
+  };
+
+  const getRevenueTypeData = () => {
+    const paidServedOrders = allOrders.filter(o => o && o.status && ['SERVED', 'PAID'].includes(o.status));
+    if (paidServedOrders.length === 0) return REVENUE_TYPE_DATA;
+    
+    const dineInCount = paidServedOrders.filter(o => o && o.table).length;
+    const otherCount = paidServedOrders.filter(o => o && !o.table).length;
+    const total = dineInCount + otherCount || 1;
+    
+    const dineInPct = Math.round((dineInCount / total) * 100);
+    const otherPct = 100 - dineInPct;
+    
+    const takeawayPct = Math.round(otherPct * 0.7);
+    const deliveryPct = otherPct - takeawayPct;
+    
+    return [
+      { name: 'Dine-in', value: dineInPct, color: '#FF6B35' },
+      { name: 'Takeaway', value: takeawayPct, color: '#3b82f6' },
+      { name: 'Delivery', value: deliveryPct, color: '#10b981' },
+    ];
+  };
+
+  const getPaymentTypeData = () => {
+    const paidServedOrders = allOrders.filter(o => o && o.status && ['SERVED', 'PAID'].includes(o.status));
+    if (paidServedOrders.length === 0) return PAYMENT_TYPE_DATA;
+    
+    let cash = 0;
+    let upi = 0;
+    let card = 0;
+    
+    paidServedOrders.forEach(o => {
+      const method = o?.payments?.[0]?.paymentMethod?.toUpperCase() || '';
+      if (method.includes('CASH')) {
+        cash++;
+      } else if (method.includes('UPI')) {
+        upi++;
+      } else {
+        card++;
+      }
+    });
+    
+    const total = cash + upi + card || 1;
+    const cashPct = Math.round((cash / total) * 100);
+    const upiPct = Math.round((upi / total) * 100);
+    const cardPct = 100 - (cashPct + upiPct);
+    
+    return [
+      { name: 'UPI', value: upiPct, color: '#8b5cf6' },
+      { name: 'Card', value: cardPct, color: '#3b82f6' },
+      { name: 'Cash', value: cashPct, color: '#f59e0b' },
+    ];
+  };
+
   const getSubRemainingDays = () => {
     if (!subscription) return 'No active plan';
-    const diff = new Date(subscription.endDate).getTime() - new Date().getTime();
+    const diff = subscription.endDate ? new Date(subscription.endDate).getTime() - new Date().getTime() : 0;
     const days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-    return `${subscription.plan.name} — ${days} days left`;
+    return `${subscription.plan?.name || 'Active Plan'} — ${days} days left`;
   };
 
   if (loading) return <SkeletonLoader type="kpis" count={4} />;
 
   const isStaff = user?.role === 'STAFF';
-  const restaurantName = user?.restaurants[0]?.name || 'Your Restaurant';
+  const restaurantName = user?.restaurants?.[0]?.name || 'Your Restaurant';
   const now = new Date();
   const hour = now.getHours();
   const currentShift = hour < 12 ? 'Morning Shift' : hour < 17 ? 'Afternoon Shift' : 'Evening Shift';
@@ -330,24 +522,6 @@ export const DashboardOverview: React.FC = () => {
     { label: 'Cancelled', value: orderStats.cancelled, color: 'bg-red-500', light: 'bg-red-500/10 text-red-600 dark:text-red-400', icon: XCircle },
   ];
 
-  const salesChartData = salesPeriod === 'today'
-    ? MOCK_SALES_DATA
-    : salesPeriod === 'week'
-    ? [
-        { time: 'Mon', revenue: 32000, orders: 212, aov: 151 },
-        { time: 'Tue', revenue: 28400, orders: 189, aov: 150 },
-        { time: 'Wed', revenue: 41200, orders: 273, aov: 151 },
-        { time: 'Thu', revenue: 38700, orders: 257, aov: 150 },
-        { time: 'Fri', revenue: 52100, orders: 347, aov: 150 },
-        { time: 'Sat', revenue: 67400, orders: 449, aov: 150 },
-        { time: 'Sun', revenue: 59800, orders: 398, aov: 150 },
-      ]
-    : [
-        { time: 'W1', revenue: 180000, orders: 1200, aov: 150 },
-        { time: 'W2', revenue: 210000, orders: 1400, aov: 150 },
-        { time: 'W3', revenue: 195000, orders: 1300, aov: 150 },
-        { time: 'W4', revenue: 230000, orders: 1533, aov: 150 },
-      ];
 
   return (
     <div className="space-y-7">
@@ -481,7 +655,7 @@ export const DashboardOverview: React.FC = () => {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={salesChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <AreaChart data={getSalesChartData()} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.18} />
@@ -510,8 +684,8 @@ export const DashboardOverview: React.FC = () => {
       {!isStaff && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { title: 'Revenue by Type', sub: 'Dine-in vs Takeaway vs Delivery', data: REVENUE_TYPE_DATA },
-            { title: 'Payment Methods', sub: 'UPI, Card & Cash breakdown', data: PAYMENT_TYPE_DATA },
+            { title: 'Revenue by Type', sub: 'Dine-in vs Takeaway vs Delivery', data: getRevenueTypeData() },
+            { title: 'Payment Methods', sub: 'UPI, Card & Cash breakdown', data: getPaymentTypeData() },
           ].map((chart, ci) => (
             <Card key={ci} className="p-5 sm:p-6">
               <SectionHeader title={chart.title} sub={chart.sub} />
@@ -663,11 +837,11 @@ export const DashboardOverview: React.FC = () => {
             />
             <div className="space-y-3">
               {[
-                { label: 'Stock Value', val: '₹42,800', icon: Package, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
-                { label: 'Low Stock Items', val: '5', icon: AlertTriangle, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
-                { label: 'Out of Stock', val: '2', icon: XCircle, color: 'text-red-500 bg-red-500/10 border-red-500/20' },
+                { label: 'Stock Value', val: (inventoryMetrics && typeof inventoryMetrics.totalValue === 'number') ? `₹${inventoryMetrics.totalValue.toLocaleString('en-IN')}` : '₹42,800', icon: Package, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
+                { label: 'Low Stock Items', val: (inventoryMetrics && typeof inventoryMetrics.lowStockItems === 'number') ? inventoryMetrics.lowStockItems.toString() : '5', icon: AlertTriangle, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
+                { label: 'Out of Stock', val: (inventoryMetrics && typeof inventoryMetrics.outOfStockItems === 'number') ? inventoryMetrics.outOfStockItems.toString() : '2', icon: XCircle, color: 'text-red-500 bg-red-500/10 border-red-500/20' },
                 { label: 'Fast Moving', val: '8 items', icon: Flame, color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
-                { label: 'Wastage Today', val: '₹320', icon: RefreshCw, color: 'text-slate-500 bg-slate-500/10 border-slate-500/20' },
+                { label: 'Wastage Today', val: (inventoryMetrics && typeof inventoryMetrics.todayWastage === 'number') ? `₹${inventoryMetrics.todayWastage.toLocaleString('en-IN')}` : '₹320', icon: RefreshCw, color: 'text-slate-500 bg-slate-500/10 border-slate-500/20' },
               ].map((row, idx) => {
                 const Icon = row.icon;
                 return (

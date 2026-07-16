@@ -41,34 +41,40 @@ async function request(path: string, options: RequestOptions = {}) {
     let response = await fetch(url, fetchOptions);
 
     // If 401 Unauthorized, attempt token refresh
-    if (response.status === 401 && store.refreshToken && path !== '/auth/refresh' && path !== '/auth/login') {
-      console.log('Access token expired, attempting refresh...');
-      
-      const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken: store.refreshToken }),
-      });
-
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        const newAccessToken = data.accessToken;
+    if (response.status === 401 && path !== '/auth/refresh' && path !== '/auth/login') {
+      if (store.refreshToken) {
+        console.log('Access token expired, attempting refresh...');
         
-        // Update access token in store
-        store.updateAccessToken(newAccessToken);
+        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refreshToken: store.refreshToken }),
+        });
 
-        // Update Authorization header for original request retry
-        headers.set('Authorization', `Bearer ${newAccessToken}`);
-        fetchOptions.headers = headers;
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          const newAccessToken = data.accessToken;
+          
+          // Update access token in store
+          store.updateAccessToken(newAccessToken);
 
-        // Retry original request
-        console.log('Token refresh successful, retrying original request...');
-        response = await fetch(url, fetchOptions);
-      } else {
-        // Refresh token failed, clear auth session
-        console.error('Refresh token expired or invalid, logging out...');
+          // Update Authorization header for original request retry
+          headers.set('Authorization', `Bearer ${newAccessToken}`);
+          fetchOptions.headers = headers;
+
+          // Retry original request
+          console.log('Token refresh successful, retrying original request...');
+          response = await fetch(url, fetchOptions);
+        } else {
+          // Refresh token failed, clear auth session
+          console.error('Refresh token expired or invalid, logging out...');
+          store.clearAuth();
+        }
+      } else if (store.accessToken) {
+        // No refresh token but we had an access token, clear auth session
+        console.error('Unauthorized response with no refresh token, logging out...');
         store.clearAuth();
       }
     }

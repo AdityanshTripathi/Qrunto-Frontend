@@ -158,6 +158,7 @@ export const DashboardLayout: React.FC = () => {
         console.error('Subscription check failed:', err);
         const errMsg = err.message?.toLowerCase() || '';
         if (errMsg.includes('token') || errMsg.includes('unauthorized') || errMsg.includes('auth')) {
+          clearAuth();
           navigate('/login', { replace: true });
         } else {
           setConnectionError(true);

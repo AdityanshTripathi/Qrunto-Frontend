@@ -21,12 +21,8 @@ import {
 import { api } from '../../lib/api';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 
-// Helper to rewrite URL to localhost if running in local environment
 const getTableUrl = (url: string | null): string => {
   if (!url) return '';
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return url.replace(/https?:\/\/[^\/]+/, 'http://localhost:5173');
-  }
   return url;
 };
 
