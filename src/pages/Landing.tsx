@@ -1,1243 +1,973 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  QrCode, 
-  ShoppingBag, 
-  ArrowRight, 
-  Menu, 
-  X, 
-  Smartphone,
-  Check,
-  Laptop,
-  Clock,
-  Database,
-  Layers,
-  CreditCard,
+import {
+  QrCode,
   Users,
-  Building,
-  Coffee,
-  Flame,
-  Landmark,
-  UtensilsCrossed
+  Boxes,
+  TrendingUp,
+  Clock,
+  AlertTriangle,
+  Receipt,
+  UserCheck,
+  PackageX,
+  ChefHat,
+  BellRing,
+  CreditCard,
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  Menu as MenuIcon,
+  X,
+  ArrowRight,
+  Zap,
+  Activity,
+  ShoppingBag,
+  Layers,
+  Sliders,
+  DollarSign
 } from 'lucide-react';
-import { Component as GlowBackground } from '@/components/ui/background-components';
 
 export const Landing: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Custom mock interactive states
-  const [demoCartCount, setDemoCartCount] = useState(1);
-  const [demoWaiters, setDemoWaiters] = useState([
-    { name: 'Rahul S.', role: 'Senior Waiter', status: 'Active', tables: 'Tables 1-4' },
-    { name: 'Priya K.', role: 'Waiter', status: 'On Break', tables: 'Tables 5-8' }
-  ]);
-  const [demoOrders] = useState([
-    { id: '104', table: 'Table 4', item: 'Truffle Mushroom Pizza', qty: 1, status: 'Cooking', time: '2 min ago' },
-    { id: '103', table: 'Table 2', item: 'Spicy Chicken Burger + Fries', qty: 1, status: 'Ready', time: '5 min ago' },
-    { id: '102', table: 'Table 7', item: 'Request: Call Waiter (Water)', qty: 0, status: 'Pending', time: 'Just now' }
-  ]);
-  const [newWaiterName, setNewWaiterName] = useState('');
+  const [faqOpen, setFaqOpen] = useState<Record<number, boolean>>({ 0: true });
 
-  const handleAddDemoWaiter = (e: React.FormEvent) => {
+  // Contact Form State
+  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    restaurantName: '',
+    city: ''
+  });
+
+  const toggleFaq = (index: number) => {
+    setFaqOpen((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newWaiterName.trim()) return;
-    setDemoWaiters([
-      ...demoWaiters,
-      { name: newWaiterName, role: 'Waiter', status: 'Active', tables: 'Assigned on login' }
-    ]);
-    setNewWaiterName('');
+    setFormSubmitted(true);
   };
 
   return (
-    <GlowBackground>
-      <div className="text-[#111827] font-sans antialiased selection:bg-[#FF6B35]/20 selection:text-[#FF6B35] relative">
-      {/* Stripe-style Background Grid Lines */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_36px] pointer-events-none z-0"></div>
+    <div className="font-sans bg-white text-[#0F172A] antialiased selection:bg-[#FF6B00]/10 selection:text-[#FF6B00]">
+      
+      {/* ==================================================
+          SECTION 1 — NAVBAR (Dark #081522)
+          ================================================== */}
+      <header className="sticky top-0 z-50 bg-[#081522] border-b border-slate-800 h-20">
+        <div className="max-w-[1280px] mx-auto px-6 h-full flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-2xl font-black tracking-tight text-white">
+              ORD<span className="text-[#FF6B00]">IO</span>
+            </span>
+          </Link>
 
-      {/* Navbar (Sticky and Mobile Friendly) */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stone-200/50 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="flex items-center gap-2">
-                <img 
-                  src="/logo-black.png" 
-                  alt="ORDIO" 
-                  className="h-8 w-auto object-contain transform hover:scale-[1.02] transition-transform"
-                />
-              </Link>
-            </div>
+          {/* Center Links */}
+          <nav className="hidden md:flex items-center space-x-9">
+            <button
+              onClick={() => scrollToSection('problems')}
+              className="text-[15px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              Features
+            </button>
+            <button
+              onClick={() => scrollToSection('what-you-get')}
+              className="text-[15px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              Pricing
+            </button>
+            <button
+              onClick={() => scrollToSection('faq')}
+              className="text-[15px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              Resources
+            </button>
+          </nav>
 
-            {/* Navigation links (hidden on mobile) */}
-            <nav className="hidden md:flex items-center space-x-8">
-              <a href="#problem-solution" className="text-sm font-medium text-[#4B5563] hover:text-[#FF6B35] transition-colors duration-200">
-                Problems
-              </a>
-              <a href="#how-it-works" className="text-sm font-medium text-[#4B5563] hover:text-[#FF6B35] transition-colors duration-200">
-                How It Works
-              </a>
-              <a href="#product-customer" className="text-sm font-medium text-[#4B5563] hover:text-[#FF6B35] transition-colors duration-200">
-                Customer App
-              </a>
-              <a href="#product-restaurant" className="text-sm font-medium text-[#4B5563] hover:text-[#FF6B35] transition-colors duration-200">
-                Dashboard
-              </a>
-              <a href="#waiter-ops" className="text-sm font-medium text-[#4B5563] hover:text-[#FF6B35] transition-colors duration-200">
-                Waiters
-              </a>
-              <a href="#benefits" className="text-sm font-medium text-[#4B5563] hover:text-[#FF6B35] transition-colors duration-200">
-                Benefits
-              </a>
+          {/* Right Actions */}
+          <div className="hidden md:flex items-center gap-4">
+            <Link
+              to="/login"
+              className="text-[15px] font-semibold text-slate-300 hover:text-white transition-colors"
+            >
+              Login
+            </Link>
+            <button
+              onClick={() => scrollToSection('demo-form')}
+              className="bg-[#FF6B00] hover:bg-[#E85D00] text-white text-[15px] font-bold px-6 py-3 rounded-[12px] transition-all transform hover:-translate-y-0.5 shadow-lg shadow-[#FF6B00]/20 cursor-pointer"
+            >
+              Book Demo
+            </button>
+          </div>
+
+          {/* Mobile Toggle */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-white hover:bg-slate-800 rounded-[12px] transition-colors"
+              aria-label="Toggle Menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-800 bg-[#081522] px-6 py-6 space-y-4">
+            <nav className="flex flex-col space-y-3">
+              <button
+                onClick={() => { setMobileMenuOpen(false); scrollToSection('problems'); }}
+                className="text-left text-[16px] font-medium text-slate-300 hover:text-white py-2"
+              >
+                Features
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); scrollToSection('what-you-get'); }}
+                className="text-left text-[16px] font-medium text-slate-300 hover:text-white py-2"
+              >
+                Pricing
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); scrollToSection('faq'); }}
+                className="text-left text-[16px] font-medium text-slate-300 hover:text-white py-2"
+              >
+                Resources
+              </button>
             </nav>
 
-            {/* CTAs */}
-            <div className="hidden md:flex items-center space-x-4">
-              <Link 
-                to="/login" 
-                className="text-sm font-medium text-[#4B5563] hover:text-[#FF6B35] px-3 py-1.5 transition-colors duration-200"
+            <div className="pt-4 border-t border-slate-800 flex flex-col gap-3">
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-3 text-[15px] font-semibold text-white border border-slate-700 rounded-[12px] bg-slate-900"
               >
-                Sign In
+                Login
               </Link>
-              <Link 
-                to="/register" 
-                className="text-sm font-semibold text-white bg-[#FF6B35] hover:bg-[#E55A24] px-4.5 py-2 rounded-xl hover:shadow-lg hover:shadow-orange-500/10 active:scale-[0.98] transition-all duration-200"
-              >
-                Start Free Trial
-              </Link>
-            </div>
-
-            {/* Mobile hamburger menu button (48px Touch Area) */}
-            <div className="md:hidden flex items-center">
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="inline-flex items-center justify-center p-3 rounded-xl text-[#4B5563] hover:text-[#111827] hover:bg-stone-150 focus:outline-none transition-colors min-h-[48px] min-w-[48px]"
+                onClick={() => { setMobileMenuOpen(false); scrollToSection('demo-form'); }}
+                className="w-full text-center py-3 text-[15px] font-bold text-white bg-[#FF6B00] hover:bg-[#E85D00] rounded-[12px]"
               >
-                {mobileMenuOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
+                Book Demo
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Mobile menu drawer panel (Touch targets optimized for 48px height) */}
-        <div className={`md:hidden transition-all duration-300 overflow-hidden ${mobileMenuOpen ? 'max-h-screen opacity-100 border-b border-stone-200' : 'max-h-0 opacity-0 pointer-events-none'}`}>
-          <div className="px-3 pt-2 pb-4 space-y-1 bg-white shadow-inner">
-            <a 
-              href="#problem-solution" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-3 rounded-lg text-base font-semibold text-[#4B5563] hover:text-[#FF6B35] hover:bg-stone-50 transition-all min-h-[48px]"
-            >
-              Problems
-            </a>
-            <a 
-              href="#how-it-works" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-3 rounded-lg text-base font-semibold text-[#4B5563] hover:text-[#FF6B35] hover:bg-stone-50 transition-all min-h-[48px]"
-            >
-              How It Works
-            </a>
-            <a 
-              href="#product-customer" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-3 rounded-lg text-base font-semibold text-[#4B5563] hover:text-[#FF6B35] hover:bg-stone-50 transition-all min-h-[48px]"
-            >
-              Customer App
-            </a>
-            <a 
-              href="#product-restaurant" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-3 rounded-lg text-base font-semibold text-[#4B5563] hover:text-[#FF6B35] hover:bg-stone-50 transition-all min-h-[48px]"
-            >
-              Dashboard
-            </a>
-            <a 
-              href="#waiter-ops" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-3 rounded-lg text-base font-semibold text-[#4B5563] hover:text-[#FF6B35] hover:bg-stone-50 transition-all min-h-[48px]"
-            >
-              Waiters
-            </a>
-            <a 
-              href="#benefits" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-3 rounded-lg text-base font-semibold text-[#4B5563] hover:text-[#FF6B35] hover:bg-stone-50 transition-all min-h-[48px]"
-            >
-              Benefits
-            </a>
-            
-            <div className="pt-4 pb-2 border-t border-stone-200/50 flex flex-col gap-2 px-3">
-              <Link 
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center px-4 py-3.5 border border-stone-200 text-sm font-semibold rounded-xl text-[#111827] bg-white hover:bg-stone-50 transition-all min-h-[48px] flex items-center justify-center"
-              >
-                Sign In
-              </Link>
-              <Link 
-                to="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center px-4 py-3.5 text-sm font-semibold rounded-xl text-white bg-[#FF6B35] hover:bg-[#E55A24] transition-all min-h-[48px] flex items-center justify-center"
-              >
-                Start Free Trial
-              </Link>
-            </div>
-          </div>
-        </div>
+        )}
       </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-8 pb-16 lg:pt-24 lg:pb-32 z-10">
-        {/* Glow effect behind mockups */}
-        <div className="absolute top-1/2 right-1/10 w-96 h-96 bg-[#FF6B35]/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-12 gap-3 sm:gap-6 lg:gap-8 items-center">
+      {/* ==================================================
+          SECTION 2 — HERO (Dark #081522, Full Viewport Height, Pure Code Visual)
+          ================================================== */}
+      <section className="bg-[#081522] py-[80px] md:py-[120px] min-h-[calc(100vh-80px)] flex items-center text-white relative overflow-hidden border-b border-slate-800">
+        <div className="max-w-[1280px] mx-auto px-6 w-full text-center">
+          
+          <div className="max-w-[920px] mx-auto space-y-6">
             
-            {/* Left Column: Text and CTAs */}
-            <div className="col-span-7 lg:col-span-6 flex flex-col items-start text-left w-full">
-              <div className="flex justify-start">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FF6B35]/8 text-[#FF6B35] text-[10px] xs:text-xs sm:text-sm font-black uppercase tracking-wider mb-3 sm:mb-5">
-                  Mobile-First Table Automation
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/80 border border-slate-700">
+              <span className="w-2 h-2 rounded-full bg-[#FF6B00] animate-pulse"></span>
+              <span className="text-[13px] font-bold text-slate-200 tracking-wider uppercase">
+                Scan. Order. Pay.
+              </span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-[40px] sm:text-[56px] md:text-[72px] font-black text-white leading-[1.05] tracking-tight">
+              The Restaurant Operating System <br />
+              <span className="text-[#FF6B00]">Built For Modern Restaurants</span>
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-[18px] sm:text-[20px] text-slate-300 leading-relaxed font-normal max-w-2xl mx-auto">
+              Manage QR Ordering, Billing, CRM, Inventory, Waiter Management and Analytics from one platform.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+              <button
+                onClick={() => scrollToSection('demo-form')}
+                className="w-full sm:w-auto bg-[#FF6B00] hover:bg-[#E85D00] text-white text-[16px] font-bold px-8 py-4 rounded-[12px] transition-all transform hover:-translate-y-0.5 shadow-xl shadow-[#FF6B00]/25 text-center cursor-pointer"
+              >
+                Book Demo
+              </button>
+              <button
+                onClick={() => scrollToSection('why-ordio')}
+                className="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 text-[16px] font-semibold px-8 py-4 rounded-[12px] transition-all text-center cursor-pointer"
+              >
+                Learn More
+              </button>
+            </div>
+
+            {/* Feature Pill System */}
+            <div className="pt-6 flex flex-wrap justify-center gap-2.5">
+              {[
+                { name: 'QR Ordering', icon: QrCode },
+                { name: 'CRM', icon: Users },
+                { name: 'Inventory', icon: Boxes },
+                { name: 'Analytics', icon: TrendingUp },
+                { name: 'Waiter Management', icon: ChefHat },
+                { name: 'Online Payments', icon: CreditCard },
+              ].map((pill) => {
+                const Icon = pill.icon;
+                return (
+                  <div
+                    key={pill.name}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-[13px] font-semibold text-slate-300"
+                  >
+                    <Icon className="w-3.5 h-3.5 text-[#FF6B00]" />
+                    <span>{pill.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+
+          {/* Geometric Pure SaaS Visual System (NO IMAGES, NO SCREENSHOTS, NO DEVICES) */}
+          <div className="mt-16 max-w-[1140px] mx-auto bg-slate-900/90 border border-slate-800 rounded-[24px] p-6 sm:p-10 text-left shadow-2xl relative">
+            
+            {/* Diagram Title */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-8">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B00]"></span>
+                <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">
+                  ORDIO Unified Workflow Engine
                 </span>
               </div>
-              <h1 className="text-2xl xs:text-3xl sm:text-5xl lg:text-6xl font-black text-[#111827] tracking-tight leading-tight sm:leading-none mb-3 sm:mb-4">
-                Scan.<br className="hidden sm:block" />
-                Order.<br className="hidden sm:block" />
-                <span className="bg-gradient-to-r from-[#FF6B35] via-orange-500 to-[#FF8C35] bg-clip-text text-transparent">Pay.</span>
-              </h1>
-              <h2 className="text-sm xs:text-base sm:text-lg lg:text-xl font-bold text-[#111827] mb-2 sm:mb-3">
-                Turn every table into a self-ordering experience.
-              </h2>
-              <p className="text-xs xs:text-sm sm:text-base text-[#4B5563] leading-normal sm:leading-relaxed mb-4 sm:mb-6 max-w-lg">
-                Customers scan a QR code, browse the menu, place orders, and pay instantly without waiting for a waiter.
-              </p>
-              
-              {/* Full-width touch CTA buttons on mobile */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <Link 
-                  to="/register" 
-                  className="w-full sm:w-auto text-center font-bold text-white bg-[#FF6B35] hover:bg-[#E55A24] px-3 sm:px-8 py-2.5 sm:py-4.5 text-xs xs:text-sm sm:text-base rounded-xl shadow-lg shadow-orange-500/10 active:scale-[0.98] transition-all min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-1.5 sm:gap-2"
-                >
-                  Start Free Trial
-                  <ArrowRight className="w-4.5 h-4.5 sm:w-4 sm:h-4" />
-                </Link>
-                <a 
-                  href="#how-it-works" 
-                  className="w-full sm:w-auto text-center font-semibold text-[#4B5563] hover:text-[#111827] bg-white border border-stone-200 hover:border-stone-300 px-3 sm:px-8 py-2.5 sm:py-4.5 text-xs xs:text-sm sm:text-base rounded-xl shadow-sm hover:shadow-md transition-all min-h-[44px] sm:min-h-[48px] flex items-center justify-center gap-1.5 sm:gap-2"
-                >
-                  Book Demo
-                </a>
-              </div>
-            </div>
-
-            {/* Right Column: Mockups (Responsive wrapper with side-by-side positioning on mobile) */}
-            <div className="col-span-5 lg:col-span-6 relative flex justify-end items-start h-[210px] xs:h-[230px] sm:h-[460px] w-full overflow-visible mt-0 lg:mt-0">
-              
-              {/* Back Mockup: Dashboard (hidden on mobile below 640px) */}
-              <div className="absolute top-10 left-4 w-[380px] md:w-[420px] bg-white border border-stone-200/80 rounded-2xl shadow-2xl p-5 z-10 hidden sm:block transform -rotate-1 scale-95 hover:scale-100 transition-all origin-bottom-left">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B35] animate-pulse"></span>
-                    <span className="text-xs font-black uppercase text-stone-900 tracking-wider">Live Kitchen Screen</span>
-                  </div>
-                </div>
-
-                {/* Dashboard Stats */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-stone-50 border border-stone-100 rounded-xl p-3">
-                    <span className="text-[9px] text-[#6B7280] uppercase tracking-wider block font-bold">Total Sales</span>
-                    <span className="text-base font-extrabold text-stone-950 mt-1 block">₹42,850.00</span>
-                  </div>
-                  <div className="bg-stone-50 border border-stone-100 rounded-xl p-3">
-                    <span className="text-[9px] text-[#6B7280] uppercase tracking-wider block font-bold">Active Tables</span>
-                    <span className="text-base font-extrabold text-stone-950 mt-1 block">14 / 20</span>
-                  </div>
-                </div>
-
-                {/* Active KOTs queue */}
-                <div className="space-y-2 max-h-44 overflow-hidden">
-                  {demoOrders.slice(0, 2).map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-2.5 bg-stone-50 border border-stone-100 rounded-xl text-xs">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-extrabold text-stone-900">{order.table}</span>
-                        </div>
-                        <p className="text-[11px] text-[#4B5563] font-medium mt-0.5">{order.item}</p>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">
-                        {order.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Front Mockup: Mobile Customer Ordering (Scaled down to fit on mobile) */}
-              <div className="absolute right-0 top-0 origin-top-right scale-[0.52] xs:scale-[0.58] sm:scale-100 sm:absolute sm:bottom-0 sm:right-4 sm:top-auto sm:left-auto sm:origin-center w-[260px] sm:w-[280px] bg-white border-4 border-stone-950 rounded-[36px] sm:rounded-[40px] shadow-2xl overflow-hidden z-25 sm:transform sm:rotate-2 hover:rotate-0 transition-transform">
-                {/* Speaker notch */}
-                <div className="w-28 h-5.5 bg-stone-950 rounded-b-2xl mx-auto absolute top-0 left-1/2 -translate-x-1/2 z-30 flex items-center justify-center">
-                  <div className="w-10 h-1 bg-stone-850 rounded-full"></div>
-                </div>
-
-                {/* Screen content */}
-                <div className="pt-7 bg-stone-50 h-[380px] sm:h-[420px] flex flex-col justify-between select-none">
-                  {/* Web App Top Navbar */}
-                  <div className="bg-white border-b border-stone-150 p-2.5 flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <UtensilsCrossed className="w-3 h-3 text-[#FF6B35]" />
-                      <span className="text-[10px] font-black text-stone-900">THE SPICY GRILL</span>
-                    </div>
-                    <span className="bg-[#FF6B35]/8 text-[#FF6B35] font-bold text-[8px] px-1.5 py-0.5 rounded-full">Table 4</span>
-                  </div>
-
-                  {/* Food Scroll Menu */}
-                  <div className="p-2.5 overflow-y-auto flex-1 space-y-2">
-                    <div className="text-[9px] text-[#FF6B35] font-black uppercase tracking-wider">
-                      Popular Items
-                    </div>
-
-                    {/* Food Item */}
-                    <div className="bg-white border border-stone-150 rounded-xl p-2 flex justify-between gap-2 shadow-sm">
-                      <div className="flex-1">
-                        <h4 className="text-[10.5px] font-bold text-stone-900 leading-tight">Truffle Mushroom Pizza</h4>
-                        <span className="text-[10px] font-extrabold text-[#FF6B35] block mt-1">₹499</span>
-                      </div>
-                      <div className="flex flex-col items-center justify-between shrink-0">
-                        <button 
-                          onClick={() => setDemoCartCount(demoCartCount + 1)}
-                          className="bg-[#FF6B35] text-white text-[9px] font-black px-2.5 py-1 rounded-lg w-full"
-                        >
-                          + ADD
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Food Item 2 */}
-                    <div className="bg-white border border-stone-150 rounded-xl p-2 flex justify-between gap-2 shadow-sm">
-                      <div className="flex-1">
-                        <h4 className="text-[10.5px] font-bold text-stone-900 leading-tight">Spicy Chicken Burger</h4>
-                        <span className="text-[10px] font-extrabold text-[#FF6B35] block mt-1">₹249</span>
-                      </div>
-                      <div className="flex flex-col items-center justify-between shrink-0">
-                        <button 
-                          onClick={() => setDemoCartCount(demoCartCount + 1)}
-                          className="bg-[#FF6B35] text-white text-[9px] font-black px-2.5 py-1 rounded-lg w-full"
-                        >
-                          + ADD
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom Cart Drawer Summary (>=48px touch height) */}
-                  <div className="bg-white border-t border-stone-150 p-2.5 shadow-inner">
-                    <div className="flex items-center justify-between bg-[#FF6B35] text-white p-2.5 rounded-lg cursor-pointer h-10">
-                      <div className="flex items-center gap-1.5">
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-bold">{demoCartCount} Item added</span>
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider flex items-center gap-0.5">
-                        View Cart <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 2: Problem vs Solution */}
-      <section id="problem-solution" className="py-16 bg-stone-50 border-y border-stone-200/60 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="text-xs font-bold tracking-wider text-[#FF6B35] uppercase">
-              Operations Audit
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tight mt-2 mb-3">
-              Why Traditional Dining is Slowing You Down
-            </h2>
-            <p className="text-sm text-[#4B5563]">
-              Comparing the friction of manual table service against the speed of Ordio digital automation.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Box: Restaurant Problems */}
-            <div className="bg-white border border-red-100 rounded-3xl p-6 sm:p-8 shadow-sm">
-              <h3 className="text-base font-black text-red-600 flex items-center gap-2 mb-5">
-                <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                The Traditional Friction
-              </h3>
-              
-              <ul className="space-y-4">
-                <li className="flex gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0 text-xs font-bold">1</div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Long Waiting Times</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Customers wait 10-15 minutes just to get the waiter's attention, receive physical menus, and place order details.
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0 text-xs font-bold">2</div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Order Mistakes</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Wrong orders written down during busy hours lead to kitchen waste, food delays, and dissatisfied diners.
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0 text-xs font-bold">3</div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Slow Billing & Checkout</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Asking for the bill, waiting for the card machine, or counting cash tables slows down table turnaround by 15 minutes.
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0 text-xs font-bold">4</div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Staff Dependency</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Your revenue is limited by waiter availability. Staff shortages directly hurt customer service quality.
-                    </p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            {/* Right Box: Ordio Solutions */}
-            <div className="bg-white border border-[#FF6B35]/25 rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF6B35]/5 rounded-full blur-3xl pointer-events-none"></div>
-              
-              <h3 className="text-base font-black text-[#FF6B35] flex items-center gap-2 mb-5">
-                <span className="w-2 h-2 rounded-full bg-[#FF6B35] animate-pulse"></span>
-                The Ordio Solution
-              </h3>
-
-              <ul className="space-y-4">
-                <li className="flex gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center shrink-0"><Check className="w-4 h-4" /></div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Instant QR Ordering</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Scan code, browse visual menu, and place order directly to the kitchen. Zero wait times.
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center shrink-0"><Check className="w-4 h-4" /></div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Flawless Accuracy</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Customers verify their cart selections and custom options themselves. No transcription errors.
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center shrink-0"><Check className="w-4 h-4" /></div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Online Split-Bill Payments</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Customers pay directly from their phones using UPI, credit cards, or split bills. Tables clear immediately.
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center shrink-0"><Check className="w-4 h-4" /></div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Smart Waiter Allocation</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Waiters receive focused call requests (e.g., "Water" or "Service") on their dedicated dashboards.
-                    </p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 3: How it Works (Swipeable Carousel on Mobile) */}
-      <section id="how-it-works" className="py-16 bg-white relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="text-xs font-bold tracking-wider text-[#FF6B35] uppercase">
-              The Journey
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tight mt-2 mb-3">
-              Seamless Dining in 5 Steps
-            </h2>
-            <p className="text-sm text-[#4B5563]">
-              From seating to billing, trace how simple table ordering becomes with Ordio. Swipe left on mobile.
-            </p>
-          </div>
-
-          {/* Carousel Layout for Mobile, Grid Layout for Desktop */}
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-5 pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-5">
-            
-            {/* Step 1 */}
-            <div className="snap-center shrink-0 w-[260px] sm:w-auto bg-stone-50 border border-stone-150 rounded-2xl p-5 hover:border-[#FF6B35]/30 transition-colors">
-              <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
-                1
-              </div>
-              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Scan QR</h3>
-              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
-                Customer scans the unique QR sticker placed on the table with their default mobile camera.
-              </p>
-              <div className="bg-white border border-stone-100 rounded-lg p-2.5 flex items-center justify-center">
-                <QrCode className="w-8 h-8 text-[#111827]" />
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="snap-center shrink-0 w-[260px] sm:w-auto bg-stone-50 border border-stone-150 rounded-2xl p-5 hover:border-[#FF6B35]/30 transition-colors">
-              <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
-                2
-              </div>
-              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Browse Menu</h3>
-              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
-                A beautiful, interactive visual menu loads instantly on their phone. No app install required.
-              </p>
-              <div className="bg-white border border-stone-100 rounded-lg p-2.5 flex items-center justify-center font-bold text-[10px] sm:text-xs text-[#FF6B35] uppercase">
-                🍕 View Pizzas
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="snap-center shrink-0 w-[260px] sm:w-auto bg-stone-50 border border-stone-150 rounded-2xl p-5 hover:border-[#FF6B35]/30 transition-colors">
-              <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
-                3
-              </div>
-              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Place Order</h3>
-              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
-                Add customizations, choose table addons, and send the order directly to the kitchen dashboard.
-              </p>
-              <div className="bg-white border border-stone-100 rounded-lg p-2.5 text-center text-[10px] sm:text-xs text-emerald-600 font-bold">
-                ✓ Order Sent to KOT
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="snap-center shrink-0 w-[260px] sm:w-auto bg-stone-50 border border-stone-150 rounded-2xl p-5 hover:border-[#FF6B35]/30 transition-colors">
-              <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
-                4
-              </div>
-              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Pay Online</h3>
-              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
-                Review bill breakdown, split with friends, and checkout instantly using cards or UPI options.
-              </p>
-              <div className="bg-white border border-stone-100 rounded-lg p-2.5 text-center font-mono text-[10px] sm:text-xs text-stone-800 font-bold">
-                💳 Pay (UPI/Card)
-              </div>
-            </div>
-
-            {/* Step 5 */}
-            <div className="snap-center shrink-0 w-[260px] sm:w-auto bg-stone-50 border border-stone-150 rounded-2xl p-5 hover:border-[#FF6B35]/30 transition-colors">
-              <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 text-[#FF6B35] flex items-center justify-center font-black text-xs mb-4">
-                5
-              </div>
-              <h3 className="font-bold text-[#111827] text-sm sm:text-base mb-2">Enjoy Food</h3>
-              <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-4">
-                Kitchen prepares and waiters serve the meals directly. Enjoy a friction-free dining experience.
-              </p>
-              <div className="bg-white border border-stone-100 rounded-lg p-2.5 text-center text-[10px] sm:text-xs text-stone-600 font-bold">
-                🍜 Food Served!
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* Section 4: What Customers See (Customer Ordering Mobile Screen) */}
-      <section id="product-customer" className="py-16 bg-stone-50 border-t border-stone-200/60 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-10 items-center">
-            {/* Mockup Frame Left (Stacked first on mobile) */}
-            <div className="lg:col-span-5 flex justify-center w-full">
-              {/* High-fidelity Mockup */}
-              <div className="w-[280px] sm:w-[300px] max-w-full bg-white border-[6px] sm:border-[8px] border-stone-900 rounded-[40px] sm:rounded-[48px] shadow-2xl overflow-hidden relative">
-                {/* Top Dynamic Notch */}
-                <div className="w-24 sm:w-28 h-5 bg-stone-900 rounded-b-xl mx-auto absolute top-0 left-1/2 -translate-x-1/2 z-30"></div>
-                
-                {/* App Screen Content */}
-                <div className="pt-8 h-[460px] sm:h-[520px] flex flex-col justify-between bg-stone-50">
-                  {/* Webapp header */}
-                  <div className="bg-white border-b border-stone-200 p-3.5 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-[11px] font-black text-[#111827]">Table 4 Menu</h4>
-                      <span className="text-[8.5px] text-[#6B7280] font-medium">Bistro Royale Cafe</span>
-                    </div>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  </div>
-
-                  {/* Active food item details */}
-                  <div className="p-3 sm:p-4 flex-1 overflow-y-auto space-y-3">
-                    <div className="bg-white border border-stone-200 rounded-2xl p-3 sm:p-4 shadow-sm text-left">
-                      <div className="w-full h-20 sm:h-24 bg-stone-150 rounded-xl flex items-center justify-center font-bold text-[#FF6B35] text-[10px] sm:text-xs uppercase tracking-wider mb-3">
-                        [ Truffle Mushroom Pizza ]
-                      </div>
-                      <h3 className="text-[11px] sm:text-xs font-black text-stone-950">Truffle Mushroom Pizza</h3>
-                      <p className="text-[8.5px] sm:text-[9.5px] text-[#6B7280] leading-relaxed mt-1">
-                        Baked on hand-stretched sourdough, wild portobello mushrooms, fresh herbs, truffle drizzle.
-                      </p>
-                      
-                      {/* Customizations */}
-                      <div className="mt-2.5 pt-2.5 border-t border-stone-100 space-y-1.5">
-                        <div className="flex items-center justify-between text-[8.5px] sm:text-[9px]">
-                          <span className="font-bold text-stone-700">Extra Cheese (+₹50)</span>
-                          <input type="checkbox" defaultChecked className="rounded text-[#FF6B35] focus:ring-[#FF6B35] w-2.5 h-2.5" />
-                        </div>
-                        <div className="flex items-center justify-between text-[8.5px] sm:text-[9px]">
-                          <span className="font-bold text-stone-700">Gluten-Free Base (+₹80)</span>
-                          <input type="checkbox" className="rounded text-[#FF6B35] focus:ring-[#FF6B35] w-2.5 h-2.5" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Add to order cart button block (>=48px touch height) */}
-                  <div className="bg-white border-t border-stone-250 p-3 sm:p-4">
-                    <div className="flex items-center justify-between mb-2.5 text-xs">
-                      <span className="font-bold text-stone-600">Total Price</span>
-                      <span className="font-extrabold text-[#FF6B35]">₹549.00</span>
-                    </div>
-                    <button className="w-full h-11 bg-[#FF6B35] text-white font-bold text-[10px] sm:text-xs rounded-xl shadow-md uppercase tracking-wider flex items-center justify-center">
-                      Add Item to Order
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right content */}
-            <div className="lg:col-span-7 flex flex-col justify-center text-center sm:text-left">
-              <span className="text-xs font-bold text-[#FF6B35] tracking-wider uppercase mb-3">
-                Customer View
+              <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                Active Operational Flow
               </span>
-              <h3 className="text-3xl font-black text-stone-900 tracking-tight leading-none mb-4">
-                Interactive Menus built for Conversions
-              </h3>
-              <p className="text-sm sm:text-base text-[#4B5563] leading-relaxed mb-6 max-w-xl mx-auto sm:mx-0">
-                Ordio's customer interface is a lightweight, blazing-fast web application. There are no apps to install or accounts to register. Diners scan, choose add-ons, add items, and pay instantly.
-              </p>
-
-              {/* Bento micro benefits */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-left">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/8 text-[#FF6B35] flex items-center justify-center shrink-0">
-                    <Smartphone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Visual Menu Cards</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Beautiful layouts with high-quality descriptions, vegetarian indicators, and price tags.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/8 text-[#FF6B35] flex items-center justify-center shrink-0">
-                    <Layers className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Add-on Selections</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Drive up-sells with cheese toppings, custom base options, and beverage combos.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/8 text-[#FF6B35] flex items-center justify-center shrink-0">
-                    <CreditCard className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Online Payments Drawer</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Integrated checkout flows supporting UPI apps, credit/debit cards, and Google Pay.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/8 text-[#FF6B35] flex items-center justify-center shrink-0">
-                    <Clock className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-stone-900 text-sm sm:text-base">Live Order Status</h4>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5 leading-relaxed">
-                      Customers track their kitchen order status (cooking, ready, served) directly in their web browser.
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Section 5: What Restaurants See (Dashboard Layout) */}
-      <section id="product-restaurant" className="py-16 bg-white border-t border-stone-200/60 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col-reverse lg:grid lg:grid-cols-12 gap-10 items-center">
-            
-            {/* Left Side: High fidelity Dashboard Mockup (Shown on top of description on mobile) */}
-            <div className="lg:col-span-7 flex justify-center w-full overflow-hidden">
-              <div className="w-full max-w-2xl bg-white border border-stone-250 rounded-2xl shadow-xl overflow-hidden text-left">
-                
-                {/* Mockup Dashboard Bar */}
-                <div className="bg-[#111827] text-white p-3.5 flex items-center justify-between border-b border-stone-850">
-                  <div className="flex items-center gap-1.5">
-                    <Laptop className="w-3.5 h-3.5 text-[#FF6B35]" />
-                    <span className="text-[10px] font-black tracking-wider uppercase">Ordio Control Panel</span>
+            {/* 4 Connected Node Cards Pipeline */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
+              
+              {/* Node 1: Customer Scan */}
+              <div className="bg-slate-950 border border-slate-800 rounded-[16px] p-5 space-y-3 relative group hover:border-[#FF6B00]/60 transition-all">
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-lg bg-[#FF6B00]/20 text-[#FF6B00] flex items-center justify-center">
+                    <QrCode className="w-5 h-5" />
                   </div>
-                  <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
-                    Connected
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                    Step 01
                   </span>
                 </div>
-
-                {/* Dashboard Inner Layout */}
-                <div className="bg-stone-50 p-4 sm:p-6 flex flex-col md:grid md:grid-cols-3 gap-4">
-                  {/* Live order queue */}
-                  <div className="md:col-span-2 space-y-3">
-                    <h4 className="text-[10px] font-black text-stone-900 uppercase tracking-wider flex items-center justify-between">
-                      <span>Kitchen Orders</span>
-                      <span className="text-[9px] bg-[#FF6B35]/10 text-[#FF6B35] px-1.5 py-0.5 rounded-full font-bold">3 Active</span>
-                    </h4>
-
-                    {/* Order cards */}
-                    <div className="space-y-2">
-                      {demoOrders.map((order) => (
-                        <div key={order.id} className="bg-white border border-stone-150 rounded-xl p-3 shadow-sm text-xs">
-                          <div className="flex items-center justify-between border-b border-stone-100 pb-1.5 mb-1.5">
-                            <div>
-                              <span className="font-extrabold text-stone-900">{order.table}</span>
-                              <span className="text-stone-400 font-mono ml-1.5 text-[9px]">KOT#{order.id}</span>
-                            </div>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-850 rounded">
-                              {order.status}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-[#4B5563] text-[10px]">
-                            <span className="font-bold truncate max-w-[150px]">{order.item}</span>
-                            <span className="text-stone-400">{order.time}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Quick actions / stats */}
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-[10px] font-black text-stone-900 uppercase tracking-wider mb-2">Table Grid</h4>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {['T1', 'T2', 'T3', 'T4', 'T5', 'T6'].map((t, i) => (
-                          <div 
-                            key={t} 
-                            className={`p-1.5 rounded-lg text-center text-[9px] font-black border ${
-                              i === 3 
-                                ? 'bg-orange-50 text-[#FF6B35] border-[#FF6B35]/30'
-                                : i === 1
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-250'
-                                  : 'bg-white text-stone-400 border-stone-200'
-                            }`}
-                          >
-                            {t}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="bg-white border border-stone-150 rounded-xl p-3 shadow-sm">
-                      <span className="text-[9px] text-[#6B7280] font-bold uppercase tracking-wider block">Live Sales</span>
-                      <span className="text-lg font-black text-stone-900 block mt-0.5">₹12,450</span>
-                    </div>
-                  </div>
+                <h4 className="text-[16px] font-bold text-white">Customer Scan</h4>
+                <p className="text-[13px] text-slate-400 leading-relaxed">
+                  Table 04 QR code scanned via camera.
+                </p>
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Scan Latency</span>
+                  <span className="font-bold text-emerald-400">0.8s</span>
                 </div>
+              </div>
 
+              {/* Node 2: Order Creation */}
+              <div className="bg-slate-950 border border-slate-800 rounded-[16px] p-5 space-y-3 relative group hover:border-[#FF6B00]/60 transition-all">
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                    Step 02
+                  </span>
+                </div>
+                <h4 className="text-[16px] font-bold text-white">Order Creation</h4>
+                <p className="text-[13px] text-slate-400 leading-relaxed">
+                  Order #204 auto-created with item customizations.
+                </p>
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Cart Total</span>
+                  <span className="font-bold text-white">₹647.00</span>
+                </div>
+              </div>
+
+              {/* Node 3: Restaurant Operations */}
+              <div className="bg-slate-950 border border-slate-800 rounded-[16px] p-5 space-y-3 relative group hover:border-[#FF6B00]/60 transition-all">
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                    Step 03
+                  </span>
+                </div>
+                <h4 className="text-[16px] font-bold text-white">Restaurant Operations</h4>
+                <p className="text-[13px] text-slate-400 leading-relaxed">
+                  Live KOT ticket sent to kitchen & waiter desk.
+                </p>
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Kitchen Chime</span>
+                  <span className="font-bold text-[#FF6B00]">Triggered</span>
+                </div>
+              </div>
+
+              {/* Node 4: Analytics & Revenue */}
+              <div className="bg-slate-950 border border-slate-800 rounded-[16px] p-5 space-y-3 relative group hover:border-[#FF6B00]/60 transition-all">
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                    Step 04
+                  </span>
+                </div>
+                <h4 className="text-[16px] font-bold text-white">Analytics & Growth</h4>
+                <p className="text-[13px] text-slate-400 leading-relaxed">
+                  Revenue ledger & stock balances updated live.
+                </p>
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Daily Revenue</span>
+                  <span className="font-bold text-emerald-400">₹42,850</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Metric Footer Bar */}
+            <div className="mt-8 pt-6 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4 text-[13px] text-slate-400">
+              <div className="flex items-center gap-6">
+                <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#FF6B00]" /> 100% Digital Workflow</span>
+                <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#FF6B00]" /> Real-time KOT Chime Engine</span>
+              </div>
+              <span className="font-mono text-slate-400">SYSTEM STATUS: OPTIMAL</span>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* ==================================================
+          SECTION 3 — PROBLEMS WE SOLVE (Surface #F8FAFC, 3x2 Grid)
+          ================================================== */}
+      <section id="problems" className="bg-[#F8FAFC] py-[80px] md:py-[120px] border-y border-[#E2E8F0]">
+        <div className="max-w-[1280px] mx-auto px-6">
+          
+          <div className="text-center max-w-[760px] mx-auto mb-16 space-y-4">
+            <span className="text-[13px] font-bold text-[#FF6B00] uppercase tracking-wider block">
+              Operational Challenges
+            </span>
+            <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-bold text-[#0F172A] leading-tight">
+              Restaurant Operations Are Still Too Manual
+            </h2>
+            <p className="text-[18px] text-[#64748B] font-medium">
+              Restaurants lose time and revenue because of disconnected workflows.
+            </p>
+          </div>
+
+          {/* 3x2 Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
+            {/* Card 1 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-[24px] p-8 space-y-4 hover:border-[#FF6B00]/40 transition-all hover:shadow-lg">
+              <div className="w-12 h-12 rounded-[14px] bg-red-500/10 text-red-500 flex items-center justify-center">
+                <Clock className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[22px] font-bold text-[#0F172A]">Long Wait Times</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Guests wait 10-15 minutes just to receive physical menus, place orders, or get a waiter's attention.
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-[24px] p-8 space-y-4 hover:border-[#FF6B00]/40 transition-all hover:shadow-lg">
+              <div className="w-12 h-12 rounded-[14px] bg-red-500/10 text-red-500 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[22px] font-bold text-[#0F172A]">Order Errors</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Manual transcription mistakes between waitstaff and kitchen lead to food waste, delays, and dissatisfied diners.
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-[24px] p-8 space-y-4 hover:border-[#FF6B00]/40 transition-all hover:shadow-lg">
+              <div className="w-12 h-12 rounded-[14px] bg-red-500/10 text-red-500 flex items-center justify-center">
+                <Receipt className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[22px] font-bold text-[#0F172A]">Slow Billing</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Waiting for card terminals or counting cash stalls checkout during peak rush hours, slowing table turnaround velocity.
+              </p>
+            </div>
+
+            {/* Card 4 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-[24px] p-8 space-y-4 hover:border-[#FF6B00]/40 transition-all hover:shadow-lg">
+              <div className="w-12 h-12 rounded-[14px] bg-red-500/10 text-red-500 flex items-center justify-center">
+                <UserCheck className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[22px] font-bold text-[#0F172A]">Staff Dependency</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                High waiter turnover directly limits floor service capacity when staff members are unavailable.
+              </p>
+            </div>
+
+            {/* Card 5 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-[24px] p-8 space-y-4 hover:border-[#FF6B00]/40 transition-all hover:shadow-lg">
+              <div className="w-12 h-12 rounded-[14px] bg-red-500/10 text-red-500 flex items-center justify-center">
+                <PackageX className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[22px] font-bold text-[#0F172A]">Inventory Waste</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Unmonitored raw material stock levels and unlinked recipe checkouts cause food spoilage and profit leakage.
+              </p>
+            </div>
+
+            {/* Card 6 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-[24px] p-8 space-y-4 hover:border-[#FF6B00]/40 transition-all hover:shadow-lg">
+              <div className="w-12 h-12 rounded-[14px] bg-red-500/10 text-red-500 flex items-center justify-center">
+                <Users className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[22px] font-bold text-[#0F172A]">No Customer Insights</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Restaurants remain blind to repeat diner preferences, leaving customer retention to chance.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* ==================================================
+          SECTION 4 — WHY ORDIO (Dark #081522, Bento Grid Layout)
+          ================================================== */}
+      <section id="why-ordio" className="bg-[#081522] py-[80px] md:py-[120px] text-white border-b border-slate-800">
+        <div className="max-w-[1280px] mx-auto px-6">
+          
+          <div className="text-center max-w-[760px] mx-auto mb-16 space-y-4">
+            <span className="text-[13px] font-bold text-[#FF6B00] uppercase tracking-wider block">
+              The ORDIO Advantage
+            </span>
+            <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-bold text-white leading-tight">
+              Why Restaurants Choose ORDIO
+            </h2>
+            <p className="text-[18px] text-slate-300 font-medium">
+              Everything your restaurant needs in one platform.
+            </p>
+          </div>
+
+          {/* Premium Bento Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 text-left">
+            
+            {/* Card 1: QR Ordering */}
+            <div className="md:col-span-7 bg-slate-900 border border-slate-800 rounded-[24px] p-8 space-y-6 hover:-translate-y-2 transition-all duration-300 hover:border-[#FF6B00]/60">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/20 text-[#FF6B00] flex items-center justify-center">
+                <QrCode className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-[26px] font-bold text-white">QR Ordering</h3>
+                <p className="text-[16px] text-slate-300 mt-2 leading-relaxed">
+                  Table-linked QR codes allow diners to browse visual digital menus, customize dishes, and send orders directly to the kitchen without app downloads.
+                </p>
+              </div>
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                {['Zero app install needed', 'Custom chef notes & modifiers', 'Instant KOT routing'].map((bullet) => (
+                  <div key={bullet} className="flex items-center gap-2 text-[14px] font-semibold text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-[#FF6B00]" />
+                    <span>{bullet}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Right Content */}
-            <div className="lg:col-span-5 flex flex-col justify-center text-center sm:text-left">
-              <span className="text-xs font-bold text-[#FF6B35] tracking-wider uppercase mb-3">
-                Operator View
-              </span>
-              <h3 className="text-3xl font-black text-stone-900 tracking-tight leading-none mb-4">
-                Centralized Operations Control
-              </h3>
-              <p className="text-sm sm:text-base text-[#4B5563] leading-relaxed mb-6 max-w-xl mx-auto sm:mx-0">
-                Manage your kitchen tickets, table statuses, staff assignments, and live sales performance from a single unified control panel.
-              </p>
+            {/* Card 2: CRM */}
+            <div className="md:col-span-5 bg-slate-900 border border-slate-800 rounded-[24px] p-8 space-y-6 hover:-translate-y-2 transition-all duration-300 hover:border-[#FF6B00]/60">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/20 text-[#FF6B00] flex items-center justify-center">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-[26px] font-bold text-white">CRM & Loyalty</h3>
+                <p className="text-[16px] text-slate-300 mt-2 leading-relaxed">
+                  Automatically build guest phone directories, track visit frequency, and trigger automated loyalty rewards.
+                </p>
+              </div>
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                {['Automated guest phone directory', 'Lifetime spend (LTV) insights', 'Targeted celebration coupons'].map((bullet) => (
+                  <div key={bullet} className="flex items-center gap-2 text-[14px] font-semibold text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-[#FF6B00]" />
+                    <span>{bullet}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-              <div className="space-y-3.5 text-left max-w-lg mx-auto sm:mx-0">
-                <div className="flex gap-2.5">
-                  <div className="w-4 h-4 rounded-full bg-orange-100 text-[#FF6B35] flex items-center justify-center shrink-0 mt-0.5"><Check className="w-2.5 h-2.5" /></div>
-                  <p className="text-xs text-[#6B7280] leading-relaxed">
-                    <strong className="text-stone-900 font-bold">Kitchen Display KOT Screen</strong>: WebSocket-backed real-time updates ensure zero delay in cooking orders.
-                  </p>
-                </div>
-                <div className="flex gap-2.5">
-                  <div className="w-4 h-4 rounded-full bg-orange-100 text-[#FF6B35] flex items-center justify-center shrink-0 mt-0.5"><Check className="w-2.5 h-2.5" /></div>
-                  <p className="text-xs text-[#6B7280] leading-relaxed">
-                    <strong className="text-stone-900 font-bold">Visual Table Maps</strong>: Tracks occupied tables, bill settle requests, and buzzer alerts at a glance.
-                  </p>
-                </div>
-                <div className="flex gap-2.5">
-                  <div className="w-4 h-4 rounded-full bg-orange-100 text-[#FF6B35] flex items-center justify-center shrink-0 mt-0.5"><Check className="w-2.5 h-2.5" /></div>
-                  <p className="text-xs text-[#6B7280] leading-relaxed">
-                    <strong className="text-stone-900 font-bold">Live Business Metrics</strong>: Consolidates table turnaround speeds, tax audits, and sales performance.
-                  </p>
-                </div>
+            {/* Card 3: Inventory */}
+            <div className="md:col-span-6 bg-slate-900 border border-slate-800 rounded-[24px] p-8 space-y-6 hover:-translate-y-2 transition-all duration-300 hover:border-[#FF6B00]/60">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/20 text-[#FF6B00] flex items-center justify-center">
+                <Boxes className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-[24px] font-bold text-white">Inventory Tracking</h3>
+                <p className="text-[16px] text-slate-300 mt-2 leading-relaxed">
+                  Monitor raw material stock levels, link dish recipe deductions, log food wastage, and manage supplier purchase orders.
+                </p>
+              </div>
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                {['Recipe-based auto stock deduction', 'Low stock alerts & purchase orders', 'Wastage logs & supplier profiles'].map((bullet) => (
+                  <div key={bullet} className="flex items-center gap-2 text-[14px] font-semibold text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-[#FF6B00]" />
+                    <span>{bullet}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 4: Analytics */}
+            <div className="md:col-span-6 bg-slate-900 border border-slate-800 rounded-[24px] p-8 space-y-6 hover:-translate-y-2 transition-all duration-300 hover:border-[#FF6B00]/60">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/20 text-[#FF6B00] flex items-center justify-center">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-[24px] font-bold text-white">Real-Time Analytics</h3>
+                <p className="text-[16px] text-slate-300 mt-2 leading-relaxed">
+                  Track daily revenue trends, peak order hours, average ticket size, and top dish profitability in real time.
+                </p>
+              </div>
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                {['Sales revenue & AOV trends', 'Top selling dish rankings', 'Table turnover velocity stats'].map((bullet) => (
+                  <div key={bullet} className="flex items-center gap-2 text-[14px] font-semibold text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-[#FF6B00]" />
+                    <span>{bullet}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 5: Waiter Management */}
+            <div className="md:col-span-6 bg-slate-900 border border-slate-800 rounded-[24px] p-8 space-y-4 hover:-translate-y-2 transition-all duration-300 hover:border-[#FF6B00]/60">
+              <div className="w-10 h-10 rounded-[12px] bg-[#FF6B00]/20 text-[#FF6B00] flex items-center justify-center">
+                <ChefHat className="w-5 h-5" />
+              </div>
+              <h3 className="text-[22px] font-bold text-white">Waiter Management</h3>
+              <p className="text-[15px] text-slate-300 leading-relaxed">
+                Mobile-first waiter portal protected by 4-digit passcodes for floor staff table allocations and service call alerts.
+              </p>
+              <div className="pt-2 border-t border-slate-800">
+                <span className="text-[12px] font-semibold text-[#FF6B00]">Passcode Authorization Security</span>
+              </div>
+            </div>
+
+            {/* Card 6: Online Payments */}
+            <div className="md:col-span-6 bg-slate-900 border border-slate-800 rounded-[24px] p-8 space-y-4 hover:-translate-y-2 transition-all duration-300 hover:border-[#FF6B00]/60">
+              <div className="w-10 h-10 rounded-[12px] bg-[#FF6B00]/20 text-[#FF6B00] flex items-center justify-center">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <h3 className="text-[22px] font-bold text-white">Online Payments</h3>
+              <p className="text-[15px] text-slate-300 leading-relaxed">
+                Integrated UPI deep links, credit card checkouts, and automatic bill splitting directly on guest smartphones.
+              </p>
+              <div className="pt-2 border-t border-slate-800">
+                <span className="text-[12px] font-semibold text-[#FF6B00]">Instant Bank Settlements</span>
               </div>
             </div>
 
           </div>
+
         </div>
       </section>
 
-      {/* Section 6: Waiter Operations Panel */}
-      <section id="waiter-ops" className="py-16 bg-stone-50 border-t border-stone-200/60 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-10 items-center">
-            
-            {/* Left Side: Mock Waiter list (Padded and touch optimized) */}
-            <div className="lg:col-span-7 flex justify-center w-full overflow-hidden">
-              <div className="w-full max-w-xl bg-white border border-stone-250 rounded-2xl shadow-xl p-4 sm:p-6 text-left">
-                
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-stone-150 pb-3 mb-4">
-                  <div>
-                    <h3 className="font-extrabold text-stone-950 text-sm sm:text-base uppercase tracking-wider">Waiter Crew Management</h3>
-                    <p className="text-xs sm:text-sm text-[#6B7280] mt-0.5">Control waiter accounts and active alerts.</p>
-                  </div>
-                  <Users className="w-5 h-5 text-[#FF6B35]" />
+
+      {/* ==================================================
+          SECTION 5 — WHAT YOU GET WITH ORDIO (White #FFFFFF, 6 Cards)
+          ================================================== */}
+      <section id="what-you-get" className="bg-white py-[80px] md:py-[120px]">
+        <div className="max-w-[1280px] mx-auto px-6">
+          
+          <div className="text-center max-w-[760px] mx-auto mb-16 space-y-4">
+            <span className="text-[13px] font-bold text-[#FF6B00] uppercase tracking-wider block">
+              Complete Capabilities
+            </span>
+            <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-bold text-[#0F172A] leading-tight">
+              One Platform. <br />
+              Complete Restaurant Operations.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
+            {/* Card 1 */}
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[24px] p-8 space-y-4">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/10 text-[#FF6B00] flex items-center justify-center">
+                <QrCode className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[24px] font-bold text-[#0F172A]">QR Ordering</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Customers scan QR codes and place orders directly from their phones.
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[24px] p-8 space-y-4">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/10 text-[#FF6B00] flex items-center justify-center">
+                <Users className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[24px] font-bold text-[#0F172A]">CRM</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Track customer history and build stronger relationships.
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[24px] p-8 space-y-4">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/10 text-[#FF6B00] flex items-center justify-center">
+                <Boxes className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[24px] font-bold text-[#0F172A]">Inventory</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Monitor stock and reduce wastage.
+              </p>
+            </div>
+
+            {/* Card 4 */}
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[24px] p-8 space-y-4">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/10 text-[#FF6B00] flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[24px] font-bold text-[#0F172A]">Analytics</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Understand restaurant performance with real-time insights.
+              </p>
+            </div>
+
+            {/* Card 5 */}
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[24px] p-8 space-y-4">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/10 text-[#FF6B00] flex items-center justify-center">
+                <ChefHat className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[24px] font-bold text-[#0F172A]">Waiter Management</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Manage tables and customer assistance efficiently.
+              </p>
+            </div>
+
+            {/* Card 6 */}
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[24px] p-8 space-y-4">
+              <div className="w-12 h-12 rounded-[14px] bg-[#FF6B00]/10 text-[#FF6B00] flex items-center justify-center">
+                <Building2 className="w-6 h-6 stroke-[1.75]" />
+              </div>
+              <h3 className="text-[24px] font-bold text-[#0F172A]">Multi-Restaurant SaaS</h3>
+              <p className="text-[16px] text-[#64748B] leading-relaxed">
+                Operate multiple locations independently.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* ==================================================
+          SECTION 6 — HOW IT WORKS (Modern Horizontal Timeline)
+          ================================================== */}
+      <section className="bg-[#F8FAFC] py-[80px] md:py-[120px] border-y border-[#E2E8F0]">
+        <div className="max-w-[1280px] mx-auto px-6">
+          
+          <div className="text-center max-w-[760px] mx-auto mb-16 space-y-4">
+            <span className="text-[13px] font-bold text-[#FF6B00] uppercase tracking-wider block">
+              Frictionless Setup
+            </span>
+            <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-bold text-[#0F172A] leading-tight">
+              Get Started In Minutes
+            </h2>
+          </div>
+
+          {/* Timeline Grid (Desktop Horizontal, Mobile Vertical) */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 text-left relative">
+            {[
+              { num: 'Step 1', title: 'Create Restaurant', desc: 'Configure outlet details and tax series.' },
+              { num: 'Step 2', title: 'Upload Menu', desc: 'Add dishes, prices, veg/non-veg tags & images.' },
+              { num: 'Step 3', title: 'Generate QR Codes', desc: 'Print table-mapped QR stickers directly.' },
+              { num: 'Step 4', title: 'Start Taking Orders', desc: 'Receive live KOT tickets directly in kitchen.' },
+              { num: 'Step 5', title: 'Track Performance', desc: 'Monitor daily sales and customer repeat rates.' },
+            ].map((st, index) => (
+              <div key={st.num} className="bg-white border border-[#E2E8F0] rounded-[24px] p-6 space-y-3 relative flex flex-col justify-between">
+                <div>
+                  <span className="px-3 py-1 bg-[#FF6B00]/10 text-[#FF6B00] text-[12px] font-bold rounded-md uppercase inline-block mb-3">
+                    {st.num}
+                  </span>
+                  <h3 className="text-[20px] font-bold text-[#0F172A]">{st.title}</h3>
+                  <p className="text-[15px] text-[#64748B] mt-2 leading-relaxed">{st.desc}</p>
                 </div>
-
-                {/* Alert Notifications */}
-                <div className="mb-5 space-y-2">
-                  <h4 className="text-[10px] sm:text-xs font-bold text-[#FF6B35] uppercase tracking-wider">Active Staff Alerts</h4>
-                  
-                  {/* Alert 1 (Height >= 48px) */}
-                  <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs min-h-[48px]">
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-ping shrink-0"></span>
-                      <span className="font-black text-stone-900">Table 4</span>
-                      <span className="text-[#6B7280]">Requested Service</span>
-                    </div>
-                    <button className="h-9 px-3 bg-[#FF6B35] text-white font-bold text-xs rounded-lg shadow-sm w-full sm:w-auto flex items-center justify-center shrink-0">
-                      Assign Waiter
-                    </button>
+                {index < 4 && (
+                  <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 text-[#FF6B00] z-10">
+                    <ArrowRight className="w-5 h-5" />
                   </div>
+                )}
+              </div>
+            ))}
+          </div>
 
-                  {/* Alert 2 */}
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs min-h-[48px]">
-                    <div className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0"></span>
-                      <span className="font-black text-stone-900">Table 2</span>
-                      <span className="text-[#6B7280]">Requested Bill Checkout</span>
+        </div>
+      </section>
+
+
+      {/* ==================================================
+          SECTION 7 — CTA BANNER (Dark #081522)
+          ================================================== */}
+      <section className="bg-[#081522] py-[80px] md:py-[100px] text-white text-center border-b border-slate-800">
+        <div className="max-w-[800px] mx-auto px-6 space-y-6">
+          <h2 className="text-[32px] sm:text-[44px] md:text-[52px] font-black text-white leading-tight">
+            Ready To Modernize Your Restaurant?
+          </h2>
+          <p className="text-[18px] sm:text-[20px] text-slate-300 font-medium">
+            Scan. Order. Pay. Manage Everything.
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={() => scrollToSection('demo-form')}
+              className="bg-[#FF6B00] hover:bg-[#E85D00] text-white text-[16px] font-bold px-9 py-4 rounded-[12px] transition-all transform hover:-translate-y-0.5 shadow-xl shadow-[#FF6B00]/25 inline-flex items-center gap-2 cursor-pointer"
+            >
+              <span>Book Demo</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+
+      {/* ==================================================
+          SECTION 8 — FAQ (White #FFFFFF, Accordion Layout)
+          ================================================== */}
+      <section id="faq" className="bg-white py-[80px] md:py-[120px]">
+        <div className="max-w-[840px] mx-auto px-6">
+          
+          <div className="text-center mb-16 space-y-4">
+            <span className="text-[13px] font-bold text-[#FF6B00] uppercase tracking-wider block">
+              Clear Answers
+            </span>
+            <h2 className="text-[32px] sm:text-[40px] md:text-[48px] font-bold text-[#0F172A] leading-tight">
+              Frequently Asked Questions
+            </h2>
+          </div>
+
+          <div className="space-y-4 text-left">
+            {[
+              { q: 'How does QR Ordering work?', a: 'Every table gets a dedicated QR sticker. Diners scan it with their phone camera to open your responsive digital menu, select customizations, and place orders directly to your kitchen dashboard.' },
+              { q: 'Do customers need an app?', a: 'No app download is needed. The menu opens instantly in Safari, Chrome, or any mobile browser.' },
+              { q: 'Can waiters create orders?', a: 'Yes. Waiters can use the passcode-protected Waiter Dashboard to enter orders manually, manage tables, or print KOT receipts.' },
+              { q: 'How does billing work?', a: 'Invoices are generated automatically with customizable series (e.g., INV-2026-001), CGST/SGST tax configurations, and instant thermal printer compatibility.' },
+              { q: 'Can I manage multiple restaurants?', a: 'Yes. ORDIO includes multi-outlet management controls allowing you to configure menus, staff roles, and view sales analytics across all branches.' },
+              { q: 'Do you support online payments?', a: 'Yes. Customers can pay via UPI deep links, credit cards, or split bills directly on their mobile phones.' },
+              { q: 'How quickly can I get started?', a: 'Initial restaurant setup, menu upload, and table QR code generation take less than 30 minutes.' },
+              { q: 'Can menus be customized?', a: 'Yes. You can edit dishes, prices, veg/non-veg tags, stock availability, and category sequences anytime.' },
+            ].map((item, idx) => {
+              const isOpen = !!faqOpen[idx];
+              return (
+                <div key={idx} className="border border-[#E2E8F0] rounded-[16px] overflow-hidden bg-white">
+                  <button
+                    onClick={() => toggleFaq(idx)}
+                    className="w-full flex items-center justify-between p-6 text-[18px] font-bold text-[#0F172A] hover:bg-[#F8FAFC] transition-colors cursor-pointer"
+                  >
+                    <span>{item.q}</span>
+                    {isOpen ? (
+                      <ChevronUp className="w-5 h-5 text-[#64748B] shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-[#64748B] shrink-0" />
+                    )}
+                  </button>
+                  {isOpen && (
+                    <div className="px-6 pb-6 text-[16px] text-[#64748B] leading-relaxed border-t border-[#E2E8F0] pt-4">
+                      {item.a}
                     </div>
-                    <button className="h-9 px-3 bg-red-500 text-white font-bold text-xs rounded-lg shadow-sm w-full sm:w-auto flex items-center justify-center shrink-0">
-                      Process Bill
-                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </section>
+
+
+      {/* ==================================================
+          SECTION 9 — DEMO FORM (Surface #F8FAFC background, Large Card)
+          ================================================== */}
+      <section id="demo-form" className="bg-[#F8FAFC] py-[80px] md:py-[120px] border-t border-[#E2E8F0]">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="bg-white border border-[#E2E8F0] rounded-[24px] p-8 sm:p-12 shadow-xl">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 text-left items-center">
+              
+              {/* Left Side Info */}
+              <div className="lg:col-span-5 space-y-6">
+                <span className="px-3 py-1 rounded-md text-[12px] font-bold uppercase tracking-wider bg-[#FF6B00]/10 text-[#FF6B00]">
+                  Book A Demo
+                </span>
+                <h2 className="text-[32px] sm:text-[40px] font-bold text-[#0F172A] leading-tight">
+                  We'd Love To Show You ORDIO
+                </h2>
+                <p className="text-[18px] text-[#64748B] leading-relaxed">
+                  Book a personalized demo and see how ORDIO can simplify your restaurant operations.
+                </p>
+
+                <div className="space-y-3 pt-4 border-t border-[#E2E8F0]">
+                  <div className="flex items-center gap-3 text-[15px] font-semibold text-[#0F172A]">
+                    <CheckCircle2 className="w-5 h-5 text-[#FF6B00]" />
+                    <span>Free 30-minute personalized walkthrough</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[15px] font-semibold text-[#0F172A]">
+                    <CheckCircle2 className="w-5 h-5 text-[#FF6B00]" />
+                    <span>Custom menu catalog migration assistance</span>
                   </div>
                 </div>
+              </div>
 
-                {/* Waiter accounts list */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
-                    <span>Active Crew Logs</span>
-                    <span className="text-stone-400 font-semibold">{demoWaiters.length} Online</span>
+              {/* Right Side Form */}
+              <div className="lg:col-span-7 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[20px] p-6 sm:p-8">
+                {formSubmitted ? (
+                  <div className="text-center py-12 space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
+                      <CheckCircle2 className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-[24px] font-bold text-[#0F172A]">Demo Request Received!</h3>
+                    <p className="text-[16px] text-[#64748B]">Our team will get in touch with you shortly on your provided phone number.</p>
                   </div>
-
-                  <div className="border border-stone-150 rounded-xl overflow-hidden divide-y divide-stone-150">
-                    {demoWaiters.map((w, index) => (
-                      <div key={index} className="p-3 flex items-center justify-between text-xs bg-stone-50/50">
-                        <div>
-                          <p className="font-bold text-stone-950">{w.name}</p>
-                          <span className="text-xs text-[#6B7280]">{w.role} • {w.tables}</span>
-                        </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold bg-emerald-100 text-emerald-800">
-                          {w.status}
-                        </span>
+                ) : (
+                  <form onSubmit={handleFormSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[14px] font-bold text-[#0F172A] mb-1">Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="John Doe"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-[12px] text-[15px] text-[#0F172A] focus:outline-none focus:border-[#FF6B00]"
+                        />
                       </div>
-                    ))}
-                  </div>
+                      <div>
+                        <label className="block text-[14px] font-bold text-[#0F172A] mb-1">Phone *</label>
+                        <input
+                          type="tel"
+                          required
+                          placeholder="+91 98765 43210"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-[12px] text-[15px] text-[#0F172A] focus:outline-none focus:border-[#FF6B00]"
+                        />
+                      </div>
+                    </div>
 
-                  {/* Add Waiter form (48px Touch Height inputs & button) */}
-                  <form onSubmit={handleAddDemoWaiter} className="flex flex-col sm:flex-row gap-2 mt-3 pt-2">
-                    <input 
-                      type="text" 
-                      placeholder="Enter waiter name"
-                      value={newWaiterName}
-                      onChange={(e) => setNewWaiterName(e.target.value)}
-                      className="flex-grow bg-stone-50 border border-stone-200 rounded-xl px-3 h-11 text-xs focus:outline-none focus:ring-1 focus:ring-[#FF6B35] text-stone-900"
-                    />
-                    <button 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[14px] font-bold text-[#0F172A] mb-1">Email *</label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="john@restaurant.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-[12px] text-[15px] text-[#0F172A] focus:outline-none focus:border-[#FF6B00]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[14px] font-bold text-[#0F172A] mb-1">Restaurant Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Spice Bistro"
+                          value={formData.restaurantName}
+                          onChange={(e) => setFormData({ ...formData, restaurantName: e.target.value })}
+                          className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-[12px] text-[15px] text-[#0F172A] focus:outline-none focus:border-[#FF6B00]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[14px] font-bold text-[#0F172A] mb-1">City *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Mumbai"
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        className="w-full px-4 py-3 bg-white border border-[#E2E8F0] rounded-[12px] text-[15px] text-[#0F172A] focus:outline-none focus:border-[#FF6B00]"
+                      />
+                    </div>
+
+                    <button
                       type="submit"
-                      className="bg-[#FF6B35] text-white font-bold text-xs h-11 px-5 rounded-xl transition-all shadow-sm flex items-center justify-center"
+                      className="w-full bg-[#FF6B00] hover:bg-[#E85D00] text-white font-bold text-[16px] py-4 rounded-[12px] transition-all shadow-md mt-2 cursor-pointer"
                     >
-                      + Add Crew
+                      Book Demo
                     </button>
                   </form>
-                </div>
-
+                )}
               </div>
-            </div>
 
-            {/* Right Content */}
-            <div className="lg:col-span-5 flex flex-col justify-center text-center sm:text-left">
-              <span className="text-xs font-bold text-[#FF6B35] tracking-wider uppercase mb-3">
-                Waiter Dashboard
-              </span>
-              <h3 className="text-3xl font-black text-stone-900 tracking-tight leading-none mb-4">
-                Restaurant Waiter Operations
-              </h3>
-              <p className="text-sm sm:text-base text-[#4B5563] leading-relaxed mb-5 max-w-xl mx-auto sm:mx-0">
-                Equip your waitstaff with the tools they need to manage tables efficiently. Waiters can log in from their own mobile dashboards to handle customer requests instantly.
-              </p>
-
-              <div className="space-y-2.5 text-left text-xs text-[#4B5563] max-w-lg mx-auto sm:mx-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0"></div>
-                  <span>Create individual waiter accounts with designated table permissions.</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0"></div>
-                  <span>Receive instant buzzer requests (water, general help, bill checks).</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0"></div>
-                  <span>Waiters can manually append items to existing active tickets on behalf of diners.</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Section 7: Why Restaurants Love Bento Layout */}
-      <section id="benefits" className="py-16 bg-white relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="text-xs font-bold tracking-wider text-[#FF6B35] uppercase">
-              The Value
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tight mt-2 mb-3">
-              Modern Restaurant Bento Architecture
-            </h2>
-            <p className="text-sm text-[#4B5563]">
-              Discover why modern restaurants trust Ordio to automate KOTs and maximize daily table turnover.
-            </p>
-          </div>
 
-          {/* Bento Grid (Stacks to cols-1 on mobile) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      {/* ==================================================
+          SECTION 10 — FOOTER (Dark #081522)
+          ================================================== */}
+      <footer className="bg-[#081522] text-white py-16 border-t border-slate-800">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-left">
             
-            {/* Box 1 */}
-            <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 md:col-span-2 flex flex-col justify-between hover:border-[#FF6B35]/30 transition-colors">
-              <div>
-                <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">No App Installations Required</h4>
-                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed max-w-lg">
-                  Customers scan QR codes using default camera apps. They don't need to register, remember passwords, or download bulky applications. It is 100% web-based.
-                </p>
-              </div>
-              <div className="mt-6 flex flex-wrap gap-2">
-                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[10px] sm:text-xs font-bold text-stone-600">⚡ WebApp Load Time: ~0.8s</span>
-                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[10px] sm:text-xs font-bold text-stone-600">📲 No App Stores</span>
-              </div>
-            </div>
-
-            {/* Box 2 */}
-            <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 hover:border-[#FF6B35]/30 transition-colors flex flex-col justify-between">
-              <div>
-                <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">5-Minute Express Setup</h4>
-                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
-                  Import menu structures, configure tables, generate QR codes, and begin accepting guest orders in under 5 minutes.
-                </p>
-              </div>
-              <div className="mt-6">
-                <span className="text-xs font-bold text-[#FF6B35] flex items-center gap-1">Fast Onboarding <Clock className="w-3 h-3" /></span>
-              </div>
-            </div>
-
-            {/* Box 3 */}
-            <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 hover:border-[#FF6B35]/30 transition-colors flex flex-col justify-between">
-              <div>
-                <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">Unlimited Table Layouts</h4>
-                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
-                  Support setup for 5 tables or 500. Generate customized KOT routing parameters for each location automatically.
-                </p>
-              </div>
-              <div className="mt-6">
-                <span className="text-[10px] sm:text-xs font-mono font-bold text-stone-700 bg-white px-2 py-0.5 border border-stone-200 rounded">TABLE_SLUG_ROUTER</span>
-              </div>
-            </div>
-
-            {/* Box 4 */}
-            <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 md:col-span-2 flex flex-col justify-between hover:border-[#FF6B35]/30 transition-colors">
-              <div>
-                <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">Real-Time Kitchen KOT Feeds</h4>
-                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed max-w-lg">
-                  Order updates flow dynamically into kitchen terminals. Sounds alert chefs when new tickets arrive, reducing delayed notifications to zero.
-                </p>
-              </div>
-              <div className="mt-6 flex flex-wrap gap-2">
-                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[10px] sm:text-xs font-bold text-[#FF6B35]">● Live Feed Connected</span>
-                <span className="bg-white px-2.5 py-1 border border-stone-200 rounded-lg text-[10px] sm:text-xs font-bold text-stone-500">⚡ Latency: &lt; 50ms</span>
-              </div>
-            </div>
-
-            {/* Box 5 */}
-            <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 hover:border-[#FF6B35]/30 transition-colors flex flex-col justify-between">
-              <div>
-                <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">Instant UPI Payments</h4>
-                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
-                  Accept split bills or complete order checkouts directly. Funds route securely to your bank merchant accounts.
-                </p>
-              </div>
-              <div className="mt-6">
-                <span className="text-[10px] sm:text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">Settlements Active</span>
-              </div>
-            </div>
-
-            {/* Box 6 */}
-            <div className="bg-stone-50 border border-stone-150 rounded-3xl p-5 sm:p-6 hover:border-[#FF6B35]/30 transition-colors flex flex-col justify-between">
-              <div>
-                <h4 className="font-extrabold text-stone-950 text-sm sm:text-base mb-1.5">Multi-Restaurant Operations</h4>
-                <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
-                  Manage multiple franchise locations, separate menu configurations, and centralized billing dashboards.
-                </p>
-              </div>
-              <div className="mt-6">
-                <span className="text-xs font-bold text-stone-700">All Branches Consolidated</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* Section 8: Restaurant Types Grid (Swipeable Horizontal Scroll on Mobile) */}
-      <section className="py-16 bg-stone-50 border-y border-stone-200/60 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="max-w-3xl mx-auto mb-12">
-            <span className="text-xs font-bold tracking-wider text-[#FF6B35] uppercase">
-              Niched Solutions
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tight mt-2 mb-3">
-              Designed for Diverse Formats
-            </h2>
-            <p className="text-sm text-[#4B5563]">
-              Custom layout parameters configured for specific dining categories. Swipe left on mobile.
-            </p>
-          </div>
-
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 lg:grid-cols-6">
-            {/* Cafe */}
-            <div className="snap-center shrink-0 w-[140px] sm:w-auto bg-white border border-stone-150 rounded-2xl p-5 hover:shadow-lg transition-shadow text-center">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center mx-auto mb-3">
-                <Coffee className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Cafes</h4>
-            </div>
-
-            {/* Fast Food */}
-            <div className="snap-center shrink-0 w-[140px] sm:w-auto bg-white border border-stone-150 rounded-2xl p-5 hover:shadow-lg transition-shadow text-center">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center mx-auto mb-3">
-                <Flame className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-stone-900 text-xs sm:text-sm">QSR / Fast Food</h4>
-            </div>
-
-            {/* Fine Dining */}
-            <div className="snap-center shrink-0 w-[140px] sm:w-auto bg-white border border-stone-150 rounded-2xl p-5 hover:shadow-lg transition-shadow text-center">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center mx-auto mb-3">
-                <UtensilsCrossed className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Fine Dining</h4>
-            </div>
-
-            {/* Cloud Kitchen */}
-            <div className="snap-center shrink-0 w-[140px] sm:w-auto bg-white border border-stone-150 rounded-2xl p-5 hover:shadow-lg transition-shadow text-center">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center mx-auto mb-3">
-                <Database className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Cloud Kitchens</h4>
-            </div>
-
-            {/* Food Court */}
-            <div className="snap-center shrink-0 w-[140px] sm:w-auto bg-white border border-stone-150 rounded-2xl p-5 hover:shadow-lg transition-shadow text-center">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center mx-auto mb-3">
-                <Landmark className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Food Courts</h4>
-            </div>
-
-            {/* Multi-Branch */}
-            <div className="snap-center shrink-0 w-[140px] sm:w-auto bg-white border border-stone-150 rounded-2xl p-5 hover:shadow-lg transition-shadow text-center">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#FF6B35] flex items-center justify-center mx-auto mb-3">
-                <Building className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-stone-900 text-xs sm:text-sm">Multi-Branch</h4>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* Section 9: Social Proof Testimonials */}
-      <section className="py-16 bg-white relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="text-xs font-bold tracking-wider text-[#FF6B35] uppercase">
-              Social Proof
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tight mt-2 mb-3">
-              Loved by Restaurant Operators
-            </h2>
-            <p className="text-sm text-[#4B5563]">
-              Read how Ordio helps establishments automate menus, manage staff, and increase earnings.
-            </p>
-          </div>
-
-          {/* Testimonial Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-stone-50 border border-stone-150 rounded-3xl p-6 sm:p-8 flex flex-col justify-between">
-              <p className="text-xs sm:text-sm text-[#4B5563] italic leading-relaxed mb-6 font-medium">
-                "Ordio completely redefined how our bistro functions during Sunday rush hours. Table clearance times dropped by 18 minutes because customers check out and pay directly from their phones. Waiter stress has reduced noticeably!"
-              </p>
-              <div className="flex items-center gap-3 pt-3.5 border-t border-stone-200">
-                <div className="w-8 h-8 rounded-full bg-[#FF6B35]/15 text-[#FF6B35] flex items-center justify-center font-bold text-xs">
-                  AN
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-stone-900">Arjun Nair</h4>
-                  <span className="text-xs text-[#6B7280]">Owner, The Spice Bistro</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-stone-50 border border-stone-150 rounded-3xl p-6 sm:p-8 flex flex-col justify-between">
-              <p className="text-xs sm:text-sm text-[#4B5563] italic leading-relaxed mb-6 font-medium">
-                "Our previous system was a complex POS that crashed frequently. Setting up Ordio took less than 5 minutes. The digital KOT monitor sounds alerts in the kitchen when guests click submit. Perfect operations accuracy."
-              </p>
-              <div className="flex items-center gap-3 pt-3.5 border-t border-stone-200">
-                <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs">
-                  KD
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-stone-900">Kiran Deshmukh</h4>
-                  <span className="text-xs text-[#6B7280]">Operations Manager, Food Court Plaza</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Monochromatic Restaurant Brand Logos Layout */}
-          <div className="mt-12 pt-10 border-t border-stone-200/60 text-center">
-            <span className="text-[9px] font-black text-stone-400 uppercase tracking-widest block mb-6">
-              Empowering active tables at top venues
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 items-center justify-center opacity-40 grayscale text-center">
-              <div className="text-[10px] sm:text-xs font-black tracking-wider text-stone-705">BELLA ITALIA</div>
-              <div className="text-[10px] sm:text-xs font-black tracking-wider text-stone-705">BISTRO ROYALE</div>
-              <div className="text-[10px] sm:text-xs font-black tracking-wider text-stone-705">THE SPICY GRILL</div>
-              <div className="text-[10px] sm:text-xs font-black tracking-wider text-stone-705">DRAGON EXPRESS</div>
-              <div className="text-[10px] sm:text-xs font-black tracking-wider text-stone-705">TANDOORI HUB</div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* Section 10: Final CTA - Large Dark Section */}
-      <section className="py-16 bg-[#111827] text-white relative overflow-hidden z-10">
-        {/* Glow effects inside dark CTA */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#FF6B35]/15 rounded-full blur-[100px] pointer-events-none"></div>
-
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-25">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-none mb-4">
-            Ready to Modernize Your Restaurant?
-          </h2>
-          <p className="text-sm sm:text-base text-gray-300 leading-relaxed mb-8 max-w-xl mx-auto">
-            Join restaurants using Ordio to simplify ordering, automate KOTs, and improve customer dining experience.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 w-full sm:w-auto">
-            <Link 
-              to="/register" 
-              className="w-full sm:w-auto text-center font-bold text-[#111827] bg-[#FF6B35] hover:bg-[#E55A24] hover:text-white px-8 py-4.5 rounded-xl shadow-lg transition-all min-h-[48px] flex items-center justify-center"
-            >
-              Start Free Trial
-            </Link>
-            <a 
-              href="mailto:demo@ordio.in" 
-              className="w-full sm:w-auto text-center font-semibold text-white bg-transparent border border-gray-700 hover:border-gray-500 px-8 py-4.5 rounded-xl transition-all min-h-[48px] flex items-center justify-center"
-            >
-              Book Demo
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-white text-stone-850 py-12 border-t border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10 text-left">
-            <div className="md:col-span-2 space-y-3">
-              <Link to="/">
-                <img 
-                  src="/logo-black.png" 
-                  alt="ORDIO Logo" 
-                  className="h-8 w-auto object-contain mb-3"
-                />
-              </Link>
-              <p className="text-xs sm:text-sm text-[#6B7280] max-w-sm leading-relaxed">
-                Scan. Order. Pay. QR code table ordering platform designed to simplify restaurant menu management, automate waiter workflows, and fast-track checkout transactions.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-black text-stone-900 tracking-wider uppercase mb-3">Legal</h4>
-              <ul className="space-y-1.5">
-                <li><Link to="/terms" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Terms & Conditions</Link></li>
-                <li><Link to="/privacy" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/refund" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Refund Policy</Link></li>
+            {/* Col 1: Product */}
+            <div className="space-y-3">
+              <h4 className="text-[14px] font-bold text-white uppercase tracking-wider">Product</h4>
+              <ul className="space-y-2 text-[14px] text-slate-400">
+                <li><button onClick={() => scrollToSection('why-ordio')} className="hover:text-white transition-colors cursor-pointer">QR Ordering</button></li>
+                <li><button onClick={() => scrollToSection('why-ordio')} className="hover:text-white transition-colors cursor-pointer">CRM</button></li>
+                <li><button onClick={() => scrollToSection('why-ordio')} className="hover:text-white transition-colors cursor-pointer">Inventory</button></li>
+                <li><button onClick={() => scrollToSection('why-ordio')} className="hover:text-white transition-colors cursor-pointer">Analytics</button></li>
               </ul>
             </div>
 
-            <div>
-              <h4 className="text-xs font-black text-stone-900 tracking-wider uppercase mb-3">Support</h4>
-              <ul className="space-y-1.5">
-                <li><Link to="/contact" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Contact Us</Link></li>
-                <li><Link to="/help" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Help Center</Link></li>
-                <li><a href="#" className="text-xs text-[#6B7280] hover:text-[#FF6B35] transition-colors">Documentation</a></li>
+            {/* Col 2: Company */}
+            <div className="space-y-3">
+              <h4 className="text-[14px] font-bold text-white uppercase tracking-wider">Company</h4>
+              <ul className="space-y-2 text-[14px] text-slate-400">
+                <li><Link to="/about" className="hover:text-white transition-colors">About</Link></li>
+                <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
               </ul>
             </div>
+
+            {/* Col 3: Resources */}
+            <div className="space-y-3">
+              <h4 className="text-[14px] font-bold text-white uppercase tracking-wider">Resources</h4>
+              <ul className="space-y-2 text-[14px] text-slate-400">
+                <li><Link to="/help" className="hover:text-white transition-colors">Documentation</Link></li>
+                <li><Link to="/help" className="hover:text-white transition-colors">Help Center</Link></li>
+              </ul>
+            </div>
+
+            {/* Col 4: Legal */}
+            <div className="space-y-3">
+              <h4 className="text-[14px] font-bold text-white uppercase tracking-wider">Legal</h4>
+              <ul className="space-y-2 text-[14px] text-slate-400">
+                <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-white transition-colors">Terms</Link></li>
+              </ul>
+            </div>
+
           </div>
 
-          <div className="pt-6 border-t border-stone-150 flex flex-col md:flex-row items-center justify-between gap-3 text-center">
-            <p className="text-[10px] sm:text-xs text-[#9CA3AF]">
-              © {new Date().getFullYear()} ORDIO. All rights reserved. Designed for modern hospitality operators worldwide.
-            </p>
-            <p className="text-[10px] sm:text-xs text-stone-400 font-bold uppercase tracking-wide">
-              Scan. Order. Pay.
-            </p>
+          <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-[14px] text-slate-500">
+            <span className="font-bold text-white">ORD<span className="text-[#FF6B00]">IO</span> — Scan. Order. Pay. Manage Everything.</span>
+            <span>© 2026 ORDIO. All Rights Reserved.</span>
           </div>
         </div>
       </footer>
+
     </div>
-    </GlowBackground>
   );
 };
