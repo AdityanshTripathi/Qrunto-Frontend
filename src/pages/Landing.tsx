@@ -11,7 +11,6 @@ import {
   UserCheck,
   PackageX,
   ChefHat,
-  BellRing,
   CreditCard,
   Building2,
   ChevronDown,
@@ -20,12 +19,8 @@ import {
   Menu as MenuIcon,
   X,
   ArrowRight,
-  Zap,
   Activity,
-  ShoppingBag,
-  Layers,
-  Sliders,
-  DollarSign
+  ShoppingBag
 } from 'lucide-react';
 
 export const Landing: React.FC = () => {
