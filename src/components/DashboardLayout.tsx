@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -9,14 +9,9 @@ import {
   BarChart3, 
   CreditCard, 
   Settings as SettingsIcon, 
-  LogOut, 
-  Menu, 
   X, 
-  User,
   Users,
   Smile,
-  ChevronLeft,
-  ChevronRight,
   Bell,
   BellRing,
   Package
@@ -24,15 +19,13 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/api';
 import { toast } from 'sonner';
-import { useTheme } from '../context/ThemeContext';
 import { ThemeToggle } from './ThemeToggle';
+
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { DashboardSidebar } from './dashboard-sidebar/DashboardSidebar';
 
 export const DashboardLayout: React.FC = () => {
   const { user, clearAuth, setAuth } = useAuthStore();
-  const { theme } = useTheme();
-  const logoSrc = theme === 'light' ? '/logo-black.png' : '/logo-white.png';
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [checkingSub, setCheckingSub] = useState(true);
@@ -89,7 +82,6 @@ export const DashboardLayout: React.FC = () => {
         const newUnread = newNotifications.filter((n: any) => !n.isRead).length;
         
         if (!silent && newUnread > unreadCountRef.current) {
-          // Play notification chime sound using synthesized Web Audio API for maximum reliability
           try {
             const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
             const playTone = (freq: number, duration: number, delay: number) => {
@@ -104,14 +96,12 @@ export const DashboardLayout: React.FC = () => {
               osc.start(audioCtx.currentTime + delay);
               osc.stop(audioCtx.currentTime + delay + duration);
             };
-            // Double chime: E5 (659.25Hz) then G5 (783.99Hz)
             playTone(659.25, 0.15, 0);
             playTone(783.99, 0.25, 0.12);
           } catch (soundErr) {
             console.log('Audio playback blocked by browser or unsupported', soundErr);
           }
 
-          // Trigger toast for new notifications
           const currentIds = new Set(notificationsRef.current.map(n => n.id));
           const addedNotifs = newNotifications.filter((n: any) => !n.isRead && !currentIds.has(n.id));
           
@@ -130,12 +120,11 @@ export const DashboardLayout: React.FC = () => {
       }
     };
 
-    // Initial silent load on mount
     fetchNotifications(true);
 
     const interval = setInterval(() => {
       fetchNotifications(false);
-    }, 10000); // Check every 10 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
   }, []);
@@ -207,26 +196,21 @@ export const DashboardLayout: React.FC = () => {
     return null;
   }
 
-  // Navigation Links definition
   const navLinks = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
-    { name: 'Active Orders', path: '/dashboard/orders', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
-    { name: 'Menu Items', path: '/dashboard/menu', icon: Utensils, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
-    { name: 'Categories', path: '/dashboard/categories', icon: Tags, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
-    { name: 'Tables & QRs', path: '/dashboard/tables', icon: QrCode, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER', 'STAFF'] },
-    { name: 'Inventory', path: '/dashboard/inventory', icon: Package, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },
-    { name: 'Waiters', path: '/dashboard/waiters', icon: Users, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },
-    { name: 'CRM Hub', path: '/dashboard/crm', icon: Smile, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },
-    { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },
-    { name: 'Billing Plan', path: '/dashboard/subscription', icon: CreditCard, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },
-    { name: 'Settings', path: '/dashboard/settings', icon: SettingsIcon, roles: ['SUPER_ADMIN', 'RESTAURANT_OWNER'] },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Active Orders', path: '/dashboard/orders', icon: ShoppingBag },
+    { name: 'Menu Items', path: '/dashboard/menu', icon: Utensils },
+    { name: 'Categories', path: '/dashboard/categories', icon: Tags },
+    { name: 'Tables & QRs', path: '/dashboard/tables', icon: QrCode },
+    { name: 'Inventory', path: '/dashboard/inventory', icon: Package },
+    { name: 'Waiters', path: '/dashboard/waiters', icon: Users },
+    { name: 'CRM Hub', path: '/dashboard/crm', icon: Smile },
+    { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
+    { name: 'Billing Plan', path: '/dashboard/subscription', icon: CreditCard },
+    { name: 'Settings', path: '/dashboard/settings', icon: SettingsIcon },
   ];
 
-  // Filter links based on logged-in user's role
   const userRole = user?.role || 'STAFF';
-  const filteredLinks = navLinks.filter(link => link.roles.includes(userRole));
-
-  // Extract current page name for header display
   const currentPath = location.pathname;
   const currentRoute = navLinks.find(link => link.path === currentPath)?.name || 'Overview';
 
@@ -246,200 +230,23 @@ export const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
-      {/* ⚠️ Admin Bypass Banner */}
-      {localStorage.getItem('admin_access_token') && (
-        <div className="w-full bg-amber-500 text-black py-2 px-4 text-center text-xs font-black flex items-center justify-center gap-2 z-50 shrink-0">
-          <span>⚠️ You are logged in as Owner of {user?.restaurants[0]?.name || 'this restaurant'} (Support Session).</span>
-          <button
-            onClick={handleReturnToAdmin}
-            className="underline hover:text-red-900 transition-colors ml-1 font-extrabold uppercase tracking-wide border border-black/20 rounded px-2 py-0.5 bg-black/5 hover:bg-black/10"
-          >
-            Return to Admin Panel
-          </button>
-        </div>
-      )}
-      <div className="flex-1 flex flex-col lg:flex-row">
-        {/* 1. Desktop Sidebar Container */}
-      <aside 
-        className={`hidden lg:flex flex-col justify-between border-r border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl transition-all duration-300 sticky top-0 h-screen shrink-0 ${
-          sidebarCollapsed ? 'w-20' : 'w-64'
-        }`}
-      >
-        {/* Toggle Collapse Button */}
-        <button
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="absolute -right-3 top-7 w-6 h-6 rounded-full bg-[#FF6B35] border border-[#374151] flex items-center justify-center text-white hover:bg-orange-600 transition-colors shadow-md shadow-[#FF6B35]/20"
-        >
-          {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
-
-        {/* Sidebar Header/Logo */}
-        <div>
-          <div className="flex items-center justify-center px-4 py-5 border-b border-slate-100 dark:border-[#374151]/35">
-            {sidebarCollapsed ? (
-              <img src="/favicon.png" alt="Ordio Logo" className="w-8 h-8 object-contain rounded-lg" />
-            ) : (
-              <img src={logoSrc} alt="Ordio Logo" className="h-10 w-auto object-contain" />
-            )}
+    <SidebarProvider>
+      <div className="min-h-screen bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col w-full">
+        {/* ⚠️ Admin Bypass Banner */}
+        {localStorage.getItem('admin_access_token') && (
+          <div className="w-full bg-amber-500 text-black py-2 px-4 text-center text-xs font-black flex items-center justify-center gap-2 z-50 shrink-0">
+            <span>⚠️ You are logged in as Owner of {user?.restaurants[0]?.name || 'this restaurant'} (Support Session).</span>
+            <button
+              onClick={handleReturnToAdmin}
+              className="underline hover:text-red-900 transition-colors ml-1 font-extrabold uppercase tracking-wide border border-black/20 rounded px-2 py-0.5 bg-black/5 hover:bg-black/10"
+            >
+              Return to Admin Panel
+            </button>
           </div>
-
-          {/* Navigation Links */}
-          <nav className="px-3 py-6 space-y-1">
-            {filteredLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <NavLink
-                  key={link.path}
-                  to={link.path}
-                  end={link.path === '/dashboard'}
-                  className={({ isActive }) =>
-                    `flex items-center gap-4 py-3 rounded-xl transition-all ${
-                      sidebarCollapsed ? 'justify-center px-0' : 'px-4'
-                    } ${
-                      isActive 
-                        ? 'bg-[#FF6B35] text-white font-medium shadow-lg shadow-[#FF6B35]/15' 
-                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-[#9ca3af] dark:hover:text-white dark:hover:bg-[#374151]/30'
-                    }`
-                  }
-                  title={link.name}
-                >
-                  <Icon className="w-5 h-5 min-w-5 min-h-5" />
-                  {!sidebarCollapsed && <span className="text-sm">{link.name}</span>}
-                </NavLink>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Profile Card & Logout */}
-        <div className="border-t border-slate-200 dark:border-[#374151]/35 p-4 flex flex-col gap-2">
-          {!sidebarCollapsed ? (
-            <div className="bg-slate-50 border border-slate-100 dark:bg-[#111827]/40 dark:border-[#374151]/30 rounded-2xl p-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#FF6B35]">
-                <User className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 dark:text-gray-100 truncate">{user?.name}</p>
-                <p className="text-[10px] text-slate-500 dark:text-gray-400 font-mono truncate tracking-wider uppercase">{userRole.replace('_', ' ')}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="w-9 h-9 mx-auto rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#FF6B35]" title={user?.name}>
-              <User className="w-4 h-4" />
-            </div>
-          )}
-          
-          <button
-            onClick={() => clearAuth()}
-            className={`w-full flex items-center gap-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/5 rounded-xl transition-all ${
-              sidebarCollapsed ? 'justify-center px-0' : 'px-4'
-            }`}
-            title="Log Out"
-          >
-            <LogOut className="w-5 h-5 min-w-5 min-h-5" />
-            {!sidebarCollapsed && <span className="text-sm font-semibold">Log Out</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* 2. Mobile Header Bar */}
-      <header className="lg:hidden flex items-center justify-between border-b border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl px-6 py-4">
-        <div className="flex items-center gap-3">
-          <img src={logoSrc} alt="Ordio Logo" className="h-8 w-auto object-contain" />
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="p-2 bg-slate-100 dark:bg-[#374151]/50 border border-slate-200 dark:border-[#4b5563]/40 rounded-xl text-slate-700 dark:text-gray-200"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
-      </header>
-
-      {/* 3. Mobile Navigation Drawer Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          {/* Drawer backdrop */}
-          <div 
-            onClick={() => setMobileMenuOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-          ></div>
-          
-          {/* Drawer sheet content */}
-          <div className="relative w-80 max-w-[80%] bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-[#374151]/50 p-6 flex flex-col justify-between z-10 animate-in slide-in-from-left duration-200">
-            <div>
-              {/* Close Button */}
-              <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-[#374151]/35">
-                <div className="flex items-center gap-3">
-                  <img src={logoSrc} alt="Ordio Logo" className="h-8 w-auto object-contain" />
-                </div>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-1.5 bg-slate-100 border border-slate-200 dark:bg-[#1f2937] dark:border-[#374151] rounded-lg text-slate-500 dark:text-[#9ca3af]"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Mobile links */}
-              <nav className="py-6 space-y-1">
-                {filteredLinks.map((link) => {
-                  const Icon = link.icon;
-                  return (
-                    <NavLink
-                      key={link.path}
-                      to={link.path}
-                      end={link.path === '/dashboard'}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `flex items-center gap-4 py-3.5 px-4 rounded-xl transition-all ${
-                          isActive 
-                            ? 'bg-[#FF6B35] text-white font-medium shadow-md shadow-[#FF6B35]/15' 
-                            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-[#9ca3af] dark:hover:text-white dark:hover:bg-[#374151]/20'
-                        }`
-                      }
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="text-sm">{link.name}</span>
-                    </NavLink>
-                  );
-                })}
-              </nav>
-            </div>
-
-            {/* Mobile bottom profile */}
-            <div className="border-t border-slate-200 dark:border-[#374151]/35 pt-4 space-y-3">
-              <div className="bg-slate-50 border border-slate-100 dark:bg-[#1f2937]/50 dark:border-[#374151]/30 rounded-2xl p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#FF6B35]">
-                  <User className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate text-slate-800 dark:text-gray-100">{user?.name}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-gray-400 font-mono truncate uppercase tracking-wider">{userRole.replace('_', ' ')}</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  clearAuth();
-                }}
-                className="w-full flex items-center gap-4 py-3.5 px-4 text-red-400 hover:text-red-300 hover:bg-red-500/5 rounded-xl transition-all"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="text-sm font-semibold">Log Out</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 4. Desktop Main Content Layout */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+        )}
+        <div className="flex-1 flex w-full min-w-0">
+          <DashboardSidebar />
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Desktop Top Header Bar */}
         <header className="hidden lg:flex items-center justify-between px-8 py-5 border-b border-slate-200 dark:border-[#374151]/40 bg-white/80 dark:bg-[#111827]/60 backdrop-blur-md relative z-20 transition-colors duration-300">
           <div className="flex flex-col">
@@ -566,6 +373,7 @@ export const DashboardLayout: React.FC = () => {
       </div>
       </div>
     </div>
+    </SidebarProvider>
   );
 };
 export default DashboardLayout;
