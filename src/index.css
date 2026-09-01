@@ -109,4 +109,39 @@
   .font-inter-tight {
     font-family: 'Inter Tight', sans-serif;
   }
+  .glass-panel-dark {
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .glass-card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .glass-card-hover:hover {
+    border-color: rgba(255, 107, 0, 0.4);
+    box-shadow: 0 10px 30px -10px rgba(255, 107, 0, 0.15);
+    transform: translateY(-2px);
+  }
+  .glow-orange {
+    box-shadow: 0 0 30px -5px rgba(255, 107, 0, 0.3);
+  }
+  .glow-orange-subtle {
+    box-shadow: 0 0 20px -2px rgba(255, 107, 0, 0.15);
+  }
+  @keyframes carouselFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .carousel-fade-in {
+    animation: carouselFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
+
+
