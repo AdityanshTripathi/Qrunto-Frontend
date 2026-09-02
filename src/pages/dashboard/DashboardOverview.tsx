@@ -255,7 +255,7 @@ const SectionHeader: React.FC<{
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export const DashboardOverview: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -314,10 +314,9 @@ export const DashboardOverview: React.FC = () => {
 
   useEffect(() => {
     const restaurantId = user?.restaurants?.[0]?.id;
-    if (!restaurantId) return;
+    if (!restaurantId || !accessToken) return;
 
-    const socket: Socket = io(SOCKET_URL);
-    socket.emit('join_restaurant', restaurantId);
+    const socket: Socket = io(SOCKET_URL, { auth: { token: accessToken } });
 
     const handleUpdate = () => {
       fetchDashboardData();
@@ -331,7 +330,7 @@ export const DashboardOverview: React.FC = () => {
     return () => {
       socket.disconnect();
     };
-  }, [user]);
+  }, [user, accessToken]);
 
   const getSalesChartData = () => {
     const paidServedOrders = allOrders.filter(o => o && o.status && ['SERVED', 'PAID'].includes(o.status));

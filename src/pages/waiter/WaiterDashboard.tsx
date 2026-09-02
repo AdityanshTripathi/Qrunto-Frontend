@@ -80,7 +80,7 @@ const getSocketUrl = () => {
 const SOCKET_URL = getSocketUrl();
 
 export const WaiterDashboard: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'dashboard';
 
@@ -270,12 +270,9 @@ export const WaiterDashboard: React.FC = () => {
 
   // 3. Socket.io Real-time Setup
   useEffect(() => {
-    if (!restaurantId) return;
+    if (!restaurantId || !accessToken) return;
 
-    const socket: Socket = io(SOCKET_URL);
-
-    // Join Restaurant Room
-    socket.emit('join_restaurant', restaurantId);
+    const socket: Socket = io(SOCKET_URL, { auth: { token: accessToken } });
 
     // Socket events (delegated to delta-aware fetchData)
     socket.on('NEW_ORDER', () => fetchData(true));
@@ -288,7 +285,7 @@ export const WaiterDashboard: React.FC = () => {
     return () => {
       socket.disconnect();
     };
-  }, [restaurantId]);
+  }, [restaurantId, accessToken]);
 
   // 4. Attend/Resolve Assistance Request
   const handleResolveRequest = async (id: string) => {
