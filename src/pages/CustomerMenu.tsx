@@ -14,6 +14,7 @@ import { jsPDF } from 'jspdf';
 import bannerLight from '../assets/banner_light.jpg';
 import bannerDark from '../assets/banner_dark.jpg';
 import menuIcon from '../assets/menu_icon.jpg';
+import { API_BASE_URL as BASE_URL } from '../config/backend';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Restaurant { id: string; name: string; slug: string; logoUrl: string | null; }
@@ -51,10 +52,6 @@ interface PlacedOrder {
 const fmt = (amount: number, _currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
-const BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
-    ? 'http://localhost:5000/api'
-    : 'https://backend-steel-seven-97.vercel.app/api');
 
 const getCookie = (name: string): string | null => {
   const nameEQ = name + "=";

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   TrendingUp,
@@ -43,12 +43,8 @@ import { api } from '../../lib/api';
 import { toast } from 'sonner';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { io, Socket } from 'socket.io-client';
+import { SOCKET_URL } from '../../config/backend';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL 
-  ? import.meta.env.VITE_API_URL.replace('/api', '')
-  : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:5000'
-    : 'https://backend-steel-seven-97.vercel.app');
 import {
   AreaChart,
   Area,
@@ -268,49 +264,75 @@ export const DashboardOverview: React.FC = () => {
   const [orderStats, setOrderStats] = useState({ active: 0, new: 0, accepting: 0, preparing: 0, ready: 0, served: 0, cancelled: 0, paid: 0 });
   const [salesPeriod, setSalesPeriod] = useState<'today' | 'week' | 'month'>('today');
 
-  const fetchDashboardData = async () => {
-    try {
-      const analyticsRes = await api.get('/analytics/overview');
-      setKpis(analyticsRes.kpis || { totalRevenue: 0, totalOrdersCount: 0, averageOrderValue: 0, activeTablesCount: 0 });
-      setTopItems(analyticsRes.topSellingItems || []);
+  const dashboardRequestRef = useRef<Promise<void> | null>(null);
+  const dashboardRefreshQueuedRef = useRef(false);
 
-      const subRes = await api.get('/subscriptions/current');
-      setSubscription(subRes.subscription || null);
-
-      const ordersRes = await api.get('/orders');
-      const orders: Order[] = ordersRes.orders || [];
-      setAllOrders(orders);
-      const active = orders.filter(o => ['NEW', 'ACCEPTED', 'PREPARING', 'READY'].includes(o.status));
-      setActiveOrders(active.slice(0, 6));
-
-      try {
-        const invRes = await api.get('/inventory/reports/dashboard-metrics');
-        setInventoryMetrics(invRes);
-      } catch (err) {
-        console.error('Failed to load inventory metrics:', err);
-      }
-
-      setOrderStats({
-        active: active.length,
-        new: orders.filter(o => o.status === 'NEW').length,
-        accepting: orders.filter(o => o.status === 'ACCEPTED').length,
-        preparing: orders.filter(o => o.status === 'PREPARING').length,
-        ready: orders.filter(o => o.status === 'READY').length,
-        served: orders.filter(o => o.status === 'SERVED').length,
-        cancelled: orders.filter(o => o.status === 'CANCELLED').length,
-        paid: orders.filter(o => o.status === 'PAID').length,
-      });
-    } catch (err: any) {
-      toast.error('Failed to load dashboard data: ' + err.message);
-    } finally {
-      setLoading(false);
+  const fetchDashboardData = useCallback((queueIfBusy = false): Promise<void> => {
+    if (dashboardRequestRef.current) {
+      if (queueIfBusy) dashboardRefreshQueuedRef.current = true;
+      return dashboardRequestRef.current;
     }
-  };
+
+    const request = (async () => {
+      do {
+        dashboardRefreshQueuedRef.current = false;
+        try {
+          const inventoryRequest = api.get('/inventory/reports/dashboard-metrics')
+            .then(data => ({ data, error: null }))
+            .catch(error => ({ data: null, error }));
+
+          const [analyticsRes, subRes, ordersRes, orderStatsRes, inventoryResult] = await Promise.all([
+            api.get('/analytics/overview'),
+            api.get('/subscriptions/current'),
+            api.get('/orders?limit=30'),
+            api.get('/orders/stats'),
+            inventoryRequest,
+          ]);
+
+          setKpis(analyticsRes.kpis || { totalRevenue: 0, totalOrdersCount: 0, averageOrderValue: 0, activeTablesCount: 0 });
+          setTopItems(analyticsRes.topSellingItems || []);
+          setSubscription(subRes.subscription || null);
+
+          const orders: Order[] = ordersRes.orders || [];
+          setAllOrders(orders);
+          const active = orders.filter(o => ['NEW', 'ACCEPTED', 'PREPARING', 'READY'].includes(o.status));
+          setActiveOrders(active.slice(0, 6));
+          const stats = orderStatsRes.stats || {};
+          setOrderStats({
+            active: (stats.NEW || 0) + (stats.ACCEPTED || 0) + (stats.PREPARING || 0) + (stats.READY || 0),
+            new: stats.NEW || 0,
+            accepting: stats.ACCEPTED || 0,
+            preparing: stats.PREPARING || 0,
+            ready: stats.READY || 0,
+            served: stats.SERVED || 0,
+            cancelled: stats.CANCELLED || 0,
+            paid: stats.PAID || 0,
+          });
+
+          if (inventoryResult.error) {
+            console.error('Failed to load inventory metrics:', inventoryResult.error);
+          } else {
+            setInventoryMetrics(inventoryResult.data);
+          }
+        } catch (err: any) {
+          toast.error('Failed to load dashboard data: ' + err.message);
+        } finally {
+          setLoading(false);
+        }
+      } while (dashboardRefreshQueuedRef.current);
+    })();
+
+    dashboardRequestRef.current = request;
+    void request.finally(() => {
+      if (dashboardRequestRef.current === request) dashboardRequestRef.current = null;
+    });
+    return request;
+  }, []);
 
   useEffect(() => {
     setLoading(true);
-    fetchDashboardData();
-  }, []);
+    void fetchDashboardData();
+  }, [fetchDashboardData]);
 
   useEffect(() => {
     const restaurantId = user?.restaurants?.[0]?.id;
@@ -319,7 +341,7 @@ export const DashboardOverview: React.FC = () => {
     const socket: Socket = io(SOCKET_URL, { auth: { token: accessToken } });
 
     const handleUpdate = () => {
-      fetchDashboardData();
+      void fetchDashboardData(true);
     };
 
     socket.on('NEW_ORDER', handleUpdate);
@@ -330,7 +352,7 @@ export const DashboardOverview: React.FC = () => {
     return () => {
       socket.disconnect();
     };
-  }, [user, accessToken]);
+  }, [user, accessToken, fetchDashboardData]);
 
   const getSalesChartData = () => {
     const paidServedOrders = allOrders.filter(o => o && o.status && ['SERVED', 'PAID'].includes(o.status));

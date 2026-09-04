@@ -17,11 +17,8 @@ import { OrderTab } from './analytics/OrderTab';
 import { MenuTab } from './analytics/MenuTab';
 import { CustomerTab } from './analytics/CustomerTab';
 import { LoyaltyTab } from './analytics/LoyaltyTab';
+import { API_BASE_URL as BASE_URL } from '../../config/backend';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
-    ? 'http://localhost:5000/api'
-    : 'https://backend-steel-seven-97.vercel.app/api');
 
 export const Analytics: React.FC = () => {
   return (

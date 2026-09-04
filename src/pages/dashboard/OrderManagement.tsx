@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import {
   Clock,
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
+import { API_BASE_URL as BASE_URL } from '../../config/backend';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type OrderStatus = 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED' | 'PAID';
@@ -49,6 +50,11 @@ interface Order {
   orderItems: OrderItem[];
 }
 
+interface OrderPagination {
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 interface OrderStats {
   NEW: number;
   PREPARING: number;
@@ -62,10 +68,6 @@ interface OrderStats {
 const fmt = (amount: number, _currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
-const BASE_URL = import.meta.env.VITE_API_URL ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
-    ? 'http://localhost:5000/api'
-    : 'https://backend-steel-seven-97.vercel.app/api');
 
 export const OrderManagement: React.FC = () => {
   const token = useAuthStore((state) => state.accessToken);
@@ -73,6 +75,9 @@ export const OrderManagement: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<OrderStats>({ NEW: 0, PREPARING: 0, READY: 0, SERVED: 0, CANCELLED: 0, PAID: 0 });
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pagination, setPagination] = useState<OrderPagination>({ nextCursor: null, hasMore: false });
+  const loadedMoreRef = useRef(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>('ALL');
@@ -191,69 +196,107 @@ export const OrderManagement: React.FC = () => {
 
   const filteredOrders = getFilteredOrders();
 
-  const fetchOrdersAndStats = useCallback(async (silent = false) => {
+  const fetchOrdersAndStats = useCallback(async (
+    silent = false,
+    cursor?: string,
+  ) => {
     if (!token) return;
-    if (!silent) setLoading(true);
+    if (cursor) setLoadingMore(true);
+    else if (!silent) setLoading(true);
 
     try {
-      let ordersUrl = `${BASE_URL}/orders`;
-      if (activeTab !== 'ALL') {
-        ordersUrl += `?status=${activeTab}`;
+      const params = new URLSearchParams({ limit: '30' });
+      if (activeTab !== 'ALL') params.set('status', activeTab);
+      if (cursor) params.set('cursor', cursor);
+
+      const now = new Date();
+      if (dateFilter === 'TODAY') {
+        params.set('date', now.toLocaleDateString('en-CA'));
+      } else if (dateFilter === 'CUSTOM' && customDate) {
+        params.set('date', customDate);
+      } else if (dateFilter !== 'ALL' && dateFilter !== 'CUSTOM') {
+        const days = dateFilter === '7_DAYS' ? 7 : dateFilter === '1_MONTH' ? 30 : 365;
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        params.set('startDate', new Date(todayStart.getTime() - days * 24 * 60 * 60 * 1000).toISOString());
+        params.set('endDate', now.toISOString());
       }
-      const ordersRes = await fetch(ordersUrl, {
-        headers: { Authorization: `Bearer ${token}` },
+
+      const ordersRequest = fetch(BASE_URL + '/orders?' + params.toString(), {
+        headers: { Authorization: 'Bearer ' + token },
       });
+      const statsRequest = cursor
+        ? Promise.resolve(null)
+        : fetch(BASE_URL + '/orders/stats', {
+            headers: { Authorization: 'Bearer ' + token },
+          });
+
+      const [ordersRes, statsRes] = await Promise.all([ordersRequest, statsRequest]);
       const ordersData = await ordersRes.json();
       if (!ordersRes.ok) throw new Error(ordersData.error || 'Failed to fetch orders');
 
-      if (orders.length > 0 && ordersData.orders.length > orders.length) {
-        const hasNew = ordersData.orders.some((o: Order) => o.status === 'NEW' && !orders.some(prev => prev.id === o.id));
-        if (hasNew) {
-          toast.success('🔔 New Order Received!', { duration: 5000 });
-          try {
-            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const playTone = (freq: number, duration: number, delay: number) => {
-              const osc = audioCtx.createOscillator();
-              const gain = audioCtx.createGain();
-              osc.connect(gain);
-              gain.connect(audioCtx.destination);
-              osc.frequency.value = freq;
-              osc.type = 'sine';
-              gain.gain.setValueAtTime(0.15, audioCtx.currentTime + delay);
-              gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + delay + duration);
-              osc.start(audioCtx.currentTime + delay);
-              osc.stop(audioCtx.currentTime + delay + duration);
-            };
-            playTone(659.25, 0.15, 0);
-            playTone(783.99, 0.25, 0.12);
-          } catch (soundErr) {
-            console.log('Audio playback blocked by browser or unsupported', soundErr);
+      const preserveLoadedPages = !cursor && silent && loadedMoreRef.current;
+      setOrders((previous) => {
+        if (!cursor && silent) {
+          const hasNew = ordersData.orders.some(
+            (order: Order) => order.status === 'NEW' && !previous.some(existing => existing.id === order.id),
+          );
+          if (hasNew) {
+            toast.success('🔔 New Order Received!', { duration: 5000 });
+            try {
+              const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+              const playTone = (freq: number, duration: number, delay: number) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + delay + duration);
+                osc.start(audioCtx.currentTime + delay);
+                osc.stop(audioCtx.currentTime + delay + duration);
+              };
+              playTone(659.25, 0.15, 0);
+              playTone(783.99, 0.25, 0.12);
+            } catch (soundErr) {
+              console.log('Audio playback blocked by browser or unsupported', soundErr);
+            }
           }
         }
-      }
-      setOrders(ordersData.orders);
 
-      const statsRes = await fetch(`${BASE_URL}/orders/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
+        if (!cursor) {
+          if (!preserveLoadedPages) return ordersData.orders;
+          const refreshedIds = new Set(ordersData.orders.map((order: Order) => order.id));
+          return [...ordersData.orders, ...previous.filter(order => !refreshedIds.has(order.id))];
+        }
+        const existingIds = new Set(previous.map(order => order.id));
+        return [...previous, ...ordersData.orders.filter((order: Order) => !existingIds.has(order.id))];
       });
-      const statsData = await statsRes.json();
-      if (!statsRes.ok) throw new Error(statsData.error || 'Failed to fetch order stats');
-      setStats(statsData.stats);
+      setPagination({
+        nextCursor: ordersData.pagination?.nextCursor ?? null,
+        hasMore: ordersData.pagination?.hasMore ?? false,
+      });
 
+      if (statsRes) {
+        const statsData = await statsRes.json();
+        if (!statsRes.ok) throw new Error(statsData.error || 'Failed to fetch order stats');
+        setStats(statsData.stats);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Error syncing data');
     } finally {
-      if (!silent) setLoading(false);
+      if (cursor) setLoadingMore(false);
+      else if (!silent) setLoading(false);
     }
-  }, [token, activeTab, orders]);
+  }, [token, activeTab, dateFilter, customDate]);
 
   useEffect(() => {
-    fetchOrdersAndStats();
+    void fetchOrdersAndStats();
     const timer = setInterval(() => {
-      fetchOrdersAndStats(true);
+      void fetchOrdersAndStats(true);
     }, pollInterval);
     return () => clearInterval(timer);
-  }, [pollInterval, activeTab, token]);
+  }, [fetchOrdersAndStats, pollInterval]);
 
   const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
     if (!token) return;
@@ -610,6 +653,19 @@ export const OrderManagement: React.FC = () => {
       )}
 
       {/* ─── Detail Modal ────────────────────────────────────────────────── */}
+      {pagination.hasMore && pagination.nextCursor && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => void fetchOrdersAndStats(true, pagination.nextCursor!)}
+            disabled={loadingMore}
+            className="px-5 py-2.5 bg-[#FF6B35] hover:bg-[#e85a28] text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+          >
+            {loadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+            {loadingMore ? 'Loading...' : 'Load more orders'}
+          </button>
+        </div>
+      )}
+
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setSelectedOrder(null)} className="absolute inset-0 bg-black/75 backdrop-blur-sm" />

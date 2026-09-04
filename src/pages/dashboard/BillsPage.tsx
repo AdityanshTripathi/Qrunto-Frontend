@@ -14,6 +14,7 @@ import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { API_BASE_URL as BASE_URL } from '../../config/backend';
 
 interface Table {
   id: string;
@@ -69,10 +70,6 @@ interface RestaurantSettings {
 const fmt = (amount: number, currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: currency, minimumFractionDigits: 0 }).format(amount);
 
-const BASE_URL = import.meta.env.VITE_API_URL || 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
-    ? 'http://localhost:5000/api'
-    : 'https://backend-steel-seven-97.vercel.app/api');
 
 export const BillsPage: React.FC = () => {
   const token = useAuthStore((state) => state.accessToken);
@@ -111,7 +108,7 @@ export const BillsPage: React.FC = () => {
       setBillRequests(billingReqs);
 
       // 2. Fetch active orders
-      const ordersRes = await fetch(`${BASE_URL}/orders`, {
+      const ordersRes = await fetch(`${BASE_URL}/orders?limit=100`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const ordersData = await ordersRes.json();

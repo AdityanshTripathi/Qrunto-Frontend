@@ -22,6 +22,7 @@ import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { api } from '../../lib/api';
 import { PasscodeLockGate } from '../../components/PasscodeLockGate';
+import { API_BASE_URL as BASE_URL } from '../../config/backend';
 import { useCallback } from 'react';
 
 
@@ -91,12 +92,6 @@ const compressLogo = (file: File, maxSize = 300, quality = 0.85): Promise<string
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
-
-const BASE_URL = import.meta.env.VITE_API_URL ||
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
-    ? 'http://localhost:5000/api'
-    : '');
-
 
 export const Settings: React.FC = () => {
   return (

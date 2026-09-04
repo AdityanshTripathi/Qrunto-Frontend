@@ -1,9 +1,6 @@
 import { useAuthStore } from '../store/authStore';
+import { API_BASE_URL as BASE_URL } from '../config/backend';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 
-  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV)
-    ? 'http://localhost:5000/api'
-    : 'https://qrunto2-backend.vercel.app/api');
 
 interface RequestOptions extends RequestInit {
   body?: any;

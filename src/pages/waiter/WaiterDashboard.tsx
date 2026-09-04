@@ -10,6 +10,7 @@ import {
   ShoppingCart, User, Loader2, X, AlertTriangle, ShieldCheck, QrCode, Minus, Receipt
 } from 'lucide-react';
 import { OrderManagement } from '../dashboard/OrderManagement';
+import { API_BASE_URL, SOCKET_URL } from '../../config/backend';
 
 // Interfaces
 interface Table {
@@ -67,17 +68,6 @@ interface Category {
 const fmt = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
-const getSocketUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL;
-  if (apiUrl) {
-    return apiUrl.replace(/\/api\/?$/, '');
-  }
-  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('ordio.in') || import.meta.env.DEV
-    ? 'http://localhost:5000'
-    : 'https://backend-steel-seven-97.vercel.app';
-};
-
-const SOCKET_URL = getSocketUrl();
 
 export const WaiterDashboard: React.FC = () => {
   const { user, accessToken } = useAuthStore();
@@ -163,7 +153,7 @@ export const WaiterDashboard: React.FC = () => {
       setTables(tablesRes.tables || []);
 
       // Fetch Active Orders
-      const ordersRes = await api.get('/orders');
+      const ordersRes = await api.get('/orders?limit=100');
       const mappedOrders: Order[] = (ordersRes.orders || []).map((order: any) => ({
         id: order.id,
         orderNumber: order.orderNumber,
@@ -245,7 +235,7 @@ export const WaiterDashboard: React.FC = () => {
   const fetchMenu = async () => {
     if (!restaurantSlug) return;
     try {
-      const res = await fetch(`${SOCKET_URL}/api/public/${restaurantSlug}`);
+      const res = await fetch(`${API_BASE_URL}/public/${restaurantSlug}`);
       if (res.ok) {
         const data = await res.json();
         setMenuItems(data.menuItems || []);
@@ -365,7 +355,7 @@ export const WaiterDashboard: React.FC = () => {
 
     setSubmittingItems(true);
     try {
-      const res = await fetch(`${SOCKET_URL}/api/public/${restaurantSlug}/orders`, {
+      const res = await fetch(`${API_BASE_URL}/public/${restaurantSlug}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -404,7 +394,7 @@ export const WaiterDashboard: React.FC = () => {
 
     setSubmittingItems(true);
     try {
-      const res = await fetch(`${SOCKET_URL}/api/public/${restaurantSlug}/orders`, {
+      const res = await fetch(`${API_BASE_URL}/public/${restaurantSlug}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
