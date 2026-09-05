@@ -338,7 +338,12 @@ export const DashboardOverview: React.FC = () => {
     const restaurantId = user?.restaurants?.[0]?.id;
     if (!restaurantId || !accessToken) return;
 
-    const socket: Socket = io(SOCKET_URL, { auth: { token: accessToken } });
+    const socket: Socket = io(SOCKET_URL, {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      tryAllTransports: true,
+      auth: { token: accessToken },
+    });
 
     const handleUpdate = () => {
       void fetchDashboardData(true);

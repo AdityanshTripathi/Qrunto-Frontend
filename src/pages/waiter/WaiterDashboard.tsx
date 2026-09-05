@@ -86,6 +86,7 @@ export const WaiterDashboard: React.FC = () => {
   
   // UI states
   const [loading, setLoading] = useState(true);
+  const [socketConnected, setSocketConnected] = useState(false);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isAddItemsOpen, setIsAddItemsOpen] = useState(false);
@@ -250,19 +251,30 @@ export const WaiterDashboard: React.FC = () => {
     fetchData();
     fetchMenu();
 
-    // Fallback polling for serverless (Vercel) hosting where socket connections are unstable/unsupported
+    if (socketConnected) return;
+
+    // Keep polling protection while the socket is disconnected or reconnecting.
     const interval = setInterval(() => {
       fetchData(true);
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [restaurantSlug]);
+  }, [restaurantSlug, socketConnected]);
 
   // 3. Socket.io Real-time Setup
   useEffect(() => {
     if (!restaurantId || !accessToken) return;
 
-    const socket: Socket = io(SOCKET_URL, { auth: { token: accessToken } });
+    const socket: Socket = io(SOCKET_URL, {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      tryAllTransports: true,
+      auth: { token: accessToken },
+    });
+
+    socket.on('connect', () => setSocketConnected(true));
+    socket.on('disconnect', () => setSocketConnected(false));
+    socket.on('connect_error', () => setSocketConnected(false));
 
     // Socket events (delegated to delta-aware fetchData)
     socket.on('NEW_ORDER', () => fetchData(true));
@@ -273,6 +285,7 @@ export const WaiterDashboard: React.FC = () => {
     socket.on('ORDER_READY', () => fetchData(true));
 
     return () => {
+      setSocketConnected(false);
       socket.disconnect();
     };
   }, [restaurantId, accessToken]);
