@@ -9,8 +9,6 @@ import {
   MapPin, ChevronLeft, ArrowUpDown, SlidersHorizontal,
 } from 'lucide-react';
 
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 import bannerLight from '../assets/banner_light.jpg';
 import bannerDark from '../assets/banner_dark.jpg';
 import menuIcon from '../assets/menu_icon.jpg';
@@ -444,6 +442,11 @@ export const CustomerMenu: React.FC = () => {
     setIsDownloadingInvoice(true);
     const toastId = toast.loading('Generating PDF invoice...');
     try {
+      // Load PDF tools only when an invoice is requested, before changing capture styles.
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
       // Temporarily set styling for best quality canvas capture
       const originalStyle = element.style.cssText;
       

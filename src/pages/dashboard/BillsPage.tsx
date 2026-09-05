@@ -13,8 +13,6 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 import { API_BASE_URL as BASE_URL, SOCKET_URL } from '../../config/backend';
 
 interface Table {
@@ -263,6 +261,11 @@ export const BillsPage: React.FC = () => {
     const toastId = toast.loading('Generating PDF invoice...');
 
     try {
+      // Load PDF tools only when an invoice is requested, before changing capture styles.
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
       const originalStyle = element.style.cssText;
       element.style.cssText += 'background-color: #ffffff !important; color: #000000 !important;';
 
