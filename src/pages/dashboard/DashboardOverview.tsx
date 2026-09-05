@@ -352,7 +352,6 @@ export const DashboardOverview: React.FC = () => {
     socket.on('NEW_ORDER', handleUpdate);
     socket.on('ITEM_ADDED', handleUpdate);
     socket.on('ORDER_UPDATED', handleUpdate);
-    socket.on('ORDER_READY', handleUpdate);
 
     return () => {
       socket.disconnect();

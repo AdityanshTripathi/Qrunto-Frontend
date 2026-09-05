@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { toast } from 'sonner';
 import {
   Clock,
@@ -17,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
-import { API_BASE_URL as BASE_URL } from '../../config/backend';
+import { API_BASE_URL as BASE_URL, SOCKET_URL } from '../../config/backend';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type OrderStatus = 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED' | 'PAID';
@@ -82,6 +83,9 @@ export const OrderManagement: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>('ALL');
   const [pollInterval, setPollInterval] = useState<number>(10000);
+  const [socketConnected, setSocketConnected] = useState(false);
+  const hasConnectedRef = useRef(false);
+  const fetchOrdersRef = useRef<(silent?: boolean) => void>(() => undefined);
 
   const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | '7_DAYS' | '1_MONTH' | '1_YEAR' | 'CUSTOM'>('ALL');
   const [customDate, setCustomDate] = useState<string>('');
@@ -292,11 +296,44 @@ export const OrderManagement: React.FC = () => {
 
   useEffect(() => {
     void fetchOrdersAndStats();
+  }, [fetchOrdersAndStats]);
+
+  useEffect(() => {
+    fetchOrdersRef.current = fetchOrdersAndStats;
+  }, [fetchOrdersAndStats]);
+
+  useEffect(() => {
+    if (socketConnected) return;
     const timer = setInterval(() => {
-      void fetchOrdersAndStats(true);
+      fetchOrdersRef.current(true);
     }, pollInterval);
     return () => clearInterval(timer);
-  }, [fetchOrdersAndStats, pollInterval]);
+  }, [pollInterval, socketConnected]);
+
+  useEffect(() => {
+    if (!token) return;
+    const socket = io(SOCKET_URL, {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      tryAllTransports: true,
+      auth: { token },
+    });
+    const refresh = () => fetchOrdersRef.current(true);
+    socket.on('connect', () => {
+      setSocketConnected(true);
+      if (hasConnectedRef.current) refresh();
+      else hasConnectedRef.current = true;
+    });
+    socket.on('disconnect', () => setSocketConnected(false));
+    socket.on('connect_error', () => setSocketConnected(false));
+    socket.on('NEW_ORDER', refresh);
+    socket.on('ITEM_ADDED', refresh);
+    socket.on('ORDER_UPDATED', refresh);
+    return () => {
+      setSocketConnected(false);
+      socket.disconnect();
+    };
+  }, [token]);
 
   const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
     if (!token) return;

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { toast } from 'sonner';
 import { 
   Receipt, 
@@ -14,7 +15,7 @@ import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { API_BASE_URL as BASE_URL } from '../../config/backend';
+import { API_BASE_URL as BASE_URL, SOCKET_URL } from '../../config/backend';
 
 interface Table {
   id: string;
@@ -80,6 +81,8 @@ export const BillsPage: React.FC = () => {
   const [restaurantSettings, setRestaurantSettings] = useState<RestaurantSettings>({ currency: 'INR', taxPercentage: 0 });
   
   const [loading, setLoading] = useState(true);
+  const [socketConnected, setSocketConnected] = useState(false);
+  const hasConnectedRef = useRef(false);
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<Record<string, 'CASH' | 'CARD' | 'UPI'>>({});
   
@@ -141,12 +144,40 @@ export const BillsPage: React.FC = () => {
     };
     fetchSettings();
     fetchData();
+  }, [token, fetchData]);
 
-    // Polling interval for updates
+  useEffect(() => {
+    if (socketConnected) return;
     const timer = setInterval(() => {
       fetchData(true);
     }, 10000);
     return () => clearInterval(timer);
+  }, [fetchData, socketConnected]);
+
+  useEffect(() => {
+    if (!token) return;
+    const socket = io(SOCKET_URL, {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      tryAllTransports: true,
+      auth: { token },
+    });
+    const refresh = () => fetchData(true);
+    socket.on('connect', () => {
+      setSocketConnected(true);
+      if (hasConnectedRef.current) refresh();
+      else hasConnectedRef.current = true;
+    });
+    socket.on('disconnect', () => setSocketConnected(false));
+    socket.on('connect_error', () => setSocketConnected(false));
+    socket.on('REQUEST_BILL', refresh);
+    socket.on('NEW_ORDER', refresh);
+    socket.on('ITEM_ADDED', refresh);
+    socket.on('ORDER_UPDATED', refresh);
+    return () => {
+      setSocketConnected(false);
+      socket.disconnect();
+    };
   }, [token, fetchData]);
 
   // Match notification table to active order

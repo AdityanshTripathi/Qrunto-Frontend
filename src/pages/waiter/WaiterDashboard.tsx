@@ -108,6 +108,7 @@ export const WaiterDashboard: React.FC = () => {
   // Refs for tracking changes and avoiding stale closure bugs in polling intervals & sockets
   const requestsRef = useRef<CustomerRequest[]>([]);
   const ordersRef = useRef<Order[]>([]);
+  const hasConnectedRef = useRef(false);
 
   useEffect(() => {
     requestsRef.current = [...requests, ...billRequests];
@@ -250,7 +251,9 @@ export const WaiterDashboard: React.FC = () => {
   useEffect(() => {
     fetchData();
     fetchMenu();
+  }, [restaurantSlug]);
 
+  useEffect(() => {
     if (socketConnected) return;
 
     // Keep polling protection while the socket is disconnected or reconnecting.
@@ -272,7 +275,11 @@ export const WaiterDashboard: React.FC = () => {
       auth: { token: accessToken },
     });
 
-    socket.on('connect', () => setSocketConnected(true));
+    socket.on('connect', () => {
+      setSocketConnected(true);
+      if (hasConnectedRef.current) fetchData(true);
+      else hasConnectedRef.current = true;
+    });
     socket.on('disconnect', () => setSocketConnected(false));
     socket.on('connect_error', () => setSocketConnected(false));
 
@@ -282,7 +289,6 @@ export const WaiterDashboard: React.FC = () => {
     socket.on('CALL_WAITER', () => fetchData(true));
     socket.on('REQUEST_BILL', () => fetchData(true));
     socket.on('ORDER_UPDATED', () => fetchData(true));
-    socket.on('ORDER_READY', () => fetchData(true));
 
     return () => {
       setSocketConnected(false);
