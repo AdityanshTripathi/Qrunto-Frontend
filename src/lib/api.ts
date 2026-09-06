@@ -1,3 +1,4 @@
+import { withRequestTimeout } from './request-timeout';
 import { useAuthStore } from '../store/authStore';
 import { API_BASE_URL as BASE_URL } from '../config/backend';
 
@@ -6,7 +7,14 @@ interface RequestOptions extends RequestInit {
   body?: any;
 }
 
-async function request(path: string, options: RequestOptions = {}) {
+function request(path: string, options: RequestOptions = {}) {
+  return withRequestTimeout(
+    signal => performRequest(path, { ...options, signal }),
+    options.signal,
+  );
+}
+
+async function performRequest(path: string, options: RequestOptions) {
   const url = `${BASE_URL}${path}`;
   const store = useAuthStore.getState();
 
@@ -44,6 +52,7 @@ async function request(path: string, options: RequestOptions = {}) {
         
         const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
           method: 'POST',
+          signal: options.signal,
           headers: {
             'Content-Type': 'application/json',
           },
