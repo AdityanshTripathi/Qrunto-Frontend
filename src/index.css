@@ -79,6 +79,41 @@
 }
 
 @layer utilities {
+  /* Keep sidebar scrollbars subtle and matched to the active theme. */
+  .sidebar-scrollbar {
+    --sidebar-scrollbar-thumb: #cbd5e1;
+    --sidebar-scrollbar-thumb-hover: #94a3b8;
+    color-scheme: light;
+    scrollbar-width: thin;
+    scrollbar-color: var(--sidebar-scrollbar-thumb) transparent;
+  }
+  .dark .sidebar-scrollbar {
+    --sidebar-scrollbar-thumb: #374151;
+    --sidebar-scrollbar-thumb-hover: #4b5563;
+    color-scheme: dark;
+  }
+  .sidebar-scrollbar:hover {
+    scrollbar-color: var(--sidebar-scrollbar-thumb-hover) transparent;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-track,
+  .sidebar-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--sidebar-scrollbar-thumb);
+    border-radius: 999px;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--sidebar-scrollbar-thumb-hover);
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-button {
+    display: none;
+  }
+
   /* Scrollbar hiding */
   .scrollbar-hide {
     -ms-overflow-style: none;
