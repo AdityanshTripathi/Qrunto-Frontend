@@ -23,6 +23,7 @@ interface SummaryData {
 }
 
 interface PaymentMethods {
+  other?: number;
   upi: number;
   cash: number;
   card: number;
@@ -107,6 +108,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     { name: 'UPI', value: data.paymentMethods.upi },
     { name: 'Cash', value: data.paymentMethods.cash },
     { name: 'Card', value: data.paymentMethods.card },
+    { name: 'Other', value: data.paymentMethods.other ?? 0 },
   ].filter(item => item.value > 0);
 
   // Expense split data for Pie Chart
@@ -170,6 +172,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   <Cell fill="#3b82f6" />
                   <Cell fill="#10b981" />
                   <Cell fill="#FF6B35" />
+                  <Cell fill="#8b5cf6" />
                 </Pie>
                 <Tooltip formatter={(v) => fmt(Number(v))} />
               </PieChart>
@@ -180,6 +183,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-blue-500 rounded-full" /> UPI: {fmt(data.paymentMethods.upi)}</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" /> Cash: {fmt(data.paymentMethods.cash)}</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-[#FF6B35] rounded-full" /> Card: {fmt(data.paymentMethods.card)}</span>
+            {!!data.paymentMethods.other && <span>Other: {fmt(data.paymentMethods.other)}</span>}
           </div>
         </div>
 
@@ -247,7 +251,7 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
           </div>
 
           <div className="p-4 bg-slate-50 dark:bg-[#111827]/40 rounded-2xl border border-slate-100 dark:border-[#374151]/10">
-            <span className="text-[10px] text-slate-400 font-bold block">Net Operating Income (Post Tax & Profit)</span>
+            <span className="text-[10px] text-slate-400 font-bold block">Net Sales Excluding GST</span>
             <span className="text-base font-black text-emerald-500 mt-1 block">{fmt(data.summary.net - data.summary.gst)}</span>
           </div>
         </div>

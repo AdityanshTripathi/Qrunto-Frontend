@@ -23,6 +23,7 @@ interface ValueData {
 }
 
 interface ConsumptionRow {
+  materialId?: string;
   materialName: string;
   quantity: number;
   unit: string;
@@ -30,8 +31,9 @@ interface ConsumptionRow {
 }
 
 interface TurnoverRow {
+  materialId?: string;
   materialName: string;
-  turnoverRatio: number;
+  turnoverRatio: number | null;
 }
 
 interface InventoryAnalyticsData {
@@ -166,7 +168,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
               <Activity className="w-4 h-4" />
               Ingredient Consumption Costs
             </h3>
-            <span className="text-xs text-slate-400 block mb-6">Total raw material cost deducted via sales & checkouts</span>
+            <span className="text-xs text-slate-400 block mb-6">Sales consumption valued at current material costs</span>
           </div>
 
           <div className="h-[200px] mb-4">
@@ -203,9 +205,9 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
 
           <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
             {data.consumption.map((c) => {
-              const turnInfo = data.turnover.find(t => t.materialName === c.materialName);
+              const turnInfo = data.turnover.find(t => c.materialId ? t.materialId === c.materialId : t.materialName === c.materialName);
               return (
-                <div key={c.materialName} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-[#111827]/40 rounded-2xl border border-slate-100 dark:border-[#374151]/10">
+                <div key={c.materialId ?? c.materialName} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-[#111827]/40 rounded-2xl border border-slate-100 dark:border-[#374151]/10">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs font-black text-slate-800 dark:text-white truncate">
                       {c.materialName}
@@ -221,7 +223,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
                     </div>
                     <div className="border-l border-slate-100 dark:border-[#374151]/20 pl-4">
                       <span className="text-[9px] text-slate-400 block">Turnover</span>
-                      <span className="text-xs font-black text-emerald-500 mt-0.5 block">{turnInfo?.turnoverRatio || 1.5}x</span>
+                      <span className="text-xs font-black text-emerald-500 mt-0.5 block">{turnInfo?.turnoverRatio == null ? 'N/A' : `${turnInfo.turnoverRatio}x`}</span>
                     </div>
                   </div>
                 </div>
