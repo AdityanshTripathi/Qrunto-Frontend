@@ -22,10 +22,10 @@ interface MenuItemPerformance {
   name: string;
   sold: number;
   revenue: number;
-  cost: number;
-  profit: number;
-  views: number;
-  conversion: number;
+  cost: number | null;
+  profit: number | null;
+  views: number | null;
+  conversion: number | null;
 }
 
 interface MenuBundle {
@@ -99,8 +99,9 @@ export const MenuTab: React.FC<MenuTabProps> = ({
   const performance = data.menuPerformance || [];
   const totalSold = performance.reduce((sum, item) => sum + item.sold, 0);
   const avgSold = performance.length > 0 ? totalSold / performance.length : 0;
-  const totalProfit = performance.reduce((sum, item) => sum + (item.profit / (item.sold || 1)), 0);
-  const avgProfit = performance.length > 0 ? totalProfit / performance.length : 0;
+  const costedPerformance = performance.filter((item): item is MenuItemPerformance & { profit: number } => item.profit !== null);
+  const totalProfit = costedPerformance.reduce((sum, item) => sum + (item.profit / (item.sold || 1)), 0);
+  const avgProfit = costedPerformance.length > 0 ? totalProfit / costedPerformance.length : 0;
 
   // Filter items based on search query
   const filteredPerformance = performance.filter((item) =>
@@ -108,7 +109,7 @@ export const MenuTab: React.FC<MenuTabProps> = ({
   );
 
   // Scatter chart data
-  const scatterData = performance.map((item) => ({
+  const scatterData = costedPerformance.map((item) => ({
     x: parseFloat((item.profit / (item.sold || 1)).toFixed(2)), // Profit margin per unit
     y: item.sold, // Quantity sold
     name: item.name,
@@ -262,8 +263,8 @@ export const MenuTab: React.FC<MenuTabProps> = ({
                       <td className="py-2.5 font-bold truncate max-w-[120px]">{item.name}</td>
                       <td className="py-2.5 text-right font-semibold text-slate-900 dark:text-white">{item.sold}</td>
                       <td className="py-2.5 text-right">{fmt(item.revenue)}</td>
-                      <td className="py-2.5 text-right font-semibold text-emerald-500">{fmt(item.profit)}</td>
-                      <td className="py-2.5 text-right text-[#FF6B35] font-semibold">{item.conversion}%</td>
+                      <td className="py-2.5 text-right font-semibold text-emerald-500">{item.profit === null ? 'N/A' : fmt(item.profit)}</td>
+                      <td className="py-2.5 text-right text-[#FF6B35] font-semibold">{item.conversion === null ? 'N/A' : `${item.conversion}%`}</td>
                     </tr>
                   ))
                 )}

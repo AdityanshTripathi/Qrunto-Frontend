@@ -26,7 +26,7 @@ interface SegmentationData {
 
 interface BehaviorData {
   avgSpend: number;
-  frequencyDays: number;
+  frequencyDays: number | null;
   clv: number;
 }
 
@@ -38,9 +38,9 @@ interface UpcomingEventsData {
 interface RetentionRow {
   cohort: string;
   size: number;
-  m1: number;
-  m2: number;
-  m3: number;
+  m1: number | null;
+  m2: number | null;
+  m3: number | null;
 }
 
 interface CustomerAnalyticsData {
@@ -125,8 +125,9 @@ export const CustomerTab: React.FC<CustomerTabProps> = ({
   ];
 
   // Helper for cohort cell background
-  const getCohortColor = (value: number, total: number) => {
+  const getCohortColor = (value: number | null, total: number) => {
     if (total === 0 || value === 0) return 'bg-slate-50 dark:bg-slate-800/10 text-slate-300';
+    if (value === null || total === 0) return '';
     const rate = (value / total) * 100;
     if (rate > 70) return 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold';
     if (rate > 50) return 'bg-emerald-500/10 text-emerald-500';
@@ -155,7 +156,7 @@ export const CustomerTab: React.FC<CustomerTabProps> = ({
           <div className="flex justify-between items-start">
             <div>
               <span className="text-[11px] font-bold text-slate-400 dark:text-[#9ca3af] uppercase tracking-wider">Average Visit Interval</span>
-              <h3 className="text-3xl font-black text-slate-800 dark:text-white mt-1.5">{data.behavior.frequencyDays} days</h3>
+              <h3 className="text-3xl font-black text-slate-800 dark:text-white mt-1.5">{data.behavior.frequencyDays === null ? 'N/A' : `${data.behavior.frequencyDays} days`}</h3>
             </div>
             <div className="w-10 h-10 bg-[#FF6B35]/10 rounded-2xl flex items-center justify-center text-[#FF6B35]">
               <Activity className="w-5 h-5" />
@@ -244,18 +245,19 @@ export const CustomerTab: React.FC<CustomerTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#374151]/10 text-slate-700 dark:text-gray-300">
+                {data.retentionMatrix.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-slate-500">No cohort data for this period.</td></tr>}
                 {data.retentionMatrix.map((row, index) => (
                   <tr key={index}>
                     <td className="py-3 text-left font-bold">{row.cohort}</td>
                     <td className="py-3 font-semibold text-slate-900 dark:text-white">{row.size}</td>
                     <td className={`py-3 rounded-lg ${getCohortColor(row.m1, row.size)}`}>
-                      {row.m1 > 0 ? `${((row.m1 / row.size) * 100).toFixed(0)}%` : '-'}
+                      {row.m1 !== null ? `${((row.m1 / row.size) * 100).toFixed(0)}%` : '-'}
                     </td>
                     <td className={`py-3 rounded-lg ${getCohortColor(row.m2, row.size)}`}>
-                      {row.m2 > 0 ? `${((row.m2 / row.size) * 100).toFixed(0)}%` : '-'}
+                      {row.m2 !== null ? `${((row.m2 / row.size) * 100).toFixed(0)}%` : '-'}
                     </td>
                     <td className={`py-3 rounded-lg ${getCohortColor(row.m3, row.size)}`}>
-                      {row.m3 > 0 ? `${((row.m3 / row.size) * 100).toFixed(0)}%` : '-'}
+                      {row.m3 !== null ? `${((row.m3 / row.size) * 100).toFixed(0)}%` : '-'}
                     </td>
                   </tr>
                 ))}

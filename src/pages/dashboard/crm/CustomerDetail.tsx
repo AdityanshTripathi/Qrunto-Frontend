@@ -222,7 +222,7 @@ export const CustomerDetail: React.FC = () => {
           <div>
             <span className="text-xs text-slate-400 font-semibold block uppercase tracking-wider">Health Score</span>
             <span className="text-lg font-black text-slate-800 dark:text-white mt-1 block">
-              {profile.healthScore ?? 100}/100
+              {profile.healthScore == null ? 'N/A' : `${profile.healthScore}/100`}
             </span>
           </div>
         </div>

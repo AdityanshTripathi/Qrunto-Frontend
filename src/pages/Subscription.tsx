@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Check, ArrowRight, Sparkles, Percent, CreditCard, Smartphone, Copy, CheckCircle, Loader2, X } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Percent, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 
@@ -22,16 +21,9 @@ export const Subscription: React.FC = () => {
   const [selectingPlan, setSelectingPlan] = useState<Plan | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | '6month' | 'yearly'>('monthly');
   const [promoCode, setPromoCode] = useState('');
-  const [promoApplied, setPromoApplied] = useState(false);
+  const promoApplied = false;
   
-  // Payment Simulator states
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi'>('card');
-  const [processingPayment, setProcessingPayment] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [generatedLicenseCode, setGeneratedLicenseCode] = useState<string | null>(null);
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -52,60 +44,8 @@ export const Subscription: React.FC = () => {
     setIsCheckoutOpen(true);
   };
 
-  const handleProcessPayment = async () => {
-    if (!selectingPlan) return;
-    setProcessingPayment(true);
-    try {
-      // Create transaction and generate license code on backend
-      let basePrice = selectingPlan.price;
-      if (billingCycle === '6month') {
-        basePrice = selectingPlan.price6Month || (selectingPlan.price * 6);
-      } else if (billingCycle === 'yearly') {
-        basePrice = selectingPlan.price1Year || (selectingPlan.price * 12);
-      }
-      const finalPrice = promoApplied ? 0 : basePrice;
-      const durationMonths = billingCycle === '6month' ? 6 : billingCycle === 'yearly' ? 12 : 1;
-
-      const res = await api.post('/subscriptions/purchase', {
-        planId: selectingPlan.id,
-        paymentMethod: paymentMethod.toUpperCase(),
-        amount: finalPrice,
-        durationMonths
-      });
-
-      setGeneratedLicenseCode(res.code);
-
-      // Auto-redeem the generated license code to activate the subscription immediately
-      await api.post('/subscriptions/redeem', { code: res.code });
-
-      setPaymentSuccess(true);
-      toast.success('Payment successful & subscription activated!');
-    } catch (err: any) {
-      toast.error(err.message || 'Payment processing failed');
-    } finally {
-      setProcessingPayment(false);
-    }
-  };
-
   const handleApplyPromo = () => {
-    if (!promoCode.trim()) {
-      toast.error('Please enter a promo code');
-      return;
-    }
-    
-    if (promoCode.toUpperCase() === 'FREE30' || promoCode.toUpperCase() === 'FIRST100') {
-      setPromoApplied(true);
-      toast.success('Promo code applied! 100% discount on first month.');
-    } else {
-      toast.error('Invalid or expired promo code');
-    }
-  };
-
-  const copyToClipboard = () => {
-    if (generatedLicenseCode) {
-      navigator.clipboard.writeText(generatedLicenseCode);
-      toast.success('License code copied to clipboard!');
-    }
+    toast.error('Online purchases are unavailable. Redeem an existing license in dashboard billing.');
   };
 
   if (loading) {
@@ -147,7 +87,7 @@ export const Subscription: React.FC = () => {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Have a promo code? (e.g., FREE30)"
+              placeholder="Existing licenses can be redeemed in billing"
               value={promoCode}
               onChange={(e) => setPromoCode(e.target.value)}
               disabled={promoApplied}
@@ -310,205 +250,11 @@ export const Subscription: React.FC = () => {
 
       {/* PAYMENT MODAL OVERLAY */}
       {isCheckoutOpen && selectingPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div 
-            onClick={() => {
-              if (!processingPayment) {
-                setIsCheckoutOpen(false);
-                setPaymentSuccess(false);
-                setGeneratedLicenseCode(null);
-              }
-            }} 
-            className="absolute inset-0 bg-black/75 backdrop-blur-sm" 
-          />
-          
-          <div className="relative w-full max-w-md bg-[#1f2937] border border-[#374151] rounded-[28px] shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="bg-[#111827] px-6 py-5 border-b border-[#374151] flex justify-between items-center">
-              <div>
-                <h3 className="font-extrabold text-white text-base">Ordio Subscriptions</h3>
-                <p className="text-[11px] text-gray-400">Order Ref: SaaS-Plan-Checkout</p>
-              </div>
-              <button 
-                onClick={() => {
-                  setIsCheckoutOpen(false);
-                  setPaymentSuccess(false);
-                  setGeneratedLicenseCode(null);
-                }}
-                disabled={processingPayment}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Content Switch */}
-            {!paymentSuccess ? (
-              <div className="p-6 space-y-6">
-                {/* Plan summary */}
-                {(() => {
-                  let displayPrice = selectingPlan.price;
-                  let displayDuration = `${selectingPlan.durationDays} Days`;
-                  
-                  if (billingCycle === '6month') {
-                    displayPrice = selectingPlan.price6Month || (selectingPlan.price * 6);
-                    displayDuration = '6 Months (180 Days)';
-                  } else if (billingCycle === 'yearly') {
-                    displayPrice = selectingPlan.price1Year || (selectingPlan.price * 12);
-                    displayDuration = '1 Year (365 Days)';
-                  }
-
-                  return (
-                    <div className="bg-[#111827]/40 border border-[#374151]/55 rounded-2xl p-4 flex justify-between items-center">
-                      <div>
-                        <h4 className="font-extrabold text-sm text-white">{selectingPlan.name} Plan</h4>
-                        <p className="text-xs text-gray-400">{displayDuration} Duration</p>
-                      </div>
-                      <span className="text-[#FF6B35] font-black text-lg">
-                        ₹{(promoApplied ? 0 : displayPrice).toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                  );
-                })()}
-
-                {/* Gateway simulation */}
-                <div className="space-y-4">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Select Payment Method</p>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setPaymentMethod('card')}
-                      className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${
-                        paymentMethod === 'card'
-                          ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-white font-bold'
-                          : 'border-[#374151]/60 bg-[#111827]/20 text-gray-400 hover:border-gray-500'
-                      }`}
-                    >
-                      <CreditCard className="w-6 h-6 mb-2" />
-                      <span className="text-xs">Credit/Debit Card</span>
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('upi')}
-                      className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${
-                        paymentMethod === 'upi'
-                          ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-white font-bold'
-                          : 'border-[#374151]/60 bg-[#111827]/20 text-gray-400 hover:border-gray-500'
-                      }`}
-                    >
-                      <Smartphone className="w-6 h-6 mb-2" />
-                      <span className="text-xs">UPI Netbanking</span>
-                    </button>
-                  </div>
-
-                  {paymentMethod === 'card' ? (
-                    <div className="space-y-3 pt-2">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-[#9ca3af] uppercase">Card Number</label>
-                        <input
-                          type="text"
-                          disabled
-                          value="4111 2222 3333 4444"
-                          className="w-full bg-[#111827]/40 border border-[#374151]/60 rounded-xl py-2.5 px-3 text-xs text-white opacity-70 cursor-not-allowed"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-[#9ca3af] uppercase">Expiry</label>
-                          <input
-                            type="text"
-                            disabled
-                            value="12 / 29"
-                            className="w-full bg-[#111827]/40 border border-[#374151]/60 rounded-xl py-2.5 px-3 text-xs text-white opacity-70 cursor-not-allowed"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-[#9ca3af] uppercase">CVV</label>
-                          <input
-                            type="password"
-                            disabled
-                            value="***"
-                            className="w-full bg-[#111827]/40 border border-[#374151]/60 rounded-xl py-2.5 px-3 text-xs text-white opacity-70 cursor-not-allowed"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="pt-2 text-center py-4 bg-[#111827]/30 border border-[#374151]/40 rounded-2xl">
-                      <p className="text-xs text-gray-300 font-semibold">UPI Integration Simulator</p>
-                      <p className="text-[10px] text-gray-500 mt-1">Simulated via secure payment link. ID: ordio.pay@upi</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Submit button */}
-                <button
-                  onClick={handleProcessPayment}
-                  disabled={processingPayment}
-                  className="w-full py-4 bg-[#FF6B35] hover:bg-orange-600 disabled:bg-[#FF6B35]/40 text-white font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#FF6B35]/15"
-                >
-                  {processingPayment ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Processing Sandbox Payment...
-                    </>
-                  ) : (
-                    <>
-                      Pay ₹{(() => {
-                        let displayPrice = selectingPlan.price;
-                        if (billingCycle === '6month') displayPrice = selectingPlan.price6Month || (selectingPlan.price * 6);
-                        else if (billingCycle === 'yearly') displayPrice = selectingPlan.price1Year || (selectingPlan.price * 12);
-                        return (promoApplied ? 0 : displayPrice).toLocaleString('en-IN');
-                      })()} Now
-                    </>
-                  )}
-                </button>
-              </div>
-            ) : (
-              <div className="p-6 text-center space-y-6">
-                <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-400">
-                  <CheckCircle className="w-10 h-10" />
-                </div>
-                
-                <div>
-                  <h3 className="text-xl font-bold text-white">Subscription Activated!</h3>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Your payment was successful and your subscription is active. Proceed to your dashboard.
-                  </p>
-                </div>
-
-                {/* License Code Display Box */}
-                <div className="bg-[#111827] border border-[#374151]/80 rounded-2xl p-5 space-y-2 relative group">
-                  <span className="text-[9px] font-bold text-[#FF6B35] uppercase tracking-wider">License Code (Auto-Activated)</span>
-                  <div className="flex items-center justify-center gap-2">
-                    <code className="text-xl font-black text-white font-mono tracking-widest selection:bg-orange-500/20">
-                      {generatedLicenseCode}
-                    </code>
-                    <button
-                      onClick={copyToClipboard}
-                      className="p-1.5 bg-[#374151]/60 hover:bg-[#374151] rounded-lg text-gray-300 transition-colors"
-                      title="Copy Code"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-2 flex gap-3">
-                  <button
-                    onClick={() => {
-                      setIsCheckoutOpen(false);
-                      setPaymentSuccess(false);
-                      setGeneratedLicenseCode(null);
-                      navigate('/dashboard'); // Direct to dashboard
-                    }}
-                    className="flex-1 py-3 bg-[#FF6B35] hover:bg-orange-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1.5"
-                  >
-                    Go to Dashboard
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75">
+          <div role="dialog" aria-label="Subscription purchase unavailable" className="max-w-md rounded-2xl bg-[#1f2937] p-6 space-y-4">
+            <button aria-label="Close" onClick={() => setIsCheckoutOpen(false)} className="float-right"><X /></button>
+            <h3 className="font-bold">{selectingPlan.name}</h3>
+            <p>Online subscription purchases are unavailable. Contact support for activation, or redeem an existing license in dashboard billing.</p>
           </div>
         </div>
       )}

@@ -1082,19 +1082,19 @@ export const SuperAdminDashboard: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase">Razorpay Integration Mode</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase">Online Payment Integration</label>
                     <select
                       disabled
                       className="w-full bg-slate-50 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/60 rounded-xl py-3 px-4 text-slate-800 dark:text-white opacity-60 cursor-not-allowed"
                     >
-                      <option>Sandbox / Test Simulation Mode</option>
+                      <option>Not configured</option>
                     </select>
                   </div>
                   <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-3 text-amber-600 dark:text-amber-400 text-xs">
                     <Sparkles className="w-5 h-5 shrink-0" />
                     <div>
-                      <p className="font-bold">Sandbox Mode Active</p>
-                      <p className="mt-0.5 opacity-80">All payments are currently routed to simulated gateways. No real credit card charges are processed.</p>
+                      <p className="font-bold">Online Payments Unavailable</p>
+                      <p className="mt-0.5 opacity-80">Online payments and subscription purchases are disabled until a verified provider integration is configured.</p>
                     </div>
                   </div>
                 </div>

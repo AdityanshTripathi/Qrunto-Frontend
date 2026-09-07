@@ -18,12 +18,12 @@ import {
 } from 'recharts';
 
 interface TimingData {
-  avgPrepTime: number;
-  avgDeliveryTime: number;
-  avgTableTurnaround: number;
+  avgPrepTime: number | null;
+  avgDeliveryTime: number | null;
+  avgTableTurnaround: number | null;
   delayPercentage: {
-    kitchen: number;
-    waiter: number;
+    kitchen: number | null;
+    waiter: number | null;
   };
 }
 
@@ -38,7 +38,7 @@ interface ConversionData {
   qrViews: number;
   cartSessions: number;
   ordersPlaced: number;
-  cartAbandonmentRate: number;
+  cartAbandonmentRate: number | null;
 }
 
 interface OrderAnalyticsData {
@@ -119,7 +119,7 @@ export const OrderTab: React.FC<OrderTabProps> = ({
           <div className="flex justify-between items-start">
             <div>
               <span className="text-[11px] font-bold text-slate-400 dark:text-[#9ca3af] uppercase tracking-wider">Avg Prep Time</span>
-              <h3 className="text-3xl font-black text-slate-800 dark:text-white mt-1.5">{data.timing.avgPrepTime} mins</h3>
+              <h3 className="text-3xl font-black text-slate-800 dark:text-white mt-1.5">{data.timing.avgPrepTime === null ? 'N/A' : `${data.timing.avgPrepTime} mins`}</h3>
             </div>
             <div className="w-10 h-10 bg-[#FF6B35]/10 rounded-2xl flex items-center justify-center text-[#FF6B35]">
               <Clock className="w-5 h-5" />
@@ -132,7 +132,7 @@ export const OrderTab: React.FC<OrderTabProps> = ({
           <div className="flex justify-between items-start">
             <div>
               <span className="text-[11px] font-bold text-slate-400 dark:text-[#9ca3af] uppercase tracking-wider">Avg Service Time</span>
-              <h3 className="text-3xl font-black text-slate-800 dark:text-white mt-1.5">{data.timing.avgDeliveryTime} mins</h3>
+              <h3 className="text-3xl font-black text-slate-800 dark:text-white mt-1.5">{data.timing.avgDeliveryTime === null ? 'N/A' : `${data.timing.avgDeliveryTime} mins`}</h3>
             </div>
             <div className="w-10 h-10 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500">
               <CheckCircle className="w-5 h-5" />
@@ -145,7 +145,7 @@ export const OrderTab: React.FC<OrderTabProps> = ({
           <div className="flex justify-between items-start">
             <div>
               <span className="text-[11px] font-bold text-slate-400 dark:text-[#9ca3af] uppercase tracking-wider">Table Turnaround</span>
-              <h3 className="text-3xl font-black text-slate-800 dark:text-white mt-1.5">{data.timing.avgTableTurnaround} mins</h3>
+              <h3 className="text-3xl font-black text-slate-800 dark:text-white mt-1.5">{data.timing.avgTableTurnaround === null ? 'N/A' : `${data.timing.avgTableTurnaround} mins`}</h3>
             </div>
             <div className="w-10 h-10 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
               <Users className="w-5 h-5" />
@@ -185,12 +185,12 @@ export const OrderTab: React.FC<OrderTabProps> = ({
           <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-[#374151]/20 pt-4 text-xs font-semibold text-slate-500 dark:text-gray-400">
             <div>
               <span className="text-[10px] text-slate-400 block">Cart Abandonment Rate</span>
-              <span className="text-lg font-black text-rose-500 mt-1 block">{data.conversion.cartAbandonmentRate}%</span>
+              <span className="text-lg font-black text-rose-500 mt-1 block">{data.conversion.cartAbandonmentRate === null ? 'N/A' : `${data.conversion.cartAbandonmentRate}%`}</span>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 block">Scan to Order Conversion</span>
+              <span className="text-[10px] text-slate-400 block">Orders / Menu Views</span>
               <span className="text-lg font-black text-emerald-500 mt-1 block">
-                {data.conversion.qrViews > 0 ? ((data.conversion.ordersPlaced / data.conversion.qrViews) * 100).toFixed(1) : 0}%
+                {data.conversion.qrViews > 0 ? `${((data.conversion.ordersPlaced / data.conversion.qrViews) * 100).toFixed(1)}%` : 'N/A'}
               </span>
             </div>
           </div>
@@ -210,26 +210,26 @@ export const OrderTab: React.FC<OrderTabProps> = ({
             <div>
               <div className="flex justify-between items-center text-xs mb-1">
                 <span className="font-semibold text-slate-600 dark:text-gray-300">Kitchen Delay Ratio</span>
-                <span className="font-black text-rose-500">{data.timing.delayPercentage.kitchen}%</span>
+                <span className="font-black text-rose-500">{data.timing.delayPercentage.kitchen === null ? 'N/A' : `${data.timing.delayPercentage.kitchen}%`}</span>
               </div>
               <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
                 <div
                   className="bg-rose-500 h-full rounded-full"
-                  style={{ width: `${data.timing.delayPercentage.kitchen}%` }}
+                  style={{ width: `${data.timing.delayPercentage.kitchen ?? 0}%` }}
                 />
               </div>
-              <span className="text-[9px] text-slate-400 mt-1 block">Orders exceeding 20 minutes prep target</span>
+              <span className="text-[9px] text-slate-400 mt-1 block">Orders exceeding 20 minutes from prep start to serving</span>
             </div>
 
             <div>
               <div className="flex justify-between items-center text-xs mb-1">
                 <span className="font-semibold text-slate-600 dark:text-gray-300">Waiter Delay Ratio</span>
-                <span className="font-black text-amber-500">{data.timing.delayPercentage.waiter}%</span>
+                <span className="font-black text-amber-500">{data.timing.delayPercentage.waiter === null ? 'N/A' : `${data.timing.delayPercentage.waiter}%`}</span>
               </div>
               <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
                 <div
                   className="bg-amber-500 h-full rounded-full"
-                  style={{ width: `${data.timing.delayPercentage.waiter}%` }}
+                  style={{ width: `${data.timing.delayPercentage.waiter ?? 0}%` }}
                 />
               </div>
               <span className="text-[9px] text-slate-400 mt-1 block">Ready-to-serve transition lag &gt; 5 mins</span>

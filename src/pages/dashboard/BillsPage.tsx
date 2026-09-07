@@ -555,8 +555,6 @@ export const BillsPage: React.FC = () => {
                           className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-[#374151]/40 rounded-xl text-xs text-slate-800 dark:text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#FF6B35]"
                         >
                           <option value="CASH">💵 Cash</option>
-                          <option value="CARD">💳 Card</option>
-                          <option value="UPI">📱 UPI</option>
                         </select>
 
                         <button

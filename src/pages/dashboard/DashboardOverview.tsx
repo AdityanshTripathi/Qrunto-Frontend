@@ -1,44 +1,7 @@
 import { useRestaurantTimezone, localDate, addDays, localHour } from '../../lib/timezone';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import {
-  TrendingUp,
-  TrendingDown,
-  ShoppingBag,
-  DollarSign,
-  Users,
-  CreditCard,
-  Utensils,
-  Clock,
-  ChevronRight,
-  Package,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Flame,
-  Star,
-  Zap,
-  QrCode,
-  Plus,
-  BarChart3,
-  UserPlus,
-  Receipt,
-  Smile,
-  Activity,
-  Layers,
-  Timer,
-  Award,
-  TrendingUp as TrendUp,
-  RefreshCw,
-  ArrowRight,
-  Sparkles,
-  ShieldAlert,
-  Tag,
-  Wallet,
-  HandCoins,
-  ChefHat,
-  Soup,
-} from 'lucide-react';
+import { TrendingUp, ShoppingBag, DollarSign, Users, CreditCard, Utensils, Clock, Package, AlertTriangle, CheckCircle2, XCircle, Flame, Star, Zap, QrCode, Plus, BarChart3, Receipt, Smile, Activity, Layers, RefreshCw, ArrowRight, ChefHat } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { api } from '../../lib/api';
 import { toast } from 'sonner';
@@ -104,59 +67,7 @@ interface Subscription {
   plan: { name: string; price: number };
 }
 
-// ─── Static placeholder data for UI sections not yet backed by API ────────────
 
-const MOCK_SALES_DATA = [
-  { time: '8am', revenue: 1200, orders: 8, aov: 150 },
-  { time: '9am', revenue: 2800, orders: 18, aov: 155 },
-  { time: '10am', revenue: 1900, orders: 12, aov: 158 },
-  { time: '11am', revenue: 3400, orders: 22, aov: 154 },
-  { time: '12pm', revenue: 6200, orders: 42, aov: 147 },
-  { time: '1pm', revenue: 7800, orders: 51, aov: 153 },
-  { time: '2pm', revenue: 5100, orders: 34, aov: 150 },
-  { time: '3pm', revenue: 3200, orders: 21, aov: 152 },
-  { time: '4pm', revenue: 2400, orders: 16, aov: 150 },
-  { time: '5pm', revenue: 4100, orders: 27, aov: 151 },
-  { time: '6pm', revenue: 6900, orders: 46, aov: 150 },
-  { time: '7pm', revenue: 8400, orders: 56, aov: 150 },
-  { time: '8pm', revenue: 7200, orders: 48, aov: 150 },
-  { time: '9pm', revenue: 5600, orders: 38, aov: 147 },
-];
-
-const REVENUE_TYPE_DATA = [
-  { name: 'Dine-in', value: 62, color: '#FF6B35' },
-  { name: 'Takeaway', value: 24, color: '#3b82f6' },
-  { name: 'Delivery', value: 14, color: '#10b981' },
-];
-
-const PAYMENT_TYPE_DATA = [
-  { name: 'UPI', value: 54, color: '#8b5cf6' },
-  { name: 'Card', value: 28, color: '#3b82f6' },
-  { name: 'Cash', value: 18, color: '#f59e0b' },
-];
-
-const MOCK_ACTIVITY = [
-  { id: 1, type: 'order', icon: ShoppingBag, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20', label: 'New Order #1042', sub: 'Table 4 — ₹480', time: '2 min ago' },
-  { id: 2, type: 'payment', icon: Wallet, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', label: 'Payment Received', sub: 'Table 7 — ₹1,240 via UPI', time: '5 min ago' },
-  { id: 3, type: 'inventory', icon: Package, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', label: 'Inventory Updated', sub: 'Paneer stock restocked', time: '18 min ago' },
-  { id: 4, type: 'customer', icon: UserPlus, color: 'text-violet-500 bg-violet-500/10 border-violet-500/20', label: 'New Customer Registered', sub: 'Priya Sharma joined', time: '32 min ago' },
-  { id: 5, type: 'coupon', icon: Tag, color: 'text-pink-500 bg-pink-500/10 border-pink-500/20', label: 'Coupon Redeemed', sub: 'WELCOME20 — ₹80 discount', time: '48 min ago' },
-  { id: 6, type: 'refund', icon: HandCoins, color: 'text-red-500 bg-red-500/10 border-red-500/20', label: 'Refund Issued', sub: 'Order #1038 — ₹350', time: '1 hr ago' },
-];
-
-const MOCK_ALERTS = [
-  { id: 1, level: 'error', icon: AlertTriangle, color: 'border-red-500/30 bg-red-500/5', iconColor: 'text-red-500 bg-red-500/10 border-red-500/20', badge: 'bg-red-500/15 text-red-500', badgeText: 'Critical', title: 'Out of Stock', sub: 'Cheese (Mozzarella) is fully depleted' },
-  { id: 2, level: 'warn', icon: Package, color: 'border-amber-500/30 bg-amber-500/5', iconColor: 'text-amber-500 bg-amber-500/10 border-amber-500/20', badge: 'bg-amber-500/15 text-amber-500', badgeText: 'Warning', title: 'Low Stock', sub: '5 items running below threshold' },
-  { id: 3, level: 'warn', icon: Timer, color: 'border-orange-500/30 bg-orange-500/5', iconColor: 'text-orange-500 bg-orange-500/10 border-orange-500/20', badge: 'bg-orange-500/15 text-orange-500', badgeText: 'Action', title: 'Kitchen Delay', sub: '3 orders pending over 20 minutes' },
-  { id: 4, level: 'info', icon: CreditCard, color: 'border-blue-500/30 bg-blue-500/5', iconColor: 'text-blue-500 bg-blue-500/10 border-blue-500/20', badge: 'bg-blue-500/15 text-blue-500', badgeText: 'Info', title: 'Subscription Expiring', sub: 'Your plan expires in 8 days' },
-];
-
-const MOCK_INSIGHTS = [
-  { id: 1, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-500/10', text: 'Revenue increased 18% compared to yesterday.' },
-  { id: 2, icon: Flame, color: 'text-orange-500', bg: 'bg-orange-500/10', text: 'Cold Coffee sales are growing rapidly — up 34% this week.' },
-  { id: 3, icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-500/10', text: 'Inventory for Cheese will finish in approximately 2 days.' },
-  { id: 4, icon: Smile, color: 'text-violet-500', bg: 'bg-violet-500/10', text: 'Customer retention improved by 12% this week.' },
-];
 
 const QUICK_ACTIONS = [
   { label: 'Create QR', icon: QrCode, to: '/dashboard/tables', color: 'bg-orange-500/10 border-orange-500/20 text-[#FF6B35] hover:bg-orange-500/20' },
@@ -169,34 +80,8 @@ const QUICK_ACTIONS = [
   { label: 'Analytics', icon: Activity, to: '/dashboard/analytics', color: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20' },
 ];
 
-// ─── Tiny Sparkline using SVG ─────────────────────────────────────────────────
 
-const Sparkline: React.FC<{ data: number[]; color: string; positive?: boolean }> = ({ data, color }) => {
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const w = 80;
-  const h = 32;
-  const points = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - min) / range) * h;
-    return `${x},${y}`;
-  });
-  const pathD = `M ${points.join(' L ')}`;
-  const fillD = `M ${points[0]} L ${points.join(' L ')} L ${w},${h} L 0,${h} Z`;
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none" className="shrink-0">
-      <defs>
-        <linearGradient id={`sg-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={fillD} fill={`url(#sg-${color.replace('#', '')})`} />
-      <path d={pathD} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-};
+
 
 // ─── Status color map ─────────────────────────────────────────────────────────
 
@@ -312,9 +197,10 @@ export const DashboardOverview: React.FC = () => {
           });
 
           if (inventoryResult.error) {
+            setInventoryMetrics(null);
             console.error('Failed to load inventory metrics:', inventoryResult.error);
           } else {
-            setInventoryMetrics(inventoryResult.data);
+            setInventoryMetrics(inventoryResult.data?.metrics ?? null);
           }
         } catch (err: any) {
           toast.error('Failed to load dashboard data: ' + err.message);
@@ -362,29 +248,10 @@ export const DashboardOverview: React.FC = () => {
 
   const getSalesChartData = () => {
     const paidServedOrders = allOrders.filter(o => o && o.status && ['SERVED', 'PAID'].includes(o.status));
-    if (paidServedOrders.length === 0) {
-      return salesPeriod === 'today'
-        ? MOCK_SALES_DATA
-        : salesPeriod === 'week'
-        ? [
-            { time: 'Mon', revenue: 32000, orders: 212, aov: 151 },
-            { time: 'Tue', revenue: 28000, orders: 190, aov: 147 },
-            { time: 'Wed', revenue: 35000, orders: 230, aov: 152 },
-            { time: 'Thu', revenue: 41000, orders: 270, aov: 151 },
-            { time: 'Fri', revenue: 48000, orders: 310, aov: 154 },
-            { time: 'Sat', revenue: 54000, orders: 360, aov: 150 },
-            { time: 'Sun', revenue: 50000, orders: 330, aov: 151 },
-          ]
-        : [
-            { time: 'W1', revenue: 180000, orders: 1200, aov: 150 },
-            { time: 'W2', revenue: 210000, orders: 1380, aov: 152 },
-            { time: 'W3', revenue: 195000, orders: 1280, aov: 152 },
-            { time: 'W4', revenue: 245000, orders: 1600, aov: 153 },
-          ];
-    }
-    
+    if (paidServedOrders.length === 0) return [];
+
     if (salesPeriod === 'today') {
-      const todayHours = ['8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'];
+      const todayHours = Array.from({ length: 24 }, (_, hour) => `${hour % 12 || 12}${hour < 12 ? 'am' : 'pm'}`);
       const today = new Date();
       
       return todayHours.map(hourStr => {
@@ -451,7 +318,7 @@ export const DashboardOverview: React.FC = () => {
 
   const getRevenueTypeData = () => {
     const paidServedOrders = allOrders.filter(o => o && o.status && ['SERVED', 'PAID'].includes(o.status));
-    if (paidServedOrders.length === 0) return REVENUE_TYPE_DATA;
+    if (paidServedOrders.length === 0) return [];
     
     const dineInCount = paidServedOrders.filter(o => o && o.table).length;
     const otherCount = paidServedOrders.filter(o => o && !o.table).length;
@@ -460,45 +327,24 @@ export const DashboardOverview: React.FC = () => {
     const dineInPct = Math.round((dineInCount / total) * 100);
     const otherPct = 100 - dineInPct;
     
-    const takeawayPct = Math.round(otherPct * 0.7);
-    const deliveryPct = otherPct - takeawayPct;
     
     return [
       { name: 'Dine-in', value: dineInPct, color: '#FF6B35' },
-      { name: 'Takeaway', value: takeawayPct, color: '#3b82f6' },
-      { name: 'Delivery', value: deliveryPct, color: '#10b981' },
+      { name: 'Other', value: otherPct, color: '#3b82f6' },
     ];
   };
 
   const getPaymentTypeData = () => {
-    const paidServedOrders = allOrders.filter(o => o && o.status && ['SERVED', 'PAID'].includes(o.status));
-    if (paidServedOrders.length === 0) return PAYMENT_TYPE_DATA;
-    
-    let cash = 0;
-    let upi = 0;
-    let card = 0;
-    
-    paidServedOrders.forEach(o => {
-      const method = o?.payments?.[0]?.paymentMethod?.toUpperCase() || '';
-      if (method.includes('CASH')) {
-        cash++;
-      } else if (method.includes('UPI')) {
-        upi++;
-      } else {
-        card++;
-      }
-    });
-    
-    const total = cash + upi + card || 1;
-    const cashPct = Math.round((cash / total) * 100);
-    const upiPct = Math.round((upi / total) * 100);
-    const cardPct = 100 - (cashPct + upiPct);
-    
-    return [
-      { name: 'UPI', value: upiPct, color: '#8b5cf6' },
-      { name: 'Card', value: cardPct, color: '#3b82f6' },
-      { name: 'Cash', value: cashPct, color: '#f59e0b' },
-    ];
+    const payments = allOrders.flatMap(order => order.payments ?? []).filter(payment => payment.status === 'SUCCESS');
+    if (payments.length === 0) return [];
+    const counts = { UPI: 0, Card: 0, Cash: 0, Other: 0 };
+    for (const payment of payments) {
+      const method = payment.paymentMethod?.toUpperCase();
+      const key = method === 'UPI' ? 'UPI' : method === 'CASH' ? 'Cash' : ['CARD', 'CREDIT_CARD', 'DEBIT_CARD'].includes(method) ? 'Card' : 'Other';
+      counts[key]++;
+    }
+    const colors = { UPI: '#8b5cf6', Card: '#3b82f6', Cash: '#f59e0b', Other: '#64748b' };
+    return (Object.keys(counts) as (keyof typeof counts)[]).map(name => ({ name, value: Math.round(counts[name] / payments.length * 100), color: colors[name] }));
   };
 
   const getSubRemainingDays = () => {
@@ -520,18 +366,18 @@ export const DashboardOverview: React.FC = () => {
   // KPI cards (owner vs staff)
   const kpiCards = isStaff
     ? [
-        { title: 'Active Orders', value: orderStats.active.toString(), sub: 'In progress', delta: null, icon: ShoppingBag, iconBg: 'bg-blue-500/10 border-blue-500/20 text-blue-500', spark: [2, 4, 3, 6, 5, 7, 8], sparkColor: '#3b82f6' },
-        { title: 'New Orders', value: orderStats.new.toString(), sub: 'Waiting to prepare', delta: null, icon: Clock, iconBg: 'bg-orange-500/10 border-orange-500/20 text-[#FF6B35]', spark: [1, 2, 1, 3, 2, 4, 3], sparkColor: '#FF6B35' },
-        { title: 'Preparing', value: orderStats.preparing.toString(), sub: 'In kitchen', delta: null, icon: ChefHat, iconBg: 'bg-amber-500/10 border-amber-500/20 text-amber-500', spark: [3, 2, 4, 3, 5, 4, 6], sparkColor: '#f59e0b' },
-        { title: 'Ready to Serve', value: orderStats.ready.toString(), sub: 'Awaiting delivery', delta: null, icon: CheckCircle2, iconBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500', spark: [1, 3, 2, 4, 3, 5, 4], sparkColor: '#10b981' },
+        { title: 'Active Orders', value: orderStats.active.toString(), sub: 'In progress', icon: ShoppingBag, iconBg: 'bg-blue-500/10 border-blue-500/20 text-blue-500' },
+        { title: 'New Orders', value: orderStats.new.toString(), sub: 'Waiting to prepare', icon: Clock, iconBg: 'bg-orange-500/10 border-orange-500/20 text-[#FF6B35]' },
+        { title: 'Preparing', value: orderStats.preparing.toString(), sub: 'In kitchen', icon: ChefHat, iconBg: 'bg-amber-500/10 border-amber-500/20 text-amber-500' },
+        { title: 'Ready to Serve', value: orderStats.ready.toString(), sub: 'Awaiting delivery', icon: CheckCircle2, iconBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' },
       ]
     : [
-        { title: "Today's Revenue", value: `₹${kpis.totalRevenue.toLocaleString('en-IN')}`, sub: 'From completed orders', delta: { pct: '+18%', pos: true }, icon: DollarSign, iconBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500', spark: [3200, 4100, 3800, 5200, 6100, 5800, kpis.totalRevenue || 7200], sparkColor: '#10b981' },
-        { title: "Today's Orders", value: kpis.totalOrdersCount.toString(), sub: 'Completed checkouts', delta: { pct: '+12%', pos: true }, icon: ShoppingBag, iconBg: 'bg-blue-500/10 border-blue-500/20 text-blue-500', spark: [18, 22, 19, 28, 31, 26, kpis.totalOrdersCount || 42], sparkColor: '#3b82f6' },
-        { title: 'Avg Order Value', value: `₹${kpis.averageOrderValue.toLocaleString('en-IN')}`, sub: 'Per customer order', delta: { pct: '+5%', pos: true }, icon: TrendingUp, iconBg: 'bg-violet-500/10 border-violet-500/20 text-violet-500', spark: [140, 145, 148, 152, 150, 155, kpis.averageOrderValue || 158], sparkColor: '#8b5cf6' },
-        { title: 'Active Tables', value: kpis.activeTablesCount.toString(), sub: 'Occupied right now', delta: null, icon: Layers, iconBg: 'bg-orange-500/10 border-orange-500/20 text-[#FF6B35]', spark: [4, 6, 5, 8, 7, 9, kpis.activeTablesCount || 6], sparkColor: '#FF6B35' },
-        { title: 'Pending Kitchen', value: (orderStats.new + orderStats.preparing).toString(), sub: 'Orders in queue', delta: null, icon: ChefHat, iconBg: 'bg-amber-500/10 border-amber-500/20 text-amber-500', spark: [2, 4, 3, 5, 4, 6, orderStats.new + orderStats.preparing], sparkColor: '#f59e0b' },
-        { title: 'Subscription', value: subscription ? (subscription.status === 'PENDING' ? 'Pending' : 'Active') : 'Inactive', sub: getSubRemainingDays(), delta: null, icon: CreditCard, iconBg: subscription?.status === 'ACTIVE' ? 'bg-teal-500/10 border-teal-500/20 text-teal-500' : 'bg-red-500/10 border-red-500/20 text-red-500', spark: [1, 1, 1, 1, 1, 1, 1], sparkColor: '#14b8a6' },
+        { title: "Today's Revenue", value: `₹${kpis.totalRevenue.toLocaleString('en-IN')}`, sub: 'From completed orders', icon: DollarSign, iconBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' },
+        { title: "Today's Orders", value: kpis.totalOrdersCount.toString(), sub: 'Completed checkouts', icon: ShoppingBag, iconBg: 'bg-blue-500/10 border-blue-500/20 text-blue-500' },
+        { title: 'Avg Order Value', value: `₹${kpis.averageOrderValue.toLocaleString('en-IN')}`, sub: 'Per customer order', icon: TrendingUp, iconBg: 'bg-violet-500/10 border-violet-500/20 text-violet-500' },
+        { title: 'Enabled Tables', value: kpis.activeTablesCount.toString(), sub: 'Available for ordering', icon: Layers, iconBg: 'bg-orange-500/10 border-orange-500/20 text-[#FF6B35]' },
+        { title: 'Pending Kitchen', value: (orderStats.new + orderStats.preparing).toString(), sub: 'Orders in queue', icon: ChefHat, iconBg: 'bg-amber-500/10 border-amber-500/20 text-amber-500' },
+        { title: 'Subscription', value: subscription ? subscription.status : 'Inactive', sub: getSubRemainingDays(), icon: CreditCard, iconBg: subscription?.status === 'ACTIVE' ? 'bg-teal-500/10 border-teal-500/20 text-teal-500' : 'bg-red-500/10 border-red-500/20 text-red-500' },
       ];
 
   const liveOpsItems = [
@@ -547,6 +393,7 @@ export const DashboardOverview: React.FC = () => {
   return (
     <div className="space-y-7">
 
+      <p className="text-xs text-slate-500">Charts below use the latest 30 orders. Full-period reports are available in Analytics.</p>
       {/* ── Welcome Header ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -567,29 +414,6 @@ export const DashboardOverview: React.FC = () => {
         </Link>
       </div>
 
-      {/* ── Alerts Bar ─────────────────────────────────────────────── */}
-      {!isStaff && (
-        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-          {MOCK_ALERTS.map(alert => {
-            const Icon = alert.icon;
-            return (
-              <div key={alert.id} className={`flex-shrink-0 flex items-center gap-3 border rounded-xl px-4 py-2.5 ${alert.color}`}>
-                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${alert.iconColor}`}>
-                  <Icon className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-800 dark:text-white">{alert.title}</span>
-                    <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full ${alert.badge}`}>{alert.badgeText}</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 dark:text-[#9ca3af] mt-0.5 whitespace-nowrap">{alert.sub}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
       {/* ── KPI Cards ──────────────────────────────────────────────── */}
       <div className={`grid gap-4 ${isStaff ? 'grid-cols-2 xl:grid-cols-4' : 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'}`}>
         {kpiCards.map((card, idx) => {
@@ -606,16 +430,9 @@ export const DashboardOverview: React.FC = () => {
                 <div>
                   <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-none">{card.value}</p>
                   <p className="text-[10px] text-slate-500 dark:text-[#9ca3af] mt-1.5 flex items-center gap-1">
-                    {card.delta && (
-                      <span className={`font-bold ${card.delta.pos ? 'text-emerald-500' : 'text-red-400'} flex items-center gap-0.5`}>
-                        {card.delta.pos ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-                        {card.delta.pct}
-                      </span>
-                    )}
                     {card.sub}
                   </p>
                 </div>
-                <Sparkline data={card.spark} color={card.sparkColor} positive={card.delta?.pos ?? true} />
               </div>
             </Card>
           );
@@ -675,6 +492,7 @@ export const DashboardOverview: React.FC = () => {
               ))}
             </div>
           </div>
+          {getSalesChartData().length === 0 && <p className="py-4 text-center text-sm text-slate-500">No completed orders in the recent feed.</p>}
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={getSalesChartData()} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <defs>
@@ -701,11 +519,11 @@ export const DashboardOverview: React.FC = () => {
         </Card>
       )}
 
-      {/* ── Revenue Breakdown ──────────────────────────────────────── */}
+      {/* ── Order Types ──────────────────────────────────────── */}
       {!isStaff && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { title: 'Revenue by Type', sub: 'Dine-in vs Takeaway vs Delivery', data: getRevenueTypeData() },
+            { title: 'Order Types', sub: 'Dine-in vs Takeaway vs Delivery', data: getRevenueTypeData() },
             { title: 'Payment Methods', sub: 'UPI, Card & Cash breakdown', data: getPaymentTypeData() },
           ].map((chart, ci) => (
             <Card key={ci} className="p-5 sm:p-6">
@@ -798,7 +616,7 @@ export const DashboardOverview: React.FC = () => {
         <Card className="lg:col-span-2 p-5 sm:p-6 flex flex-col">
           <SectionHeader
             title="Top Selling Items"
-            sub="Ranked by volume today"
+            sub="Ranked by recorded sales volume"
             action={
               <Link to="/dashboard/analytics" className="text-xs text-[#FF6B35] hover:text-orange-500 font-semibold flex items-center gap-1 shrink-0">
                 More <ArrowRight className="w-3.5 h-3.5" />
@@ -844,7 +662,7 @@ export const DashboardOverview: React.FC = () => {
 
       {/* ── Inventory + Customer + CRM Snapshots ──────────────────── */}
       {!isStaff && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {/* Inventory Snapshot */}
           <Card className="p-5 sm:p-6">
             <SectionHeader
@@ -858,11 +676,10 @@ export const DashboardOverview: React.FC = () => {
             />
             <div className="space-y-3">
               {[
-                { label: 'Stock Value', val: (inventoryMetrics && typeof inventoryMetrics.totalValue === 'number') ? `₹${inventoryMetrics.totalValue.toLocaleString('en-IN')}` : '₹42,800', icon: Package, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
-                { label: 'Low Stock Items', val: (inventoryMetrics && typeof inventoryMetrics.lowStockItems === 'number') ? inventoryMetrics.lowStockItems.toString() : '5', icon: AlertTriangle, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
-                { label: 'Out of Stock', val: (inventoryMetrics && typeof inventoryMetrics.outOfStockItems === 'number') ? inventoryMetrics.outOfStockItems.toString() : '2', icon: XCircle, color: 'text-red-500 bg-red-500/10 border-red-500/20' },
-                { label: 'Fast Moving', val: '8 items', icon: Flame, color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
-                { label: 'Wastage Today', val: (inventoryMetrics && typeof inventoryMetrics.todayWastage === 'number') ? `₹${inventoryMetrics.todayWastage.toLocaleString('en-IN')}` : '₹320', icon: RefreshCw, color: 'text-slate-500 bg-slate-500/10 border-slate-500/20' },
+                { label: 'Stock Value', val: (inventoryMetrics && typeof inventoryMetrics.totalValue === 'number') ? `₹${inventoryMetrics.totalValue.toLocaleString('en-IN')}` : 'N/A', icon: Package, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
+                { label: 'Low Stock Items', val: (inventoryMetrics && typeof inventoryMetrics.lowStockItems === 'number') ? inventoryMetrics.lowStockItems.toString() : 'N/A', icon: AlertTriangle, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
+                { label: 'Out of Stock', val: (inventoryMetrics && typeof inventoryMetrics.outOfStockItems === 'number') ? inventoryMetrics.outOfStockItems.toString() : 'N/A', icon: XCircle, color: 'text-red-500 bg-red-500/10 border-red-500/20' },
+                { label: 'Wastage Today', val: (inventoryMetrics && typeof inventoryMetrics.todayWastage === 'number') ? `₹${inventoryMetrics.todayWastage.toLocaleString('en-IN')}` : 'N/A', icon: RefreshCw, color: 'text-slate-500 bg-slate-500/10 border-slate-500/20' },
               ].map((row, idx) => {
                 const Icon = row.icon;
                 return (
@@ -878,99 +695,7 @@ export const DashboardOverview: React.FC = () => {
             </div>
           </Card>
 
-          {/* Customer Snapshot */}
-          <Card className="p-5 sm:p-6">
-            <SectionHeader
-              title="Customer Snapshot"
-              sub="Retention and loyalty metrics"
-              action={
-                <Link to="/dashboard/crm" className="text-xs text-[#FF6B35] font-semibold flex items-center gap-1 shrink-0">
-                  CRM <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              }
-            />
-            <div className="space-y-3">
-              {[
-                { label: 'New Customers', val: '24', icon: UserPlus, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
-                { label: 'Returning Customers', val: '68', icon: Users, color: 'text-violet-500 bg-violet-500/10 border-violet-500/20' },
-                { label: 'Repeat Rate', val: '73%', icon: TrendUp, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
-                { label: 'Loyalty Members', val: '182', icon: Award, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
-                { label: 'Satisfaction', val: '4.8 / 5', icon: Star, color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
-              ].map((row, idx) => {
-                const Icon = row.icon;
-                return (
-                  <div key={idx} className="flex items-center gap-3">
-                    <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${row.color}`}>
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
-                    <p className="flex-1 text-xs text-slate-600 dark:text-[#9ca3af]">{row.label}</p>
-                    <p className="text-xs font-bold text-slate-800 dark:text-white">{row.val}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-
-          {/* CRM Insights */}
-          <Card className="p-5 sm:p-6">
-            <SectionHeader
-              title="CRM Insights"
-              sub="Campaigns and loyalty performance"
-              action={
-                <Link to="/dashboard/crm" className="text-xs text-[#FF6B35] font-semibold flex items-center gap-1 shrink-0">
-                  View <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              }
-            />
-            <div className="space-y-3">
-              {[
-                { label: 'Customer Growth', val: '+14%', icon: TrendUp, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
-                { label: 'Loyalty Points Issued', val: '1,840', icon: Award, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
-                { label: 'Coupons Redeemed', val: '37', icon: Tag, color: 'text-pink-500 bg-pink-500/10 border-pink-500/20' },
-                { label: 'Birthday Customers', val: '3 today', icon: Smile, color: 'text-violet-500 bg-violet-500/10 border-violet-500/20' },
-                { label: 'Churn Risk', val: '12 customers', icon: ShieldAlert, color: 'text-red-500 bg-red-500/10 border-red-500/20' },
-              ].map((row, idx) => {
-                const Icon = row.icon;
-                return (
-                  <div key={idx} className="flex items-center gap-3">
-                    <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${row.color}`}>
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
-                    <p className="flex-1 text-xs text-slate-600 dark:text-[#9ca3af]">{row.label}</p>
-                    <p className="text-xs font-bold text-slate-800 dark:text-white">{row.val}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
         </div>
-      )}
-
-      {/* ── AI Business Insights ───────────────────────────────────── */}
-      {!isStaff && (
-        <Card className="p-5 sm:p-6">
-          <SectionHeader
-            title="Business Insights"
-            sub="AI-powered observations (preview)"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {MOCK_INSIGHTS.map(insight => {
-              const Icon = insight.icon;
-              return (
-                <div key={insight.id} className="flex items-start gap-3 bg-slate-50 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/30 rounded-xl p-4 hover:shadow-sm transition-shadow">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${insight.bg}`}>
-                    <Icon className={`w-4 h-4 ${insight.color}`} />
-                  </div>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{insight.text}</p>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-4 flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-            <p className="text-[10px] text-slate-400 dark:text-[#6b7280]">AI insights are illustrative placeholders — live intelligence coming soon.</p>
-          </div>
-        </Card>
       )}
 
       {/* ── Quick Actions ──────────────────────────────────────────── */}
@@ -997,93 +722,6 @@ export const DashboardOverview: React.FC = () => {
         </Card>
       )}
 
-      {/* ── Performance Widgets ────────────────────────────────────── */}
-      {!isStaff && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {[
-            { label: 'Best Category', val: 'Beverages', icon: Soup, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
-            { label: 'Best Item', val: 'Cold Coffee', icon: Star, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
-            { label: 'Peak Hour', val: '7–8 PM', icon: Clock, color: 'text-violet-500 bg-violet-500/10 border-violet-500/20' },
-            { label: 'Most Profitable', val: 'Paneer Tikka', icon: TrendingUp, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
-            { label: 'Best Waiter', val: 'Rahul K.', icon: Award, color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
-            { label: 'Fastest Category', val: 'Fast Food', icon: Zap, color: 'text-pink-500 bg-pink-500/10 border-pink-500/20' },
-          ].map((widget, idx) => {
-            const Icon = widget.icon;
-            return (
-              <Card key={idx} className="p-4 flex flex-col items-center text-center gap-2 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${widget.color}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[#9ca3af]">{widget.label}</p>
-                <p className="text-sm font-extrabold text-slate-800 dark:text-white leading-tight">{widget.val}</p>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Activity Timeline + Alerts ─────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Activity Timeline */}
-        <Card className="p-5 sm:p-6">
-          <SectionHeader title="Activity Timeline" sub="Recent events across the restaurant" />
-          <div className="relative">
-            <div className="absolute left-[15px] top-0 bottom-0 w-px bg-slate-200 dark:bg-[#374151]/40" />
-            <div className="space-y-4">
-              {MOCK_ACTIVITY.map(event => {
-                const Icon = event.icon;
-                return (
-                  <div key={event.id} className="flex items-start gap-3 pl-1">
-                    <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 z-10 ${event.color}`}>
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0 pt-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold text-slate-800 dark:text-white">{event.label}</p>
-                        <span className="text-[10px] text-slate-400 dark:text-[#6b7280] shrink-0">{event.time}</span>
-                      </div>
-                      <p className="text-[10px] text-slate-500 dark:text-[#9ca3af] mt-0.5">{event.sub}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </Card>
-
-        {/* Alerts & Warnings */}
-        <Card className="p-5 sm:p-6">
-          <SectionHeader
-            title="Alerts"
-            sub="Items requiring your attention"
-            action={
-              <span className="text-[10px] font-bold text-slate-400 dark:text-[#6b7280] bg-slate-100 dark:bg-[#374151]/30 border border-slate-200 dark:border-[#374151]/40 px-2 py-1 rounded-lg">
-                {MOCK_ALERTS.length} active
-              </span>
-            }
-          />
-          <div className="space-y-3">
-            {MOCK_ALERTS.map(alert => {
-              const Icon = alert.icon;
-              return (
-                <div key={alert.id} className={`flex items-start gap-3 border rounded-xl p-4 ${alert.color}`}>
-                  <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${alert.iconColor}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-xs font-bold text-slate-800 dark:text-white">{alert.title}</p>
-                      <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full ${alert.badge}`}>{alert.badgeText}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 dark:text-[#9ca3af] mt-0.5">{alert.sub}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 dark:text-[#6b7280] shrink-0 mt-0.5" />
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      </div>
 
     </div>
   );

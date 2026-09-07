@@ -5,8 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';
 import {
   ShoppingCart, Plus, Minus, Trash2, Star, Search, ChevronRight,
-  Loader2, CheckCircle, Utensils, X, Receipt, QrCode, CreditCard,
-  Smartphone, Check, ArrowLeft, ShieldAlert, Bell, Sun, Moon, Flame,
+  Loader2, CheckCircle, Utensils, X, Receipt, QrCode,
+  Check, ShieldAlert, Bell, Sun, Moon, Flame,
   MapPin, ChevronLeft, ArrowUpDown, SlidersHorizontal,
 } from 'lucide-react';
 
@@ -122,15 +122,6 @@ export const CustomerMenu: React.FC = () => {
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod] = useState<'ONLINE' | 'COUNTER' | 'WAITER'>('WAITER');
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [paymentOption, setPaymentOption] = useState<'CARD' | 'UPI' | null>(null);
-  const [upiApp, setUpiApp] = useState<string | null>(null);
-  const [upiId, setUpiId] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
   const [trackingOrder, setTrackingOrder] = useState<any>(null);
 
   // CRM Loyalty States
@@ -198,7 +189,7 @@ export const CustomerMenu: React.FC = () => {
               if (statusRes.ok) {
                 const statusData = await statusRes.json();
                 const currentStatus = statusData.order?.status;
-                const isOrderPaid = statusData.order?.paymentStatus === 'SUCCESS' || currentStatus === 'PAID';
+                const isOrderPaid = statusData.order?.paymentStatus === 'SUCCESS';
                 if (currentStatus && !isOrderPaid && currentStatus !== 'CANCELLED') {
                   setPlacedOrder(parsedOrder);
                   setTrackingOrder(statusData.order);
@@ -297,7 +288,7 @@ export const CustomerMenu: React.FC = () => {
           const data = await res.json();
           setTrackingOrder(data.order);
           const currentStatus = data.order?.status;
-          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS' || currentStatus === 'PAID';
+          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
           if (isOrderPaid || currentStatus === 'CANCELLED') {
             deleteCookie(`ordio_active_order_${slug}`);
             setActiveCookieOrder(null);
@@ -319,7 +310,7 @@ export const CustomerMenu: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           const currentStatus = data.order?.status;
-          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS' || currentStatus === 'PAID';
+          const isOrderPaid = data.order?.paymentStatus === 'SUCCESS';
           if (isOrderPaid || currentStatus === 'CANCELLED') {
             deleteCookie(`ordio_active_order_${slug}`);
             setActiveCookieOrder(null);
@@ -408,31 +399,6 @@ export const CustomerMenu: React.FC = () => {
     } catch (err: any) {
       toast.error(err.message || 'Failed to place order. Please try again.');
     } finally { setIsPlacingOrder(false); }
-  };
-
-  const handleMockPaymentSubmit = async (method: 'UPI' | 'CARD') => {
-    if (!placedOrder || !slug) return;
-    setPaymentProcessing(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    try {
-      const res = await fetch(`${BASE_URL}/public/${slug}/orders/${placedOrder.id}/pay-mock`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentMethod: method }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Payment failed');
-      setPaymentSuccess(true);
-      setIsSettleBillRequested(false);
-      toast.success('Payment Received! Chef is starting your order.', { duration: 3000 });
-      setTrackingOrder((prev: any) => prev ? { ...prev, paymentStatus: 'SUCCESS', paymentMethod: method } : null);
-      setTimeout(() => {
-        setIsPaymentModalOpen(false); setPaymentSuccess(false); setPaymentProcessing(false);
-        setPaymentOption(null); setUpiApp(null); setUpiId(''); setCardNumber(''); setCardExpiry(''); setCardCvv('');
-      }, 1500);
-    } catch (err: any) {
-      toast.error(err.message || 'Payment simulation failed.');
-      setPaymentProcessing(false);
-    }
   };
 
   const handleDownloadInvoice = async () => {
@@ -560,7 +526,7 @@ export const CustomerMenu: React.FC = () => {
   // ─── Order Tracking Screen ─────────────────────────────────────────────────
   if (placedOrder) {
     const currentStatus = trackingOrder?.status ?? placedOrder.status;
-    const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS' || currentStatus === 'PAID';
+    const isPaid = (trackingOrder?.paymentStatus ?? 'PENDING') === 'SUCCESS';
     const paymentPref = localStorage.getItem(`ordio_payment_method_${placedOrder.id}`) || 'WAITER';
     const getStep = (s: string) => ({ 'NEW': 0, 'PREPARING': 1, 'READY': 2, 'SERVED': 3, 'PAID': 3 }[s] ?? 0);
     const stepIndex = getStep(currentStatus);
@@ -939,7 +905,7 @@ export const CustomerMenu: React.FC = () => {
                       {isPaid ? (
                         <>
                           <span className="w-1.5 h-1.5 rounded-full bg-[#2E7D32] animate-pulse" />
-                          Paid Online ({trackingOrder?.paymentMethod ?? 'MOCK'})
+                          Paid ({trackingOrder?.paymentMethod ?? 'Recorded by restaurant'})
                         </>
                       ) : (
                         <>
@@ -988,104 +954,6 @@ export const CustomerMenu: React.FC = () => {
           </div>
         )}
 
-        {/* Payment Modal */}
-        {isPaymentModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !paymentProcessing && setIsPaymentModalOpen(false)} />
-            <div className="relative w-full max-w-sm bg-[#0f172a] rounded-[24px] border border-[#334155]/60 overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200 text-left">
-              <div className="bg-[#1e293b] p-4 flex items-center justify-between border-b border-[#334155]">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-[#3399FF] rounded flex items-center justify-center font-bold text-white text-xs">R</div>
-                  <div>
-                    <h5 className="text-xs font-black text-white uppercase tracking-wider">Razorpay Secure</h5>
-                    <p className="text-[10px] text-gray-400">Ordio · Order ID: {placedOrder.orderNumber}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-400">Amount</p>
-                  <p className="text-sm font-black text-[#3399FF]">{fmt(placedOrder.totalAmount, settings.currency)}</p>
-                </div>
-              </div>
-
-              {paymentProcessing ? (
-                <div className="p-8 flex flex-col items-center text-center space-y-4">
-                  {paymentSuccess ? (
-                    <>
-                      <div className="w-16 h-16 bg-emerald-500/10 border-2 border-emerald-500 rounded-full flex items-center justify-center animate-bounce">
-                        <Check className="w-8 h-8 text-emerald-400" />
-                      </div>
-                      <h4 className="text-lg font-bold text-white">Payment Successful!</h4>
-                      <p className="text-xs text-gray-400">Your order is being prepared.</p>
-                    </>
-                  ) : (
-                    <>
-                      <Loader2 className="w-12 h-12 text-[#3399FF] animate-spin" />
-                      <h4 className="text-sm font-bold text-white">Securing Payment...</h4>
-                      <p className="text-xs text-gray-400">Simulating bank gateway communication.</p>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="p-5 space-y-4">
-                  <h4 className="text-sm font-bold text-white uppercase tracking-wider text-center border-b border-[#334155] pb-2">Select Payment Method</h4>
-                  {paymentOption === null ? (
-                    <div className="space-y-3">
-                      <button onClick={() => setPaymentOption('UPI')} className="w-full p-4 bg-[#1e293b] hover:bg-[#334155]/60 border border-[#334155] rounded-xl flex items-center justify-between text-left transition-all">
-                        <div className="flex items-center gap-3">
-                          <Smartphone className="w-5 h-5 text-[#3399FF]" />
-                          <div>
-                            <p className="font-bold text-sm text-white">Pay via UPI / QR</p>
-                            <p className="text-xs text-gray-400">GPay, PhonePe, Paytm, BHIM</p>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      </button>
-                      <button onClick={() => setPaymentOption('CARD')} className="w-full p-4 bg-[#1e293b] hover:bg-[#334155]/60 border border-[#334155] rounded-xl flex items-center justify-between text-left transition-all">
-                        <div className="flex items-center gap-3">
-                          <CreditCard className="w-5 h-5 text-[#3399FF]" />
-                          <div>
-                            <p className="font-bold text-sm text-white">Pay via Card</p>
-                            <p className="text-xs text-gray-400">Visa, Mastercard, RuPay, Maestro</p>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      </button>
-                    </div>
-                  ) : paymentOption === 'UPI' ? (
-                    <div className="space-y-4">
-                      <button onClick={() => setPaymentOption(null)} className="text-[#3399FF] text-xs hover:underline flex items-center gap-1 font-semibold">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Back
-                      </button>
-                      <div className="grid grid-cols-3 gap-2">
-                        {['Google Pay', 'PhonePe', 'Paytm'].map((app) => (
-                          <button key={app} onClick={() => setUpiApp(app)} className={`p-2.5 rounded-lg border text-xs font-bold text-center transition-all ${upiApp === app ? 'bg-[#3399FF]/15 border-[#3399FF] text-white' : 'bg-[#1e293b] border-[#334155] text-gray-300 hover:bg-[#334155]/60'}`}>{app}</button>
-                        ))}
-                      </div>
-                      <input type="text" placeholder="username@okaxis" value={upiId} onChange={(e) => setUpiId(e.target.value)} className="w-full bg-[#1e293b] border border-[#334155] rounded-lg p-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#3399FF]" />
-                      <button onClick={() => handleMockPaymentSubmit('UPI')} disabled={!upiApp && !upiId} className="w-full py-3 bg-[#3399FF] hover:bg-blue-600 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm">
-                        Pay {fmt(placedOrder.totalAmount, settings.currency)}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <button onClick={() => setPaymentOption(null)} className="text-[#3399FF] text-xs hover:underline flex items-center gap-1 font-semibold">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Back
-                      </button>
-                      <input type="text" placeholder="4111 2222 3333 4444" maxLength={19} value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} className="w-full bg-[#1e293b] border border-[#334155] rounded-lg p-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#3399FF]" />
-                      <div className="grid grid-cols-2 gap-3">
-                        <input type="text" placeholder="MM/YY" maxLength={5} value={cardExpiry} onChange={(e) => setCardExpiry(e.target.value)} className="w-full bg-[#1e293b] border border-[#334155] rounded-lg p-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#3399FF]" />
-                        <input type="password" placeholder="CVV" maxLength={3} value={cardCvv} onChange={(e) => setCardCvv(e.target.value)} className="w-full bg-[#1e293b] border border-[#334155] rounded-lg p-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#3399FF]" />
-                      </div>
-                      <button onClick={() => handleMockPaymentSubmit('CARD')} disabled={cardNumber.length < 15} className="w-full py-3 bg-[#3399FF] hover:bg-blue-600 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-sm">
-                        Pay {fmt(placedOrder.totalAmount, settings.currency)}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     );
   }

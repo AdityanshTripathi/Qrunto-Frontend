@@ -197,7 +197,7 @@ export const LoyaltyTab: React.FC<LoyaltyTabProps> = ({
               <DollarSign className="w-4 h-4" />
               Coupon Campaign Leaderboard
             </h3>
-            <span className="text-xs text-slate-400 block mb-6">Track coupon redemption volume and total revenue lift generated</span>
+            <span className="text-xs text-slate-400 block mb-6">Track coupon redemption volume and revenue from redeemed orders</span>
           </div>
 
           <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
@@ -216,7 +216,7 @@ export const LoyaltyTab: React.FC<LoyaltyTabProps> = ({
                       <span className="text-xs font-bold text-slate-800 dark:text-white mt-0.5 block">{item.redemptions} times</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-slate-400 block">Rev Lift</span>
+                      <span className="text-[9px] text-slate-400 block">Order Revenue</span>
                       <span className="text-xs font-black text-emerald-500 mt-0.5 block">{fmt(item.revenueLift)}</span>
                     </div>
                   </div>
