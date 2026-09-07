@@ -1,3 +1,4 @@
+import { useRestaurantTimezone } from '../../../lib/timezone';
 import React, { useState, useEffect } from 'react';
 import { api } from '../../../lib/api';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ const getConversionFactor = (materialUnit: string): number => {
 };
 
 export const InventoryDashboard: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [loading, setLoading] = useState(true);
 
@@ -911,7 +913,7 @@ export const InventoryDashboard: React.FC = () => {
                             <tr key={po.id} className="hover:bg-slate-50/50 dark:hover:bg-[#374151]/10 transition-colors text-xs">
                               <td className="p-4 font-black">{po.poNumber}</td>
                               <td className="p-4 font-semibold text-slate-700 dark:text-gray-300">{po.supplier?.name}</td>
-                              <td className="p-4 text-slate-500 dark:text-gray-400">{new Date(po.orderDate).toLocaleDateString()}</td>
+                              <td className="p-4 text-slate-500 dark:text-gray-400">{new Date(po.orderDate).toLocaleDateString(undefined, { timeZone: restaurantTimeZone })}</td>
                               <td className="p-4 font-bold text-slate-800 dark:text-white">₹{po.grandTotal.toFixed(2)}</td>
                               <td className="p-4">
                                 <span className={`px-2 py-0.5 border rounded-full text-[9px] font-bold ${
@@ -1005,7 +1007,7 @@ export const InventoryDashboard: React.FC = () => {
                       ) : (
                         wastageRecords.map(w => (
                           <tr key={w.id} className="hover:bg-slate-50/50 dark:hover:bg-[#374151]/10 transition-colors text-xs">
-                            <td className="p-4 text-slate-500 dark:text-gray-400">{new Date(w.wasteDate).toLocaleDateString()}</td>
+                            <td className="p-4 text-slate-500 dark:text-gray-400">{new Date(w.wasteDate).toLocaleDateString(undefined, { timeZone: restaurantTimeZone })}</td>
                             <td className="p-4 font-bold text-slate-700 dark:text-gray-200">{w.rawMaterial?.name}</td>
                             <td className="p-4 font-semibold">{w.quantity} {w.rawMaterial?.unit}</td>
                             <td className="p-4 font-black text-red-500">₹{w.cost.toFixed(2)}</td>
@@ -1047,7 +1049,7 @@ export const InventoryDashboard: React.FC = () => {
                       ) : (
                         auditRecords.map(a => (
                           <tr key={a.id} className="hover:bg-slate-50/50 dark:hover:bg-[#374151]/10 transition-colors text-xs">
-                            <td className="p-4 text-slate-500 dark:text-gray-400">{new Date(a.auditDate).toLocaleDateString()}</td>
+                            <td className="p-4 text-slate-500 dark:text-gray-400">{new Date(a.auditDate).toLocaleDateString(undefined, { timeZone: restaurantTimeZone })}</td>
                             <td className="p-4 font-bold text-slate-700 dark:text-gray-200">{a.user?.name}</td>
                             <td className="p-4 font-semibold">{a.items?.length || 0} items</td>
                             <td className="p-4 space-y-1">
@@ -1113,7 +1115,7 @@ export const InventoryDashboard: React.FC = () => {
                                   {tr.status}
                                 </span>
                               </td>
-                              <td className="p-4 text-slate-500">{tr.sentDate ? new Date(tr.sentDate).toLocaleDateString() : new Date(tr.createdAt).toLocaleDateString()}</td>
+                              <td className="p-4 text-slate-500">{tr.sentDate ? new Date(tr.sentDate).toLocaleDateString(undefined, { timeZone: restaurantTimeZone }) : new Date(tr.createdAt).toLocaleDateString(undefined, { timeZone: restaurantTimeZone })}</td>
                               <td className="p-4">
                                 {tr.items?.map((it: any) => (
                                   <div key={it.id} className="text-[10px] font-medium text-slate-600 dark:text-gray-400">

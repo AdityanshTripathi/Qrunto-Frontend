@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 export interface User {
+  restaurantTimezone?: string;
   id: string;
   name: string;
   email: string;
@@ -9,6 +10,7 @@ export interface User {
     id: string;
     name: string;
     slug: string;
+    timezone?: string;
     logoUrl?: string;
   }>;
 }

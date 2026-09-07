@@ -1,3 +1,4 @@
+import { timezone } from '../../lib/timezone';
 import React, { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import type { SubmitHandler } from 'react-hook-form';
@@ -28,6 +29,7 @@ import { useCallback } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface SettingsInputs {
+  timezone: string;
   name: string;
   phone: string;
   email: string;
@@ -206,6 +208,7 @@ const SettingsContent: React.FC = () => {
       address: '',
       gstNumber: '',
       currency: 'INR',
+      timezone: timezone(undefined),
       taxPercentage: 0,
       logoUrl: '',
     },
@@ -230,6 +233,7 @@ const SettingsContent: React.FC = () => {
         setValue('email', data.restaurant.email || '');
         setValue('address', data.restaurant.address || '');
         setValue('gstNumber', data.restaurant.gstNumber || '');
+        setValue('timezone', timezone(data.restaurant.timezone));
         setValue('currency', data.settings.currency || 'INR');
         setValue('taxPercentage', data.settings.taxPercentage ?? 0);
         setLogoPreview(data.restaurant.logoUrl || null);
@@ -311,6 +315,7 @@ const SettingsContent: React.FC = () => {
           address: payload.address || null,
           gstNumber: payload.gstNumber || null,
           logoUrl: logoPreview || null,
+          timezone: payload.timezone,
           currency: payload.currency,
           taxPercentage: Number(payload.taxPercentage),
           businessHours,
@@ -320,6 +325,8 @@ const SettingsContent: React.FC = () => {
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || 'Failed to update settings');
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) useAuthStore.setState({ user: { ...currentUser, restaurantTimezone: data.restaurant.timezone, restaurants: currentUser.restaurants.map(r => r.id === data.restaurant.id ? { ...r, timezone: data.restaurant.timezone } : r) } });
       toast.success('Restaurant settings saved successfully!');
     } catch (err: any) {
       toast.error(err.message || 'Error saving settings');
@@ -486,6 +493,11 @@ const SettingsContent: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
+            <div className="space-y-2">
+              <label htmlFor="restaurant-timezone" className="text-xs font-bold text-slate-500">Restaurant timezone</label>
+              <input id="restaurant-timezone" {...register('timezone', { required: 'Timezone is required' })} placeholder="Asia/Kolkata" className="w-full rounded-xl border p-3 bg-transparent" />
+              <p className="text-xs text-slate-500">Use an IANA name, such as Asia/Kolkata, UTC, or America/New_York.</p>
+            </div>
             {/* Currency */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase tracking-wide">Billing Currency</label>

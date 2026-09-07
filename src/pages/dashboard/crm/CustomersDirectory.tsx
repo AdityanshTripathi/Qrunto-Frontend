@@ -1,3 +1,4 @@
+import { useRestaurantTimezone } from '../../../lib/timezone';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCRMStore } from '../../../store/crmStore';
@@ -13,6 +14,7 @@ import { TicketsBoard } from './TicketsBoard';
 import { toast } from 'sonner';
 
 export const CustomersDirectory: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const navigate = useNavigate();
   const {
     customers,
@@ -283,7 +285,7 @@ export const CustomersDirectory: React.FC = () => {
                           <span className="text-lg">{occ.type === 'BIRTHDAY' ? '🎂' : '💍'}</span>
                           <div>
                             <p className="font-bold text-slate-800 dark:text-white">{occ.name}</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">{occ.type} · {new Date(occ.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{occ.type} · {new Date(occ.date).toLocaleDateString(undefined, { ...({ month: 'short', day: 'numeric' }), timeZone: 'UTC' })}</p>
                           </div>
                         </div>
 
@@ -397,11 +399,11 @@ export const CustomersDirectory: React.FC = () => {
                             {profile.totalOrders ?? 0}
                           </td>
                           <td className="py-4.5 px-6 text-slate-400 text-xs">
-                            {profile.lastVisit ? new Date(profile.lastVisit).toLocaleDateString(undefined, {
+                            {profile.lastVisit ? new Date(profile.lastVisit).toLocaleDateString(undefined, { ...({
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric'
-                            }) : '-'}
+                            }), timeZone: restaurantTimeZone }) : '-'}
                           </td>
                           <td className="py-4.5 px-6 text-center font-semibold">
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${getStatusBadge(profile.repeatStatus || 'NEW')}`}>

@@ -1,3 +1,4 @@
+import { useRestaurantTimezone } from '../../../lib/timezone';
 import React, { useEffect, useState } from 'react';
 import { useCRMStore, type Campaign } from '../../../store/crmStore';
 import { Plus, Trash2, Loader2, X, Calendar, Mail, MessageSquare, Megaphone, Eye, BarChart } from 'lucide-react';
@@ -5,6 +6,7 @@ import { toast } from 'sonner';
 import { api } from '../../../lib/api';
 
 export const CampaignsConfig: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const {
     campaigns,
     campaignsLoading,
@@ -122,7 +124,7 @@ export const CampaignsConfig: React.FC = () => {
         segmentId: segmentId === 'All' ? null : segmentId,
         templateSubject: channel === 'EMAIL' ? templateSubject.trim() || 'Special Offer' : null,
         templateBody: templateBody.trim(),
-        scheduledAt: new Date(scheduledAt).toISOString(),
+        scheduledAt: scheduledAt,
       });
       toast.success('Campaign scheduled successfully!');
       setIsModalOpen(false);
@@ -250,7 +252,7 @@ export const CampaignsConfig: React.FC = () => {
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1 pt-1.5 border-t border-slate-100 dark:border-[#374151]/20">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>
-                      Scheduled: {new Date(campaign.scheduledAt).toLocaleString()}
+                      Scheduled: {new Date(campaign.scheduledAt).toLocaleString(undefined, { timeZone: restaurantTimeZone })}
                     </span>
                   </div>
 

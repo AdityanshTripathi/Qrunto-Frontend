@@ -1,3 +1,4 @@
+import { useRestaurantTimezone } from '../../lib/timezone';
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { toast } from 'sonner';
@@ -16,6 +17,7 @@ interface Waiter {
 }
 
 export const WaitersPage: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -264,7 +266,7 @@ export const WaitersPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-4.5 px-6 text-slate-400 text-xs">
-                      {new Date(waiter.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {new Date(waiter.createdAt).toLocaleDateString(undefined, { ...({ year: 'numeric', month: 'short', day: 'numeric' }), timeZone: restaurantTimeZone })}
                     </td>
                     <td className="py-4.5 px-6 text-right space-x-1.5 shrink-0">
                       <button

@@ -226,7 +226,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                 <span className="text-[10px] text-slate-400 font-semibold block">Best Sales Day</span>
                 <span className="text-sm font-black text-slate-800 dark:text-white mt-1 block">
                   {data.metrics.bestDay.date !== 'N/A' 
-                    ? `${new Date(data.metrics.bestDay.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` 
+                    ? `${new Date(data.metrics.bestDay.date).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}`
                     : 'N/A'}
                 </span>
                 <span className="text-xs font-extrabold text-emerald-500">{fmt(data.metrics.bestDay.revenue)}</span>
@@ -235,7 +235,7 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                 <span className="text-[10px] text-slate-400 font-semibold block">Worst Sales Day</span>
                 <span className="text-sm font-black text-slate-800 dark:text-white mt-1 block">
                   {data.metrics.worstDay.date !== 'N/A' 
-                    ? `${new Date(data.metrics.worstDay.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` 
+                    ? `${new Date(data.metrics.worstDay.date).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })}`
                     : 'N/A'}
                 </span>
                 <span className="text-xs font-extrabold text-rose-500">{fmt(data.metrics.worstDay.revenue)}</span>

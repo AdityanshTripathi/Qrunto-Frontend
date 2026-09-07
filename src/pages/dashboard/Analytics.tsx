@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useRestaurantTimezone, localDate, addDays } from '../../lib/timezone';
+import React, { useState, useEffect } from 'react';
 import {
   RefreshCw,
   Calendar,
@@ -38,6 +39,7 @@ const TABS = [
 ];
 
 const AnalyticsContent: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const token = useAuthStore((state) => state.accessToken);
 
   // Tab State
@@ -45,42 +47,25 @@ const AnalyticsContent: React.FC = () => {
 
   // Date Range States
   const [startDate, setStartDate] = useState<string>(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return d.toISOString().split('T')[0];
+    return addDays(localDate(new Date(), restaurantTimeZone), -30);
   });
   const [endDate, setEndDate] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
+    return localDate(new Date(), restaurantTimeZone);
   });
   const [preset, setPreset] = useState<string>('30d');
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
   const handlePresetChange = (p: string) => {
     setPreset(p);
-    const end = new Date();
-    let start = new Date();
-    switch (p) {
-      case 'today':
-        start = new Date();
-        break;
-      case 'yesterday':
-        start = new Date();
-        start.setDate(start.getDate() - 1);
-        end.setDate(end.getDate() - 1);
-        break;
-      case '7d':
-        start.setDate(start.getDate() - 7);
-        break;
-      case '30d':
-        start.setDate(start.getDate() - 30);
-        break;
-      case 'thisMonth':
-        start = new Date(end.getFullYear(), end.getMonth(), 1);
-        break;
-    }
-    setStartDate(start.toISOString().split('T')[0]);
-    setEndDate(end.toISOString().split('T')[0]);
+    const today = localDate(new Date(), restaurantTimeZone);
+    const end = p === 'yesterday' ? addDays(today, -1) : today;
+    const start = p === 'thisMonth' ? today.slice(0, 7) + '-01'
+      : p === '7d' ? addDays(today, -7) : p === '30d' ? addDays(today, -30) : end;
+    setStartDate(start);
+    setEndDate(end);
   };
+
+  useEffect(() => { handlePresetChange(preset); }, [restaurantTimeZone]);
 
   const triggerRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);

@@ -1,3 +1,4 @@
+import { useRestaurantTimezone } from '../lib/timezone';
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -25,6 +26,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardSidebar } from './dashboard-sidebar/DashboardSidebar';
 
 export const DashboardLayout: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const { user, clearAuth, setAuth } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -347,7 +349,7 @@ export const DashboardLayout: React.FC = () => {
                                   {n.message}
                                 </p>
                                 <span className="text-[9px] text-gray-500 mt-1.5 block">
-                                  {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(n.createdAt).toLocaleTimeString([], { ...({ hour: '2-digit', minute: '2-digit' }), timeZone: restaurantTimeZone })}
                                 </span>
                               </div>
                             </div>

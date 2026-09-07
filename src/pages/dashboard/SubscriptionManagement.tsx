@@ -1,3 +1,4 @@
+import { useRestaurantTimezone } from '../../lib/timezone';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, Calendar, ShieldCheck, ArrowRight, Loader2, Sparkles, Check } from 'lucide-react';
@@ -32,6 +33,7 @@ export const SubscriptionManagement: React.FC = () => {
 };
 
 const SubscriptionManagementContent: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -185,11 +187,11 @@ const SubscriptionManagementContent: React.FC = () => {
                       <div>
                         <p className="text-xs text-slate-500 dark:text-[#9ca3af] font-medium">Renews / Expires On</p>
                         <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                          {new Date(subscription.endDate).toLocaleDateString(undefined, {
+                          {new Date(subscription.endDate).toLocaleDateString(undefined, { ...({
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
-                          })}
+                          }), timeZone: restaurantTimeZone })}
                         </p>
                       </div>
                     </div>

@@ -1,3 +1,4 @@
+import { useRestaurantTimezone, localDate, addDays } from '../../lib/timezone';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { toast } from 'sonner';
@@ -71,6 +72,7 @@ const fmt = (amount: number, _currency = 'INR') =>
 
 
 export const OrderManagement: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const token = useAuthStore((state) => state.accessToken);
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -168,32 +170,16 @@ export const OrderManagement: React.FC = () => {
   };
 
   const getFilteredOrders = () => {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const sevenDaysAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const oneYearAgo = new Date(todayStart.getTime() - 365 * 24 * 60 * 60 * 1000);
-
+    const today = localDate(new Date(), restaurantTimeZone);
     return orders.filter(order => {
-      const orderDate = new Date(order.createdAt);
+      const day = localDate(order.createdAt, restaurantTimeZone);
       switch (dateFilter) {
-        case 'TODAY':
-          return orderDate >= todayStart;
-        case '7_DAYS':
-          return orderDate >= sevenDaysAgo;
-        case '1_MONTH':
-          return orderDate >= thirtyDaysAgo;
-        case '1_YEAR':
-          return orderDate >= oneYearAgo;
-        case 'CUSTOM':
-          if (!customDate) return true;
-          const [year, month, day] = customDate.split('-').map(Number);
-          const start = new Date(year, month - 1, day);
-          const end = new Date(year, month - 1, day, 23, 59, 59, 999);
-          return orderDate >= start && orderDate <= end;
-        case 'ALL':
-        default:
-          return true;
+        case 'TODAY': return day === today;
+        case '7_DAYS': return day >= addDays(today, -7);
+        case '1_MONTH': return day >= addDays(today, -30);
+        case '1_YEAR': return day >= addDays(today, -365);
+        case 'CUSTOM': return !customDate || day === customDate;
+        default: return true;
       }
     });
   };
@@ -215,13 +201,12 @@ export const OrderManagement: React.FC = () => {
 
       const now = new Date();
       if (dateFilter === 'TODAY') {
-        params.set('date', now.toLocaleDateString('en-CA'));
+        params.set('date', localDate(now, restaurantTimeZone));
       } else if (dateFilter === 'CUSTOM' && customDate) {
         params.set('date', customDate);
       } else if (dateFilter !== 'ALL' && dateFilter !== 'CUSTOM') {
         const days = dateFilter === '7_DAYS' ? 7 : dateFilter === '1_MONTH' ? 30 : 365;
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        params.set('startDate', new Date(todayStart.getTime() - days * 24 * 60 * 60 * 1000).toISOString());
+        params.set('startDate', addDays(localDate(now, restaurantTimeZone), -days));
         params.set('endDate', now.toISOString());
       }
 
@@ -292,7 +277,7 @@ export const OrderManagement: React.FC = () => {
       if (cursor) setLoadingMore(false);
       else if (!silent) setLoading(false);
     }
-  }, [token, activeTab, dateFilter, customDate]);
+  }, [token, activeTab, dateFilter, customDate, restaurantTimeZone]);
 
   useEffect(() => {
     void fetchOrdersAndStats();
@@ -650,7 +635,7 @@ export const OrderManagement: React.FC = () => {
                 {/* Order Time */}
                 <div className="flex items-center gap-1.5 text-xs text-slate-505 dark:text-[#9ca3af] mb-4">
                   <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-gray-550" />
-                  {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({new Date(order.createdAt).toLocaleDateString()})
+                  {new Date(order.createdAt).toLocaleTimeString([], { ...({ hour: '2-digit', minute: '2-digit' }), timeZone: restaurantTimeZone })} ({new Date(order.createdAt).toLocaleDateString(undefined, { timeZone: restaurantTimeZone })})
                 </div>
 
                 {/* Items Summary */}
@@ -739,7 +724,7 @@ export const OrderManagement: React.FC = () => {
                 <div className="text-right">
                   <p className="text-[10px] text-slate-505 dark:text-[#9ca3af] uppercase font-bold tracking-wider">Order Time</p>
                   <p className="text-xs text-slate-800 dark:text-white font-semibold mt-1">
-                    {new Date(selectedOrder.createdAt).toLocaleTimeString()} · {new Date(selectedOrder.createdAt).toLocaleDateString()}
+                    {new Date(selectedOrder.createdAt).toLocaleTimeString(undefined, { timeZone: restaurantTimeZone })} · {new Date(selectedOrder.createdAt).toLocaleDateString(undefined, { timeZone: restaurantTimeZone })}
                   </p>
                 </div>
               </div>

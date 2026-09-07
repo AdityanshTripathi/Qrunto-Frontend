@@ -1,3 +1,4 @@
+import { useRestaurantTimezone } from '../../lib/timezone';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { toast } from 'sonner';
@@ -71,6 +72,7 @@ const fmt = (amount: number, currency = 'INR') =>
 
 
 export const BillsPage: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const token = useAuthStore((state) => state.accessToken);
 
   const [billRequests, setBillRequests] = useState<BillRequest[]>([]);
@@ -344,7 +346,7 @@ export const BillsPage: React.FC = () => {
           <div className="text-right">
             <h1 className="text-base font-black tracking-wider text-slate-100">INVOICE</h1>
             <p className="text-[8px] text-slate-350">
-              Date: {new Date(order.createdAt).toLocaleDateString('en-IN')}
+              Date: {new Date(order.createdAt).toLocaleDateString('en-IN', { timeZone: restaurantTimeZone })}
             </p>
           </div>
         </div>
@@ -380,7 +382,7 @@ export const BillsPage: React.FC = () => {
               Order No: #{order.orderNumber}
             </p>
             <p className="text-slate-500 mt-0.5">
-              Time: {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              Time: {new Date(order.createdAt).toLocaleTimeString([], { ...({ hour: '2-digit', minute: '2-digit' }), timeZone: restaurantTimeZone })}
             </p>
           </div>
         </div>
@@ -499,7 +501,7 @@ export const BillsPage: React.FC = () => {
                     </span>
                     <span className="text-[10px] text-slate-400 flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
-                      {new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(req.createdAt).toLocaleTimeString([], { ...({ hour: '2-digit', minute: '2-digit' }), timeZone: restaurantTimeZone })}
                     </span>
                   </div>
 

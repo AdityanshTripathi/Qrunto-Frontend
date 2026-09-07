@@ -1,9 +1,11 @@
+import { useRestaurantTimezone } from '../../../lib/timezone';
 import React, { useEffect, useState } from 'react';
 import { useCRMStore, type Coupon } from '../../../store/crmStore';
 import { Plus, Trash2, Loader2, X, AlertTriangle, Calendar, Percent, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const CouponCampaignsConfig: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const {
     coupons,
     couponsLoading,
@@ -63,8 +65,8 @@ export const CouponCampaignsConfig: React.FC = () => {
         discountValue,
         minOrderAmount,
         maxDiscountAmount: maxDiscountAmount === '' ? null : maxDiscountAmount,
-        startDate: new Date(startDate).toISOString(),
-        endDate: new Date(endDate).toISOString(),
+        startDate: startDate,
+        endDate: endDate,
       });
       toast.success('Coupon campaign created successfully!');
       setIsModalOpen(false);
@@ -148,7 +150,7 @@ export const CouponCampaignsConfig: React.FC = () => {
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1 pt-1.5 border-t border-slate-100 dark:border-[#374151]/20">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>
-                      {new Date(coupon.startDate).toLocaleDateString()} - {new Date(coupon.endDate).toLocaleDateString()}
+                      {new Date(coupon.startDate).toLocaleDateString(undefined, { timeZone: restaurantTimeZone })} - {new Date(coupon.endDate).toLocaleDateString(undefined, { timeZone: restaurantTimeZone })}
                     </span>
                   </div>
                 </div>

@@ -1,3 +1,4 @@
+import { useRestaurantTimezone } from '../../lib/timezone';
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
@@ -70,6 +71,7 @@ const fmt = (amount: number) =>
 
 
 export const WaiterDashboard: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const { user, accessToken } = useAuthStore();
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'dashboard';
@@ -686,7 +688,7 @@ export const WaiterDashboard: React.FC = () => {
                       <p className="text-sm font-black text-red-600 dark:text-red-400">{req.title}</p>
                       <p className="text-xs text-slate-500 dark:text-gray-300 mt-1 leading-relaxed">{req.message}</p>
                       <span className="text-[10px] text-gray-400 mt-2 block">
-                        Received: {new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        Received: {new Date(req.createdAt).toLocaleTimeString([], { ...({ hour: '2-digit', minute: '2-digit' }), timeZone: restaurantTimeZone })}
                       </span>
                     </div>
                     <button
@@ -728,7 +730,7 @@ export const WaiterDashboard: React.FC = () => {
                             Bill Request
                           </span>
                           <span className="text-[10px] text-slate-400">
-                            {new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(req.createdAt).toLocaleTimeString([], { ...({ hour: '2-digit', minute: '2-digit' }), timeZone: restaurantTimeZone })}
                           </span>
                         </div>
                         <h4 className="text-sm font-black mt-2">{req.title}</h4>
@@ -882,7 +884,7 @@ export const WaiterDashboard: React.FC = () => {
                       {tableOrderMap[selectedTable.id].customerPhone && (
                         <p>📞 Phone: <strong>{tableOrderMap[selectedTable.id].customerPhone}</strong></p>
                       )}
-                      <p>🕒 Time: <strong>{new Date(tableOrderMap[selectedTable.id].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong></p>
+                      <p>🕒 Time: <strong>{new Date(tableOrderMap[selectedTable.id].createdAt).toLocaleTimeString([], { ...({ hour: '2-digit', minute: '2-digit' }), timeZone: restaurantTimeZone })}</strong></p>
                     </div>
                   </div>
 

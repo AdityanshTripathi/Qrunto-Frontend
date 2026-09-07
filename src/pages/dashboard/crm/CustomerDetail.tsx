@@ -1,3 +1,4 @@
+import { useRestaurantTimezone } from '../../../lib/timezone';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCRMStore } from '../../../store/crmStore';
@@ -8,6 +9,7 @@ import {
 import { toast } from 'sonner';
 
 export const CustomerDetail: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
@@ -268,7 +270,7 @@ export const CustomerDetail: React.FC = () => {
                 <div className="min-w-0">
                   <span className="text-[10px] text-slate-400 block font-bold uppercase">First Visit</span>
                   <span className="text-slate-700 dark:text-gray-200 font-semibold block">
-                    {profile.firstVisit ? new Date(profile.firstVisit).toLocaleDateString() : '-'}
+                    {profile.firstVisit ? new Date(profile.firstVisit).toLocaleDateString(undefined, { timeZone: restaurantTimeZone }) : '-'}
                   </span>
                 </div>
               </div>
@@ -278,7 +280,7 @@ export const CustomerDetail: React.FC = () => {
                 <div className="min-w-0">
                   <span className="text-[10px] text-slate-400 block font-bold uppercase">Last Active</span>
                   <span className="text-slate-700 dark:text-gray-200 font-semibold block">
-                    {profile.lastVisit ? new Date(profile.lastVisit).toLocaleDateString() : '-'}
+                    {profile.lastVisit ? new Date(profile.lastVisit).toLocaleDateString(undefined, { timeZone: restaurantTimeZone }) : '-'}
                   </span>
                 </div>
               </div>
@@ -390,12 +392,12 @@ export const CustomerDetail: React.FC = () => {
                         {note.isSystem ? 'System Event' : note.user?.name || 'Staff'}
                       </span>
                       <span className="text-[9px] text-slate-400 font-mono">
-                        {new Date(note.createdAt).toLocaleDateString(undefined, {
+                        {new Date(note.createdAt).toLocaleDateString(undefined, { ...({
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
-                        })}
+                        }), timeZone: restaurantTimeZone })}
                       </span>
                     </div>
                     <p className="text-xs text-slate-700 dark:text-gray-300 whitespace-pre-wrap">
@@ -437,12 +439,12 @@ export const CustomerDetail: React.FC = () => {
                             {event.title}
                           </span>
                           <span className="text-[10px] text-slate-400 font-medium font-mono">
-                            {new Date(event.timestamp).toLocaleString(undefined, {
+                            {new Date(event.timestamp).toLocaleString(undefined, { ...({
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit'
-                            })}
+                            }), timeZone: restaurantTimeZone })}
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 dark:text-gray-300">

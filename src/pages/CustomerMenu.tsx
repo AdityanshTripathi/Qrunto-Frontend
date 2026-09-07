@@ -1,3 +1,4 @@
+import { timezone } from '../lib/timezone';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
@@ -15,7 +16,7 @@ import menuIcon from '../assets/menu_icon.jpg';
 import { API_BASE_URL as BASE_URL } from '../config/backend';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface Restaurant { id: string; name: string; slug: string; logoUrl: string | null; }
+interface Restaurant { timezone?: string; id: string; name: string; slug: string; logoUrl: string | null; }
 interface Settings { currency: string; taxPercentage: number; }
 interface Category { id: string; name: string; displayOrder: number; }
 interface MenuItem {
@@ -82,6 +83,7 @@ export const CustomerMenu: React.FC = () => {
 
   // Data
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const restaurantTimeZone = timezone(restaurant?.timezone);
   const [settings, setSettings] = useState<Settings>({ currency: 'INR', taxPercentage: 0 });
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -836,7 +838,7 @@ export const CustomerMenu: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <h1 className="text-xl font-black tracking-wider text-slate-100">INVOICE</h1>
-                    <p className="text-[10px] text-slate-300 mt-0.5">Date: {new Date(trackingOrder?.createdAt ?? placedOrder.createdAt).toLocaleDateString('en-IN')}</p>
+                    <p className="text-[10px] text-slate-300 mt-0.5">Date: {new Date(trackingOrder?.createdAt ?? placedOrder.createdAt).toLocaleDateString('en-IN', { timeZone: restaurantTimeZone })}</p>
                   </div>
                 </div>
 
@@ -865,7 +867,7 @@ export const CustomerMenu: React.FC = () => {
                       Invoice No: <span className="text-[#D97757]">{(trackingOrder?.orderNumber ?? placedOrder.orderNumber ?? '').replace('ORD-', 'INV-')}</span>
                     </p>
                     <p className="text-slate-500 mt-0.5">
-                      Invoice Date: {new Date(trackingOrder?.createdAt ?? placedOrder.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                      Invoice Date: {new Date(trackingOrder?.createdAt ?? placedOrder.createdAt).toLocaleDateString('en-IN', { ...({ day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }), timeZone: restaurantTimeZone })}
                     </p>
                     <p className="text-slate-500 mt-1.5 text-[11px]">Order No: #{trackingOrder?.orderNumber ?? placedOrder.orderNumber}</p>
                   </div>

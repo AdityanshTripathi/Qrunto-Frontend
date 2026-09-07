@@ -1,3 +1,4 @@
+import { useRestaurantTimezone, localDate, addDays, localHour } from '../../lib/timezone';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -251,6 +252,7 @@ const SectionHeader: React.FC<{
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export const DashboardOverview: React.FC = () => {
+  const restaurantTimeZone = useRestaurantTimezone();
   const { user, accessToken } = useAuthStore();
   const navigate = useNavigate();
 
@@ -392,10 +394,7 @@ export const DashboardOverview: React.FC = () => {
         
         const hourOrders = paidServedOrders.filter(o => {
           const oDate = new Date(o.createdAt);
-          return oDate.getDate() === today.getDate() &&
-                 oDate.getMonth() === today.getMonth() &&
-                 oDate.getFullYear() === today.getFullYear() &&
-                 oDate.getHours() === targetHour;
+          return localDate(oDate, restaurantTimeZone) === localDate(today, restaurantTimeZone) && localHour(oDate, restaurantTimeZone) === targetHour;
         });
         
         const revenue = hourOrders.reduce((sum, o) => sum + o.totalAmount, 0);
@@ -410,18 +409,15 @@ export const DashboardOverview: React.FC = () => {
       const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const weekDays = [];
       for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
+        const d = new Date(addDays(localDate(new Date(), restaurantTimeZone), -i) + 'T00:00:00Z');
         weekDays.push(d);
       }
       
       return weekDays.map(date => {
-        const dayName = daysOfWeek[date.getDay()]!;
+        const dayName = daysOfWeek[date.getUTCDay()]!;
         const dayOrders = paidServedOrders.filter(o => {
           const oDate = new Date(o.createdAt);
-          return oDate.getDate() === date.getDate() &&
-                 oDate.getMonth() === date.getMonth() &&
-                 oDate.getFullYear() === date.getFullYear();
+          return localDate(oDate, restaurantTimeZone) === date.toISOString().slice(0, 10);
         });
         
         const revenue = dayOrders.reduce((sum, o) => sum + o.totalAmount, 0);
@@ -434,14 +430,14 @@ export const DashboardOverview: React.FC = () => {
     
     const monthData = [];
     for (let i = 3; i >= 0; i--) {
-      const start = new Date();
-      start.setDate(start.getDate() - (i + 1) * 7);
-      const end = new Date();
-      end.setDate(end.getDate() - i * 7);
+      const today = localDate(new Date(), restaurantTimeZone);
+      const start = addDays(today, -(i + 1) * 7 + 1);
+      const end = addDays(today, -i * 7);
       
       const weekOrders = paidServedOrders.filter(o => {
         const oDate = new Date(o.createdAt);
-        return oDate >= start && oDate <= end;
+        const day = localDate(oDate, restaurantTimeZone);
+        return day >= start && day <= end;
       });
       
       const revenue = weekOrders.reduce((sum, o) => sum + o.totalAmount, 0);
@@ -517,9 +513,9 @@ export const DashboardOverview: React.FC = () => {
   const isStaff = user?.role === 'STAFF';
   const restaurantName = user?.restaurants?.[0]?.name || 'Your Restaurant';
   const now = new Date();
-  const hour = now.getHours();
+  const hour = localHour(now, restaurantTimeZone);
   const currentShift = hour < 12 ? 'Morning Shift' : hour < 17 ? 'Afternoon Shift' : 'Evening Shift';
-  const dateStr = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dateStr = now.toLocaleDateString('en-IN', { ...({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), timeZone: restaurantTimeZone });
 
   // KPI cards (owner vs staff)
   const kpiCards = isStaff
@@ -789,7 +785,7 @@ export const DashboardOverview: React.FC = () => {
                     <p className="text-sm font-extrabold text-slate-900 dark:text-white">₹{order.totalAmount}</p>
                     <p className="text-[9px] text-slate-400 dark:text-[#6b7280] flex items-center gap-0.5 justify-end mt-0.5">
                       <Clock className="w-2.5 h-2.5" />
-                      {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(order.createdAt).toLocaleTimeString([], { ...({ hour: '2-digit', minute: '2-digit' }), timeZone: restaurantTimeZone })}
                     </p>
                   </div>
                 </div>
