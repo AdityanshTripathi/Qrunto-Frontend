@@ -23,7 +23,10 @@ import { SkeletonLoader } from '../../components/SkeletonLoader';
 
 const getTableUrl = (url: string | null): string => {
   if (!url) return '';
-  return url;
+  // Existing tables may still have a localhost URL saved in the database.
+  const orderPathIndex = url.indexOf('/order/');
+  if (orderPathIndex === -1) return '';
+  return `https://ordio.in${url.slice(orderPathIndex)}`;
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
