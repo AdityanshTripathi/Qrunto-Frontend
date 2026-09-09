@@ -1,3 +1,4 @@
+import { invoiceDiscount } from '../lib/invoice';
 import { timezone } from '../lib/timezone';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
@@ -877,17 +878,11 @@ export const CustomerMenu: React.FC = () => {
                       <span>Subtotal</span>
                       <span className="font-semibold text-slate-700 dark:text-slate-350">{fmt(trackingOrder?.subtotal ?? placedOrder.subtotal, settings.currency)}</span>
                     </div>
-                    {settings.taxPercentage > 0 && (
-                      <div className="space-y-1.5 border-l-2 border-slate-200 dark:border-slate-700 pl-3">
-                        <div className="flex justify-between text-slate-500 text-[11px]">
-                          <span>CGST ({(settings.taxPercentage / 2).toFixed(2)}%)</span>
-                          <span>{fmt((trackingOrder?.taxAmount ?? placedOrder.taxAmount) / 2, settings.currency)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-500 text-[11px]">
-                          <span>SGST ({(settings.taxPercentage / 2).toFixed(2)}%)</span>
-                          <span>{fmt((trackingOrder?.taxAmount ?? placedOrder.taxAmount) / 2, settings.currency)}</span>
-                        </div>
-                      </div>
+                    {(trackingOrder?.taxAmount ?? placedOrder.taxAmount) > 0 && (
+                      <div className="flex justify-between text-slate-500 px-1"><span>GST</span><span>{fmt(trackingOrder?.taxAmount ?? placedOrder.taxAmount, settings.currency)}</span></div>
+                    )}
+                    {invoiceDiscount(trackingOrder ?? placedOrder) > 0 && (
+                      <div className="flex justify-between text-slate-500 px-1"><span>Discount</span><span>-{fmt(invoiceDiscount(trackingOrder ?? placedOrder), settings.currency)}</span></div>
                     )}
                     {/* Gold Highlighted Grand Total Box */}
                     <div className="keep-color bg-[#FFFAF0] dark:bg-[#2A1F1A] border border-[#F3E1D3] dark:border-[#523A28] rounded-xl p-3 flex justify-between items-center text-sm font-black text-[#D97757] shadow-sm">

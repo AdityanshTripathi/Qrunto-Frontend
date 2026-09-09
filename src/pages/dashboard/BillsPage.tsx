@@ -1,3 +1,4 @@
+import { invoiceDiscount } from '../../lib/invoice';
 import { useRestaurantTimezone } from '../../lib/timezone';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
@@ -117,6 +118,7 @@ export const BillsPage: React.FC = () => {
       const ordersData = await ordersRes.json();
       if (!ordersRes.ok) throw new Error(ordersData.error || 'Failed to fetch orders');
       setOrders(ordersData.orders || []);
+      setSelectedOrder(current => current ? ordersData.orders?.find((order: Order) => order.id === current.id) ?? null : null);
 
     } catch (err: any) {
       toast.error(err.message || 'Error syncing data');
@@ -324,7 +326,7 @@ export const BillsPage: React.FC = () => {
   };
 
   const renderBillContent = (order: Order, forPrint = false) => {
-    const taxRate = restaurantSettings?.taxPercentage ?? 0;
+
     
     return (
       <div 
@@ -418,17 +420,11 @@ export const BillsPage: React.FC = () => {
               <span>Subtotal</span>
               <span className="font-semibold text-slate-700">{fmt(order.subtotal, restaurantSettings.currency)}</span>
             </div>
-            {taxRate > 0 && (
-              <div className="space-y-1 border-l border-slate-200 pl-2 text-slate-500">
-                <div className="flex justify-between text-[10px]">
-                  <span>CGST ({(taxRate / 2).toFixed(1)}%)</span>
-                  <span>{fmt(order.taxAmount / 2, restaurantSettings.currency)}</span>
-                </div>
-                <div className="flex justify-between text-[10px]">
-                  <span>SGST ({(taxRate / 2).toFixed(1)}%)</span>
-                  <span>{fmt(order.taxAmount / 2, restaurantSettings.currency)}</span>
-                </div>
-              </div>
+            {order.taxAmount > 0 && (
+              <div className="flex justify-between text-slate-500 px-1"><span>GST</span><span>{fmt(order.taxAmount, restaurantSettings.currency)}</span></div>
+            )}
+            {invoiceDiscount(order) > 0 && (
+              <div className="flex justify-between text-slate-500 px-1"><span>Discount</span><span>-{fmt(invoiceDiscount(order), restaurantSettings.currency)}</span></div>
             )}
             <div className="keep-color bg-[#FFFAF0] border border-[#F3E1D3] rounded-xl p-2.5 flex justify-between items-center text-xs font-black text-[#FF6B35] shadow-sm">
               <span className="uppercase tracking-wider text-[9px]">Grand Total</span>
