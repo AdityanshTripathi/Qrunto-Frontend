@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import {
   ChevronRight,
   LogOutIcon,
@@ -9,7 +10,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@/components/ui/avatar'
-import { MedeskLogo } from './logo'
 import { SidebarCollapseIcon } from './icons'
 import { DashboardLink, useDashboardNavigation } from './navigation'
 import { useTheme } from './theme-provider'
@@ -47,24 +47,15 @@ import { currentUser, navigationGroups, type NavigationItem } from '../../data'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/authStore'
 
-const menuButtonClassName = cn(
-  'h-12.5 gap-2.5 rounded-lg bg-transparent py-2.5 pl-3 pr-2 text-base font-normal text-muted-foreground transition-colors',
-  'hover:!bg-transparent hover:text-foreground active:!bg-transparent',
-  'aria-[current=page]:!bg-transparent aria-[current=page]:font-medium aria-[current=page]:text-foreground',
-  'data-open:!bg-transparent data-open:hover:!bg-transparent data-open:text-foreground data-active:!bg-transparent',
-  '[&_svg]:size-5! [&_svg]:shrink-0',
-  'group-data-[collapsible=icon]:size-12.5! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:[&>span]:hidden',
-)
-
-const sidebarGroupLabelClassName =
-  'h-auto px-0 py-1 text-[1.0625rem] font-normal text-foreground/70 transition-colors'
+const menuButtonClassName = 'dash-nav-item gap-2.5 [&_svg]:shrink-0';
+const sidebarGroupLabelClassName = 'dash-nav-group';
 
 function NavItem({ item }: { item: NavigationItem }) {
   const { pathname } = useDashboardNavigation()
   const { isMobile, setOpenMobile } = useSidebar()
   const isActive =
-    item.href === '/'
-      ? pathname === '/'
+    item.href === '/' || item.href === '/dashboard'
+      ? pathname === item.href
       : pathname === item.href || pathname.startsWith(`${item.href}/`)
 
   return (
@@ -75,6 +66,7 @@ function NavItem({ item }: { item: NavigationItem }) {
     >
       <DashboardLink
         href={item.href}
+        end={item.href === '/dashboard'}
         aria-current={isActive ? 'page' : undefined}
         onClick={() => {
           if (isMobile) setOpenMobile(false)
@@ -92,21 +84,54 @@ function NavItem({ item }: { item: NavigationItem }) {
 
 export function DashboardSidebar() {
   const { resolvedTheme, setTheme } = useTheme()
-  const { state, toggleSidebar } = useSidebar()
+  const { state, toggleSidebar, isMobile, openMobile, setOpenMobile } = useSidebar()
+  const sidebarRef = useRef<HTMLDivElement>(null)
   const { user, clearAuth } = useAuthStore()
   const isDark = resolvedTheme === 'dark'
 
+  useEffect(() => {
+    if (!isMobile || !openMobile) return
+    const previousFocus = document.activeElement as HTMLElement | null
+    const panel = sidebarRef.current
+    const getFocusable = () => Array.from(panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex="0"]') ?? [])
+      .filter(element => element.getClientRects().length > 0)
+    getFocusable()[0]?.focus()
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setOpenMobile(false)
+      }
+      if (event.key === 'Tab') {
+        const elements = getFocusable()
+        const first = elements[0]
+        const last = elements[elements.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last?.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first?.focus()
+        }
+      }
+    }
+    panel?.addEventListener('keydown', onKeyDown)
+    return () => {
+      panel?.removeEventListener('keydown', onKeyDown)
+      if (previousFocus?.isConnected) previousFocus.focus()
+    }
+  }, [isMobile, openMobile, setOpenMobile])
+
   const activeUser = {
     name: user?.name || currentUser.name,
-    email: user?.email || currentUser.email,
-    avatar: currentUser.avatar,
+    email: user?.email || '',
+    avatar: '',
   }
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="relative h-20 flex-row items-center justify-between gap-3 px-4 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+    <Sidebar ref={sidebarRef} collapsible="icon" className="dash-sidebar" role={isMobile ? 'dialog' : 'navigation'} aria-label="Restaurant navigation" aria-modal={isMobile ? true : undefined}>
+      <SidebarHeader className="dash-sidebar-header relative h-20 flex-row items-center justify-between gap-3 px-4 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
         <div className="flex min-w-0 items-center gap-3 transition-opacity group-data-[collapsible=icon]:hidden">
-          <MedeskLogo className="size-7 shrink-0" />
+          <span className="dash-brand-mark" aria-hidden="true">o</span>
           <span className="truncate text-xl font-semibold tracking-tight">
             Ordio
           </span>
@@ -114,7 +139,7 @@ export function DashboardSidebar() {
         <Button
           variant="ghost"
           onClick={toggleSidebar}
-          aria-label={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
+          aria-label={isMobile ? 'Close navigation' : state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
           className="size-10"
         >
           <SidebarCollapseIcon className="size-5 transition-transform group-data-[collapsible=icon]:rotate-180" />
@@ -174,7 +199,7 @@ export function DashboardSidebar() {
         })}
       </SidebarContent>
 
-      <SidebarFooter className="px-4 py-2">
+      <SidebarFooter className="dash-sidebar-footer px-4 py-2">
         <SidebarGroup className="gap-0 p-0">
           <SidebarGroupLabel
             className={cn(
@@ -190,6 +215,7 @@ export function DashboardSidebar() {
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                     tooltip={activeUser.name}
+                    aria-label={`Account menu for ${activeUser.name}`}
                     className={cn(menuButtonClassName, 'justify-start px-0!')}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">

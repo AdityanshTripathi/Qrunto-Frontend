@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Store, Mail, Lock, User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { AuthLayout, AuthField } from '../components/auth/AuthLayout';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
@@ -45,135 +45,14 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#111827] flex items-center justify-center p-4 relative">
-      {/* Back to Home Button */}
-      <Link 
-        to="/" 
-        className="absolute top-6 left-6 z-50 flex items-center gap-2 text-sm text-[#9ca3af] hover:text-white transition-colors bg-[#1f2937]/40 hover:bg-[#1f2937]/80 px-4 py-2 rounded-[12px] border border-[#374151]/50 backdrop-blur-xl"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Home
-      </Link>
-
-      {/* Decorative gradients */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FF6B35]/10 rounded-full blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
-
-      <div className="w-full max-w-lg bg-[#1f2937]/40 backdrop-blur-xl border border-[#374151]/50 rounded-[24px] shadow-2xl p-8 md:p-10 relative overflow-hidden">
-        {/* Top brand header */}
-        <div className="flex flex-col items-center mb-8">
-          <img src="/logo-white.png" alt="Ordio Logo" className="h-16 w-auto object-contain mb-4 transform hover:scale-105 transition-transform duration-300" />
-          <h2 className="text-2xl font-bold text-white tracking-tight">Create your Account</h2>
-          <p className="text-[#9ca3af] mt-2 text-center text-sm">Get started with Ordio. Setup your menu and start receiving orders instantly.</p>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          {/* Full Name */}
-          <div>
-            <label className="block text-sm font-medium text-[#d1d5db] mb-2" htmlFor="name">
-              Full Name
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <User className="h-5 h-5 text-[#9ca3af]" />
-              </span>
-              <input
-                id="name"
-                type="text"
-                placeholder="John Doe"
-                className={`w-full bg-[#111827]/60 border ${
-                  errors.name ? 'border-red-500 focus:ring-red-500' : 'border-[#374151] focus:ring-[#FF6B35]'
-                } rounded-[12px] py-3 pl-11 pr-4 text-white placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
-                {...register('name')}
-              />
-            </div>
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
-          </div>
-
-          {/* Email Address */}
-          <div>
-            <label className="block text-sm font-medium text-[#d1d5db] mb-2" htmlFor="email">
-              Email Address
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Mail className="h-5 h-5 text-[#9ca3af]" />
-              </span>
-              <input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                className={`w-full bg-[#111827]/60 border ${
-                  errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#374151] focus:ring-[#FF6B35]'
-                } rounded-[12px] py-3 pl-11 pr-4 text-white placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
-                {...register('email')}
-              />
-            </div>
-            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-          </div>
-
-          {/* Restaurant Name */}
-          <div>
-            <label className="block text-sm font-medium text-[#d1d5db] mb-2" htmlFor="restaurantName">
-              Restaurant Name
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Store className="h-5 h-5 text-[#9ca3af]" />
-              </span>
-              <input
-                id="restaurantName"
-                type="text"
-                placeholder="The Spicy Grill"
-                className={`w-full bg-[#111827]/60 border ${
-                  errors.restaurantName ? 'border-red-500 focus:ring-red-500' : 'border-[#374151] focus:ring-[#FF6B35]'
-                } rounded-[12px] py-3 pl-11 pr-4 text-white placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
-                {...register('restaurantName')}
-              />
-            </div>
-            {errors.restaurantName && <p className="text-red-500 text-xs mt-1">{errors.restaurantName.message}</p>}
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="block text-sm font-medium text-[#d1d5db] mb-2" htmlFor="password">
-              Password
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Lock className="h-5 h-5 text-[#9ca3af]" />
-              </span>
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className={`w-full bg-[#111827]/60 border ${
-                  errors.password ? 'border-red-500 focus:ring-red-500' : 'border-[#374151] focus:ring-[#FF6B35]'
-                } rounded-[12px] py-3 pl-11 pr-4 text-white placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
-                {...register('password')}
-              />
-            </div>
-            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#FF6B35] hover:bg-orange-600 disabled:bg-orange-800 disabled:cursor-not-allowed text-white font-semibold rounded-[12px] py-3.5 px-4 flex items-center justify-center gap-2 mt-4 hover:shadow-lg hover:shadow-orange-600/25 transition-all transform hover:-translate-y-[2px]"
-          >
-            {loading ? 'Creating Account...' : 'Continue to Subscription'}
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        </form>
-
-        <div className="mt-8 text-center text-[#9ca3af] text-sm">
-          Already have an account?{' '}
-          <Link to="/login" className="text-[#FF6B35] hover:underline font-medium">
-            Log In
-          </Link>
-        </div>
-      </div>
-    </div>
+    <AuthLayout mode="register" title="Create your account" subtitle="Get your restaurant started with Ordio.">
+      <form onSubmit={handleSubmit(onSubmit)} className="auth-form" noValidate>
+        <AuthField label="Full name" id="name" type="text" placeholder="Your full name" autoComplete="name" error={errors.name?.message} {...register('name')} />
+        <AuthField label="Restaurant name" id="restaurantName" type="text" placeholder="Your restaurant name" autoComplete="organization" error={errors.restaurantName?.message} {...register('restaurantName')} />
+        <AuthField label="Email address" id="email" type="email" placeholder="you@example.com" autoComplete="email" error={errors.email?.message} {...register('email')} />
+        <AuthField label="Password" id="password" type="password" placeholder="Create a password" autoComplete="new-password" hint="Use at least 6 characters." error={errors.password?.message} {...register('password')} />
+        <button type="submit" disabled={loading} className="auth-submit">{loading ? 'Creating account...' : 'Create account'}</button>
+      </form>
+    </AuthLayout>
   );
 };

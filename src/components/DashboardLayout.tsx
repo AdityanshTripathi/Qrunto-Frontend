@@ -21,6 +21,8 @@ import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/api';
 import { toast } from 'sonner';
 import { ThemeToggle } from './ThemeToggle';
+import { DashboardMenuButton } from './DashboardMenuButton';
+import './dashboard-premium.css';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardSidebar } from './dashboard-sidebar/DashboardSidebar';
@@ -46,6 +48,19 @@ export const DashboardLayout: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isNotifOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsNotifOpen(false);
+        notificationButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [isNotifOpen]);
 
   const notificationsRef = useRef<Notification[]>([]);
   const unreadCountRef = useRef<number>(0);
@@ -233,7 +248,7 @@ export const DashboardLayout: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col w-full">
+      <div className="dashboard-shell min-h-screen flex flex-col w-full">
         {/* ⚠️ Admin Bypass Banner */}
         {localStorage.getItem('admin_access_token') && (
           <div className="w-full bg-amber-500 text-black py-2 px-4 text-center text-xs font-black flex items-center justify-center gap-2 z-50 shrink-0">
@@ -250,23 +265,26 @@ export const DashboardLayout: React.FC = () => {
           <DashboardSidebar />
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Desktop Top Header Bar */}
-        <header className="hidden lg:flex items-center justify-between px-8 py-5 border-b border-slate-200 dark:border-[#374151]/40 bg-white/80 dark:bg-[#111827]/60 backdrop-blur-md relative z-20 transition-colors duration-300">
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100">{currentRoute}</h1>
-            <span className="text-xs text-slate-500 dark:text-[#9ca3af] mt-0.5">Logged in as {userRole.replace('_', ' ').toLowerCase()}</span>
+        <header className="dash-topbar">
+          <div className="dash-topbar-heading">
+            <DashboardMenuButton />
+            <div className="dash-restaurant"><strong title={user?.restaurants?.[0]?.name}>{user?.restaurants?.[0]?.name || 'Your restaurant'}</strong><p>{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: restaurantTimeZone })} &middot; {currentRoute}</p></div>
           </div>
-          <div className="flex items-center gap-4 relative">
+          <div className="dash-topbar-actions relative">
+            <div id="dashboard-overview-toolbar" />
             {/* Theme Toggle Button */}
             <ThemeToggle />
 
             {/* Notification Bell Icon */}
             <div className="relative">
               <button
+                ref={notificationButtonRef}
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
-                className="relative p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#1f2937]/80 border border-slate-200 dark:border-[#374151]/60 text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white transition-all focus:outline-none rounded-xl"
+                aria-label="Notifications" aria-expanded={isNotifOpen}
+                className="dash-icon-button relative"
               >
                 {unreadCount > 0 ? (
-                  <BellRing className="w-5 h-5 text-[#FF6B35] animate-pulse" />
+                  <BellRing className="w-5 h-5 text-[var(--dash-accent)]" />
                 ) : (
                   <Bell className="w-5 h-5" />
                 )}
@@ -283,7 +301,7 @@ export const DashboardLayout: React.FC = () => {
                   {/* Backdrop to close */}
                   <div className="fixed inset-0 z-40" onClick={() => setIsNotifOpen(false)}></div>
                   
-                  <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-[#1f2937]/95 backdrop-blur-md border border-slate-200 dark:border-[#374151]/80 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200">
+                  <div className="dash-notification-panel absolute right-0 mt-3 w-80 max-w-[calc(100vw-32px)] border rounded-xl shadow-xl z-50 overflow-hidden">
                     {/* Header */}
                     <div className="p-4 border-b border-slate-100 dark:border-[#374151]/50 flex items-center justify-between">
                       <span className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
@@ -362,9 +380,10 @@ export const DashboardLayout: React.FC = () => {
               )}
             </div>
 
-            <span className="px-3.5 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 dark:bg-[#1f2937] dark:border-[#374151]/50 dark:text-gray-300 shadow-sm">
-              🏬 {user?.restaurants[0]?.name}
-            </span>
+            <button className="dash-profile" onClick={() => navigate('/dashboard/settings')} aria-label="Open profile settings" title="Profile settings">
+              <span className="dash-avatar">{user?.name?.slice(0, 1).toUpperCase() || 'O'}</span>
+              <span className="dash-profile-copy"><strong>{user?.name || 'Account'}</strong><small>{userRole.replaceAll('_', ' ').toLowerCase()}</small></span>
+            </button>
           </div>
         </header>
 
