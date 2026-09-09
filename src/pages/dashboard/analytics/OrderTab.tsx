@@ -106,9 +106,9 @@ export const OrderTab: React.FC<OrderTabProps> = ({
 
   // Funnel chart data
   const funnelData = [
-    { name: '1. QR Menu Views', value: data.conversion.qrViews, color: '#3b82f6' },
-    { name: '2. Cart Sessions', value: data.conversion.cartSessions, color: '#FF6B35' },
-    { name: '3. Orders Placed', value: data.conversion.ordersPlaced, color: '#10b981' },
+    { name: '1. QR Menu Views', value: data.conversion.qrViews, color: 'var(--dash-info)' },
+    { name: '2. Cart Sessions', value: data.conversion.cartSessions, color: 'var(--dash-accent)' },
+    { name: '3. Orders Placed', value: data.conversion.ordersPlaced, color: 'var(--dash-success)' },
   ];
 
   return (
@@ -171,7 +171,7 @@ export const OrderTab: React.FC<OrderTabProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart layout="vertical" data={funnelData} margin={{ left: 5, right: 25, top: 0, bottom: 0 }}>
                 <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} width={120} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={{ fill: 'var(--dash-muted)', fontSize: 11 }} width={120} axisLine={false} tickLine={false} />
                 <Tooltip />
                 <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={28}>
                   {funnelData.map((entry, index) => (

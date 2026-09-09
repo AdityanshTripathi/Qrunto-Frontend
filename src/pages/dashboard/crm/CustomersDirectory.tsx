@@ -126,6 +126,10 @@ export const CustomersDirectory: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <header>
+        <h1>CRM Hub</h1>
+        <p className="text-sm text-slate-500 dark:text-gray-400">Customers, loyalty and relationships, all in one place.</p>
+      </header>
       {/* Tabs Row */}
       <div className="flex border-b border-slate-200 dark:border-[#374151]/45 overflow-x-auto scrollbar-hide">
         <button

@@ -1,0 +1,259 @@
+/* Dashboard-only aliases for the existing page utilities. Keeping the markup,
+   event handlers and API flows intact lets every workspace share the overview
+   palette. Exported invoices are deliberately excluded from these aliases. */
+
+.dashboard-workspace .bg-\[\#FF6B35\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-\[\#FF6B35\]\/65:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-\[\#FF6B35\]\/80:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-orange-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-orange-500:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  background-color: #b95727;
+}
+
+.dashboard-workspace .bg-\[\#FF6B35\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-\[\#FF6B35\]\/15:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-\[\#FF6B35\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-\[\#FF6B35\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-\[\#FF6B35\]\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-orange-100:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-orange-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-orange-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .group:hover .group-hover\:bg-\[\#FF6B35\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .hover\:bg-\[\#FF6B35\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-\[\#FF6B35\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-\[\#FF6B35\]\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover {
+  background-color: var(--dash-accent-soft);
+}
+
+.dashboard-workspace .bg-\[\#FFFAF0\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-\[\#f8fafc\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-white:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-white\/70:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  background-color: var(--dash-card);
+}
+
+.dashboard-workspace .bg-gray-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-slate-100:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-slate-100\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-slate-200:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-slate-300:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-slate-50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-slate-50\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .bg-slate-55:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .hover\:bg-slate-100:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-slate-100\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-slate-200:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-slate-200\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-slate-300:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-slate-50:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-slate-50\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-slate-55\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover {
+  background-color: var(--dash-soft);
+}
+
+.dashboard-workspace .border-\[\#374151\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-gray-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-100:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-150:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-200:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-200\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-200\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-200\/60:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-205:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-300:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-slate-500\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .divide-slate-100:not(:where([data-dashboard-print], [data-dashboard-print] *)) > :not([hidden]) ~ :not([hidden]),
+.dashboard-workspace .hover\:border-slate-300:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover {
+  border-color: var(--dash-border);
+}
+
+.dashboard-workspace .border-\[\#FF6B35\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-\[\#FF6B35\]\/15:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-\[\#FF6B35\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-\[\#FF6B35\]\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-\[\#FF6B35\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-\[\#FF6B35\]\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-orange-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-orange-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .border-orange-500\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .focus\:border-\[\#FF6B35\]:not(:where([data-dashboard-print], [data-dashboard-print] *)):focus,
+.dashboard-workspace .focus\:border-\[\#FF6B35\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)):focus,
+.dashboard-workspace .hover\:border-\[\#FF6B35\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:border-\[\#FF6B35\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:border-\[\#FF6B35\]\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover {
+  border-color: var(--dash-accent);
+}
+
+.dashboard-workspace .focus\:ring-\[\#FF6B35\]:not(:where([data-dashboard-print], [data-dashboard-print] *)):focus,
+.dashboard-workspace .focus\:ring-\[\#FF6B35\]\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)):focus,
+.dashboard-workspace .focus\:ring-\[\#FF6B35\]\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)):focus,
+.dashboard-workspace .ring-\[\#FF6B35\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  --tw-ring-color: var(--dash-accent);
+}
+
+.dashboard-workspace .group:hover .group-hover\:text-\[\#FF6B35\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .hover\:text-\[\#FF6B35\]:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:text-orange-600:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .text-\[\#FF6B35\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-orange-500:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  color: var(--dash-accent);
+}
+
+.dashboard-workspace .group:hover .group-hover\:text-slate-700:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .group:hover .group-hover\:text-slate-900:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .hover\:text-slate-800:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:text-slate-900:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .text-slate-700:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-705:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-800:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-805:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-850:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-900:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  color: var(--dash-text);
+}
+
+.dashboard-workspace .hover\:bg-\[\#FF6B35\]:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:bg-orange-600:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover {
+  background-color: #a24920;
+}
+
+.dashboard-workspace .hover\:text-slate-600:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .hover\:text-slate-650:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-workspace .text-\[\#9ca3af\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-gray-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-gray-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-100:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-300:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-350:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-450:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-505:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-550:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-workspace .text-slate-650:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  color: var(--dash-muted);
+}
+
+.dashboard-workspace .placeholder-slate-400:not(:where([data-dashboard-print], [data-dashboard-print] *))::placeholder {
+  color: var(--dash-muted); opacity: 0.85;
+}
+
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/15:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/60:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/70:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#111827\]\/80:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#374151\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#374151\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#374151\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#374151\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-gray-700:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-slate-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-slate-700:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-slate-700\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-slate-800:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-slate-800\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-slate-800\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-slate-900:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-slate-900\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:hover\:bg-\[\#111827\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-\[\#374151\]:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-\[\#374151\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-\[\#374151\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-\[\#374151\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-\[\#374151\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-\[\#374151\]\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-\[\#374151\]\/60:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-slate-700:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-slate-800:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:bg-slate-800\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover {
+  background-color: var(--dash-soft);
+}
+
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]\/15:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]\/35:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-\[\#1f2937\]\/60:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-white\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  background-color: var(--dash-card);
+}
+
+.dark .dashboard-workspace .dark\:bg-\[\#FF6B35\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:bg-orange-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  background-color: var(--dash-accent-soft);
+}
+
+.dark .dashboard-workspace .dark\:border-\[\#374151\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/15:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/35:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/45:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/55:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/60:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/75:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#374151\]\/80:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-\[\#4b5563\]\/40:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-slate-700:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-slate-700\/50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:border-slate-700\/60:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:divide-\[\#374151\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)) > :not([hidden]) ~ :not([hidden]),
+.dark .dashboard-workspace .dark\:divide-\[\#374151\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)) > :not([hidden]) ~ :not([hidden]),
+.dark .dashboard-workspace .dark\:divide-\[\#374151\]\/35:not(:where([data-dashboard-print], [data-dashboard-print] *)) > :not([hidden]) ~ :not([hidden]),
+.dark .dashboard-workspace .dark\:hover\:border-\[\#374151\]\/70:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:border-\[\#374151\]\/75:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:hover\:border-\[\#4b5563\]\/60:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover {
+  border-color: var(--dash-border);
+}
+
+.dark .dashboard-workspace .group:hover .dark\:group-hover\:text-white:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:hover\:text-white:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-workspace .dark\:text-\[\#374151\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-white:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  color: var(--dash-text);
+}
+
+.dark .dashboard-workspace .dark\:hover\:text-\[\#FF6B35\]:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover {
+  color: var(--dash-accent);
+}
+
+.dark .dashboard-workspace .dark\:placeholder-gray-600:not(:where([data-dashboard-print], [data-dashboard-print] *))::placeholder {
+  color: var(--dash-muted); opacity: 0.85;
+}
+
+.dark .dashboard-workspace .dark\:text-\[\#6b7280\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-\[\#9ca3af\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-\[\#d1d5db\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-gray-100:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-gray-200:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-gray-250:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-gray-300:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-gray-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-gray-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-gray-550:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-gray-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-slate-200:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-slate-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-workspace .dark\:text-slate-550:not(:where([data-dashboard-print], [data-dashboard-print] *)) {
+  color: var(--dash-muted);
+}
+

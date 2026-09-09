@@ -55,7 +55,7 @@ interface InventoryTabProps {
 const fmt = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
-const COLORS = ['#FF6B35', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+const COLORS = ['var(--dash-accent)', 'var(--dash-info)', 'var(--dash-success)', 'var(--dash-warning)', 'var(--dash-series-rose)', 'var(--dash-series-plum)'];
 
 export const InventoryTab: React.FC<InventoryTabProps> = ({
   startDate,
@@ -177,10 +177,10 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.consumption} margin={{ left: -15, right: 10 }}>
-                  <XAxis dataKey="materialName" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="materialName" tick={{ fill: 'var(--dash-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--dash-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip formatter={(value) => fmt(Number(value))} />
-                  <Bar dataKey="cost" fill="#FF6B35" radius={[6, 6, 0, 0]} maxBarSize={30}>
+                  <Bar dataKey="cost" fill="var(--dash-accent)" radius={[6, 6, 0, 0]} maxBarSize={30}>
                     {data.consumption.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}

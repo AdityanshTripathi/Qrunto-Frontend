@@ -118,12 +118,12 @@ export const ExecutiveTab: React.FC<ExecutiveTabProps> = ({
     {
       name: 'Peak Occupancy',
       value: data.occupancy.peakOccupancyRate,
-      fill: '#f59e0b',
+      fill: 'var(--dash-warning)',
     },
     {
       name: 'Current Occupancy',
       value: data.occupancy.currentOccupancyRate,
-      fill: '#FF6B35',
+      fill: 'var(--dash-accent)',
     },
   ];
 

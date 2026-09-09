@@ -51,7 +51,7 @@ interface FinancialTabProps {
 const fmt = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
-const COLORS = ['#FF6B35', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+const COLORS = ['var(--dash-accent)', 'var(--dash-info)', 'var(--dash-success)', 'var(--dash-warning)', 'var(--dash-series-rose)', 'var(--dash-series-plum)'];
 
 export const FinancialTab: React.FC<FinancialTabProps> = ({
   startDate,
@@ -169,10 +169,10 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
                   label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
                   labelLine={false}
                 >
-                  <Cell fill="#3b82f6" />
-                  <Cell fill="#10b981" />
-                  <Cell fill="#FF6B35" />
-                  <Cell fill="#8b5cf6" />
+                  <Cell fill="var(--dash-info)" />
+                  <Cell fill="var(--dash-success)" />
+                  <Cell fill="var(--dash-accent)" />
+                  <Cell fill="var(--dash-series-plum)" />
                 </Pie>
                 <Tooltip formatter={(v) => fmt(Number(v))} />
               </PieChart>

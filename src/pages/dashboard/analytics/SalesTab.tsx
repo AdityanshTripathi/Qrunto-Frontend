@@ -69,7 +69,7 @@ interface SalesTabProps {
 const fmt = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
-const PIE_COLORS = ['#FF6B35', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+const PIE_COLORS = ['var(--dash-accent)', 'var(--dash-info)', 'var(--dash-success)', 'var(--dash-warning)', 'var(--dash-series-rose)', 'var(--dash-series-plum)'];
 
 export const SalesTab: React.FC<SalesTabProps> = ({
   startDate,
@@ -127,10 +127,10 @@ export const SalesTab: React.FC<SalesTabProps> = ({
   const getHeatmapColor = (revenue: number) => {
     const intensity = Math.min(revenue / maxRevenue, 1);
     if (intensity === 0) return 'bg-slate-100 dark:bg-slate-800/20';
-    if (intensity < 0.25) return 'bg-[#FF6B35]/10 text-[#FF6B35]';
-    if (intensity < 0.5) return 'bg-[#FF6B35]/30 text-white';
-    if (intensity < 0.75) return 'bg-[#FF6B35]/65 text-white';
-    return 'bg-[#FF6B35] text-white font-bold shadow-sm';
+    if (intensity < 0.25) return 'dash-heat-low';
+    if (intensity < 0.5) return 'dash-heat-medium';
+    if (intensity < 0.75) return 'dash-heat-high';
+    return 'dash-heat-peak font-bold';
   };
 
   // Days list for Heatmap matrix
@@ -154,21 +154,21 @@ export const SalesTab: React.FC<SalesTabProps> = ({
             <AreaChart data={data.trends} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <defs>
                 <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#FF6B35" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--dash-accent)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--dash-accent)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="ordersGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--dash-info)" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="var(--dash-info)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" strokeOpacity={0.3} className="dark:[stroke:#374151]" />
-              <XAxis dataKey="timeLabel" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="left" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--dash-border)" strokeOpacity={0.3} className="dark:[stroke:#374151]" />
+              <XAxis dataKey="timeLabel" tick={{ fill: 'var(--dash-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="left" tick={{ fill: 'var(--dash-muted)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v}`} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fill: 'var(--dash-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip formatter={(value, name) => [name === 'revenue' ? fmt(Number(value)) : value, name]} />
-              <Area yAxisId="left" type="monotone" dataKey="revenue" stroke="#FF6B35" strokeWidth={2.5} fill="url(#salesGrad)" name="revenue" dot={{ fill: '#FF6B35', r: 4 }} />
-              <Area yAxisId="right" type="monotone" dataKey="orders" stroke="#3b82f6" strokeWidth={2} fill="url(#ordersGrad)" name="orders" dot={{ fill: '#3b82f6', r: 3 }} />
+              <Area yAxisId="left" type="monotone" dataKey="revenue" stroke="var(--dash-accent)" strokeWidth={2.5} fill="url(#salesGrad)" name="revenue" dot={{ fill: 'var(--dash-accent)', r: 4 }} />
+              <Area yAxisId="right" type="monotone" dataKey="orders" stroke="var(--dash-info)" strokeWidth={2} fill="url(#ordersGrad)" name="orders" dot={{ fill: 'var(--dash-info)', r: 3 }} />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -279,11 +279,11 @@ export const SalesTab: React.FC<SalesTabProps> = ({
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={data.categoryRevenue} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" strokeOpacity={0.2} vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--dash-border)" strokeOpacity={0.2} vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: 'var(--dash-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--dash-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => fmt(Number(v))} cursor={{ fill: 'rgba(255,107,53,0.02)' }} />
-                <Bar dataKey="revenue" fill="#FF6B35" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                <Bar dataKey="revenue" fill="var(--dash-accent)" radius={[6, 6, 0, 0]} maxBarSize={40}>
                   {data.categoryRevenue.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                   ))}
@@ -314,8 +314,8 @@ export const SalesTab: React.FC<SalesTabProps> = ({
                   label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
                   labelLine={false}
                 >
-                  <Cell fill="#3b82f6" />
-                  <Cell fill="#FF6B35" />
+                  <Cell fill="var(--dash-info)" />
+                  <Cell fill="var(--dash-accent)" />
                 </Pie>
                 <Tooltip formatter={(v) => fmt(Number(v))} />
               </PieChart>

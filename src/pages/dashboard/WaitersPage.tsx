@@ -189,6 +189,10 @@ export const WaitersPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <header>
+        <h1>Staff &amp; Waiters</h1>
+        <p className="text-sm text-slate-500 dark:text-gray-400">Manage your restaurant team and their account access.</p>
+      </header>
       {/* Top action row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="relative flex-1 max-w-md">

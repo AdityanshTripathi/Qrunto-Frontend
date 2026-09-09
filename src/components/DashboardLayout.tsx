@@ -23,6 +23,9 @@ import { toast } from 'sonner';
 import { ThemeToggle } from './ThemeToggle';
 import { DashboardMenuButton } from './DashboardMenuButton';
 import './dashboard-premium.css';
+import './dashboard-workspace-colors.css';
+import './dashboard-component-colors.css';
+import './dashboard-workspace.css';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardSidebar } from './dashboard-sidebar/DashboardSidebar';
@@ -388,7 +391,7 @@ export const DashboardLayout: React.FC = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 relative z-10 scrollbar-thin">
+        <main className={`flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 relative scrollbar-thin${location.pathname.replace(/\/$/, '') !== '/dashboard' ? ' dashboard-workspace' : ''}`}>
           <Outlet />
         </main>
       </div>

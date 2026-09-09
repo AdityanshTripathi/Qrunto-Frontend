@@ -14,7 +14,6 @@ import {
   FileText,
   Save,
   Loader2,
-  Clock,
   Camera,
   Lock,
 } from 'lucide-react';
@@ -252,29 +251,6 @@ const SettingsContent: React.FC = () => {
 
     loadSettings();
   }, [token, setValue]);
-
-  // Update a specific day's schedule
-  const updateDaySchedule = (day: DayKey, field: keyof DaySchedule, value: string | boolean) => {
-    setBusinessHours((prev) => ({
-      ...prev,
-      [day]: { ...prev[day], [field]: value },
-    }));
-  };
-
-  // Quick actions for business hours
-  const setAllDaysOpen = () => {
-    const updated: BusinessHours = { ...businessHours };
-    DAYS.forEach(({ key }) => { updated[key] = { ...updated[key], isClosed: false }; });
-    setBusinessHours(updated);
-  };
-
-  const setWeekdaysOnly = () => {
-    const updated: BusinessHours = { ...businessHours };
-    DAYS.forEach(({ key }) => {
-      updated[key] = { ...updated[key], isClosed: key === 'sunday' || key === 'saturday' };
-    });
-    setBusinessHours(updated);
-  };
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -551,93 +527,6 @@ const SettingsContent: React.FC = () => {
               </div>
             </div>
 
-          </div>
-        </div>
-
-        {/* ── Business Hours ───────────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-[#1f2937]/20 border border-slate-200 dark:border-[#374151]/30 rounded-[28px] p-5 sm:p-6 space-y-5">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <h3 className="text-sm font-bold text-[#FF6B35] uppercase tracking-wider flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Business Hours
-            </h3>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={setAllDaysOpen}
-                className="text-xs px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 rounded-xl font-semibold transition-all"
-              >
-                All Open
-              </button>
-              <button
-                type="button"
-                onClick={setWeekdaysOnly}
-                className="text-xs px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/25 rounded-xl font-semibold transition-all"
-              >
-                Weekdays Only
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2 sm:space-y-3">
-            {DAYS.map(({ key, short }) => {
-              const schedule = businessHours[key];
-              return (
-                <div
-                  key={key}
-                  className={`flex items-center gap-3 sm:gap-4 rounded-2xl px-3 sm:px-4 py-3 border transition-all ${schedule.isClosed
-                      ? 'bg-slate-50 dark:bg-[#111827]/20 border-slate-200 dark:border-[#374151]/20 opacity-60'
-                      : 'bg-slate-50 dark:bg-[#111827]/30 border-slate-200 dark:border-[#374151]/40'
-                    }`}
-                >
-                  {/* Day label */}
-                  <span className="w-8 sm:w-10 text-xs font-bold text-slate-700 dark:text-gray-300 shrink-0">{short}</span>
-
-                  {/* Open/Close toggle */}
-                  <button
-                    type="button"
-                    onClick={() => updateDaySchedule(key, 'isClosed', !schedule.isClosed)}
-                    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${schedule.isClosed ? 'bg-slate-300 dark:bg-[#374151]' : 'bg-[#FF6B35]'
-                      }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${schedule.isClosed ? 'translate-x-0' : 'translate-x-5'
-                        }`}
-                    />
-                  </button>
-
-                  {/* Status label */}
-                  <span className={`text-xs font-semibold w-10 sm:w-12 shrink-0 ${schedule.isClosed ? 'text-slate-400 dark:text-gray-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                    {schedule.isClosed ? 'Closed' : 'Open'}
-                  </span>
-
-                  {/* Time pickers */}
-                  {!schedule.isClosed && (
-                    <div className="flex items-center gap-2 sm:gap-3 flex-1 flex-wrap">
-                      <input
-                        type="time"
-                        value={schedule.open}
-                        onChange={(e) => updateDaySchedule(key, 'open', e.target.value)}
-                        className="bg-white dark:bg-[#1f2937]/60 border border-slate-300 dark:border-[#374151]/50 rounded-xl px-2 sm:px-3 py-1.5 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-[#FF6B35]/50"
-                      />
-                      <span className="text-slate-400 dark:text-gray-600 text-xs font-semibold">to</span>
-                      <input
-                        type="time"
-                        value={schedule.close}
-                        onChange={(e) => updateDaySchedule(key, 'close', e.target.value)}
-                        className="bg-white dark:bg-[#1f2937]/60 border border-slate-300 dark:border-[#374151]/50 rounded-xl px-2 sm:px-3 py-1.5 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-[#FF6B35]/50"
-                      />
-                    </div>
-                  )}
-
-                  {schedule.isClosed && (
-                    <div className="flex-1">
-                      <span className="text-xs text-slate-400 dark:text-gray-600 italic">Restaurant closed all day</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
           </div>
         </div>
 

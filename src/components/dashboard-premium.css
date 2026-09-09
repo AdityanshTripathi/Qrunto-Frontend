@@ -1,25 +1,61 @@
 .dashboard-shell {
-  --dash-bg: #f5f2ed;
-  --dash-card: #fffdfa;
-  --dash-soft: #f2ece4;
-  --dash-text: #2c2925;
-  --dash-muted: #766e64;
-  --dash-border: #e4dcd1;
-  --dash-accent: #925735;
-  --dash-accent-soft: #f1e4d7;
+  --dash-bg: #f6f3ee;
+  --dash-card: #ffffff;
+  --dash-soft: #faf2e9;
+  --dash-text: #201d19;
+  --dash-muted: #5f564c;
+  --dash-border: #d5c9ba;
+  --dash-accent: #a34418;
+  --dash-accent-soft: #ffead8;
+  --dash-info: #526b7b;
+  --dash-info-soft: #edf1f3;
+  --dash-info-border: #c5d0d7;
+  --dash-info-solid: #526b7b;
+  --dash-success: #38694f;
+  --dash-success-soft: #edf3ee;
+  --dash-success-border: #c1d4c6;
+  --dash-success-solid: #38694f;
+  --dash-warning: #886323;
+  --dash-warning-soft: #faf3e4;
+  --dash-warning-border: #dfcda8;
+  --dash-warning-solid: #886323;
+  --dash-danger: #ad4545;
+  --dash-danger-soft: #f8eded;
+  --dash-danger-border: #e2c3c3;
+  --dash-danger-solid: #ad4545;
+  --dash-series-plum: #87748e;
+  --dash-series-rose: #ad7973;
   background: var(--dash-bg);
   color: var(--dash-text);
 }
 .dark .dashboard-shell {
-  --dash-bg: #1b1c1b;
-  --dash-card: #232422;
-  --dash-soft: #2c2c28;
-  --dash-text: #f1ece4;
-  --dash-muted: #b3aca1;
-  --dash-border: #393a34;
-  --dash-accent: #d7a37d;
-  --dash-accent-soft: #3d3026;
+  --dash-bg: #141619;
+  --dash-card: #1e2125;
+  --dash-soft: #282c31;
+  --dash-text: #f2f1ee;
+  --dash-muted: #b3b7be;
+  --dash-border: #393e45;
+  --dash-accent: #f0ac7e;
+  --dash-accent-soft: #3a2c25;
+  --dash-info: #a7becd;
+  --dash-info-soft: #253039;
+  --dash-info-border: #425662;
+  --dash-success: #9ac5a8;
+  --dash-success-soft: #23332b;
+  --dash-success-border: #3d5948;
+  --dash-warning: #d8ba7d;
+  --dash-warning-soft: #362f22;
+  --dash-warning-border: #605238;
+  --dash-danger: #e5a0a0;
+  --dash-danger-soft: #39292c;
+  --dash-danger-border: #694348;
+  --dash-series-plum: #b6a2bd;
+  --dash-series-rose: #ceaaa5;
+  color-scheme: dark;
 }
+.dark .dashboard-shell .dash-topbar,
+.dark .dashboard-shell .dash-sidebar { background: #191c20; }
+.dark .dashboard-shell ::selection { background: #785039; color: #ffffff; }
 .dashboard-shell .dash-topbar {
   font-family: 'Inter', sans-serif;
   display: flex;
@@ -151,7 +187,7 @@
   height: 44px;
   min-height: 44px;
   font-size: 13px;
-  font-weight: 450;
+  font-weight: 500;
   padding: 10px 12px;
   color: var(--dash-muted);
   margin: 2px 0;
@@ -252,12 +288,12 @@
   flex-shrink: 0;
 }
 .overview-primary {
-  background: #925735;
+  background: #b95727;
   color: #fffdfa;
-  border-color: #925735;
+  border-color: #b95727;
 }
 .overview-primary:hover {
-  background: #79452a;
+  background: #a24920;
 }
 .overview-metrics {
   display: grid;
@@ -267,7 +303,7 @@
 .overview-metric {
   background: var(--dash-card);
   border: 1px solid var(--dash-border);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 22px;
   min-width: 0;
 }
@@ -277,6 +313,7 @@
   justify-content: space-between;
   gap: 10px;
   font-size: 12px;
+  font-weight: 500;
   color: var(--dash-muted);
 }
 .overview-metric-label svg {
@@ -286,7 +323,7 @@
 .overview-metric > strong {
   display: block;
   font-size: clamp(22px, 2.1vw, 30px);
-  font-weight: 600;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
   letter-spacing: -1px;
   margin-top: 22px;
@@ -307,10 +344,10 @@
 .overview-card {
   background: var(--dash-card);
   border: 1px solid var(--dash-border);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 24px;
   min-width: 0;
-  box-shadow: 0 2px 3px #30251a02;
+  box-shadow: 0 1px 2px #30251a08;
 }
 .overview-section-heading {
   display: flex;
@@ -321,7 +358,7 @@
 }
 .overview-section-heading h2 {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.2px;
   margin: 0;
   display: flex;
@@ -404,9 +441,9 @@
 }
 .overview-table th {
   padding: 14px 10px;
-  color: var(--dash-muted);
+  color: var(--dash-text);
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
   border-bottom: 1px solid var(--dash-border);
 }
 .overview-table td {

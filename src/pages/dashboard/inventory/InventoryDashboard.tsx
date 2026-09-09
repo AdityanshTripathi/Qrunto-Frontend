@@ -472,7 +472,7 @@ export const InventoryDashboard: React.FC = () => {
             <Package className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-slate-800 dark:text-gray-100 tracking-tight">Inventory Workspace</h2>
+            <h1 className="text-2xl font-black text-slate-800 dark:text-gray-100 tracking-tight">Inventory Workspace</h1>
             <p className="text-xs text-slate-500 dark:text-[#9ca3af]">Manage suppliers, stock, recipes, and warehouse audits</p>
           </div>
         </div>

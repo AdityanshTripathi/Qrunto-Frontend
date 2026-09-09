@@ -168,12 +168,12 @@ export const LoyaltyTab: React.FC<LoyaltyTabProps> = ({
           <div className="h-[200px] mb-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={pointsChartData} margin={{ left: 10, right: 10 }}>
-                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fill: 'var(--dash-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--dash-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="Issued" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={45} />
-                <Bar dataKey="Redeemed" fill="#FF6B35" radius={[6, 6, 0, 0]} maxBarSize={45} />
+                <Bar dataKey="Issued" fill="var(--dash-info)" radius={[6, 6, 0, 0]} maxBarSize={45} />
+                <Bar dataKey="Redeemed" fill="var(--dash-accent)" radius={[6, 6, 0, 0]} maxBarSize={45} />
               </BarChart>
             </ResponsiveContainer>
           </div>

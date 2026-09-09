@@ -331,6 +331,7 @@ export const BillsPage: React.FC = () => {
     return (
       <div 
         id={forPrint ? "print-bill-container" : "modal-invoice-container"}
+        data-dashboard-print
         className={`p-6 bg-white text-slate-800 ${forPrint ? 'w-full' : 'max-w-md mx-auto rounded-2xl border border-slate-200 shadow-sm'}`}
         style={forPrint ? { width: '80mm', margin: '0 auto', color: '#000000', backgroundColor: '#ffffff' } : { color: '#1e293b', backgroundColor: '#ffffff' }}
       >

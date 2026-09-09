@@ -163,8 +163,8 @@ export const MenuTab: React.FC<MenuTabProps> = ({
                   dataKey="x"
                   name="Unit Profit"
                   unit="₹"
-                  tick={{ fill: '#64748b', fontSize: 10 }}
-                  label={{ value: 'Unit Profit (₹)', position: 'bottom', fill: '#64748b', fontSize: 11, offset: 0 }}
+                  tick={{ fill: 'var(--dash-muted)', fontSize: 10 }}
+                  label={{ value: 'Unit Profit (₹)', position: 'bottom', fill: 'var(--dash-muted)', fontSize: 11, offset: 0 }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -172,16 +172,16 @@ export const MenuTab: React.FC<MenuTabProps> = ({
                   type="number"
                   dataKey="y"
                   name="Qty Sold"
-                  tick={{ fill: '#64748b', fontSize: 10 }}
-                  label={{ value: 'Quantity Sold', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 11, offset: 0 }}
+                  tick={{ fill: 'var(--dash-muted)', fontSize: 10 }}
+                  label={{ value: 'Quantity Sold', angle: -90, position: 'insideLeft', fill: 'var(--dash-muted)', fontSize: 11, offset: 0 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <ZAxis type="number" dataKey="z" range={[60, 400]} />
                 <Tooltip content={<CustomScatterTooltip />} />
-                <ReferenceLine x={avgProfit} stroke="#64748b" strokeOpacity={0.4} strokeDasharray="4 4" />
-                <ReferenceLine y={avgSold} stroke="#64748b" strokeOpacity={0.4} strokeDasharray="4 4" />
-                <Scatter name="Menu Items" data={scatterData} fill="#FF6B35" />
+                <ReferenceLine x={avgProfit} stroke="var(--dash-muted)" strokeOpacity={0.4} strokeDasharray="4 4" />
+                <ReferenceLine y={avgSold} stroke="var(--dash-muted)" strokeOpacity={0.4} strokeDasharray="4 4" />
+                <Scatter name="Menu Items" data={scatterData} fill="var(--dash-accent)" />
               </ScatterChart>
             </ResponsiveContainer>
           </div>

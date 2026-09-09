@@ -1,0 +1,175 @@
+/* Restrained component colors. Status families remain distinct; informational
+   decoration shares one slate tone. Exact utility aliases preserve interactions. */
+
+.dashboard-shell .dashboard-workspace .bg-\[\#10B981\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-\[\#22C55E\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-\[\#2E7D32\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-emerald-50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-emerald-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-emerald-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-emerald-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-\[\#10B981\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-emerald-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-emerald-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-emerald-950\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:hover\:bg-\[\#10B981\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-\[\#10B981\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-emerald-100:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-emerald-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover { background-color: var(--dash-success-soft); }
+
+.dashboard-shell .dashboard-workspace .bg-\[\#2E7D32\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-emerald-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-emerald-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-emerald-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .hover\:bg-emerald-600:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-emerald-700:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover { background-color: var(--dash-success-solid); }
+
+.dashboard-shell .dashboard-workspace .bg-\[\#EF4444\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-red-50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-red-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-red-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-red-600\/80:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-red-600\/90:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-rose-50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-rose-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-\[\#EF4444\]\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-red-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-red-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-red-950\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-rose-950\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:hover\:bg-\[\#EF4444\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-\[\#EF4444\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-red-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-red-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-rose-100:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-rose-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover { background-color: var(--dash-danger-soft); }
+
+.dashboard-shell .dashboard-workspace .bg-amber-50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-amber-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-amber-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-amber-500\/90:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-yellow-50:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-yellow-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-amber-50\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-amber-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-amber-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-yellow-950\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:hover\:bg-amber-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-amber-100:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover { background-color: var(--dash-warning-soft); }
+
+.dashboard-shell .dashboard-workspace .bg-amber-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .hover\:bg-amber-600:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover { background-color: var(--dash-warning-solid); }
+
+.dashboard-shell .dashboard-workspace .bg-blue-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-indigo-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .hover\:bg-indigo-700:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover { background-color: var(--dash-info-solid); }
+
+.dashboard-shell .dashboard-workspace .bg-blue-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-indigo-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-indigo-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-pink-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-purple-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-sky-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-sky-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-blue-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-indigo-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:bg-sky-500\/5:not(:where([data-dashboard-print], [data-dashboard-print] *)) { background-color: var(--dash-info-soft); }
+
+.dashboard-shell .dashboard-workspace .bg-red-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-red-505:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-red-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .bg-rose-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .hover\:bg-red-600:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-red-650:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:bg-red-700:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover { background-color: var(--dash-danger-solid); }
+
+.dashboard-shell .dashboard-workspace .border-\[\#10B981\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-\[\#2E7D32\]\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-emerald-200:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-emerald-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-emerald-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-emerald-500\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-emerald-500\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:border-\[\#10B981\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:border-emerald-500\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)) { border-color: var(--dash-success-border); }
+
+.dashboard-shell .dashboard-workspace .border-\[\#EF4444\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-red-200:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-red-300:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-red-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-red-500\/10:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-red-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-red-500\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-red-500\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-rose-200:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-rose-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-rose-500\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:border-\[\#EF4444\]\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:border-red-500\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .hover\:border-red-500\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:border-red-500\/35:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover { border-color: var(--dash-danger-border); }
+
+.dashboard-shell .dashboard-workspace .border-amber-200:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-amber-500\/15:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-amber-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-amber-500\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-amber-500\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-amber-505\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-yellow-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:border-amber-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:border-amber-500\/30:not(:where([data-dashboard-print], [data-dashboard-print] *)) { border-color: var(--dash-warning-border); }
+
+.dashboard-shell .dashboard-workspace .border-blue-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-blue-500\/25:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-indigo-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .border-sky-500\/20:not(:where([data-dashboard-print], [data-dashboard-print] *)) { border-color: var(--dash-info-border); }
+
+.dark .dashboard-shell .dashboard-workspace .dark\:hover\:text-red-300:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dark .dashboard-shell .dashboard-workspace .dark\:text-\[\#EF4444\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:text-red-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:text-rose-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .hover\:text-red-500:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:text-red-600:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .hover\:text-rose-700:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .text-\[\#EF4444\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-red-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-red-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-red-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-rose-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-rose-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-rose-600:not(:where([data-dashboard-print], [data-dashboard-print] *)) { color: var(--dash-danger); }
+
+.dark .dashboard-shell .dashboard-workspace .dark\:text-\[\#10B981\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:text-emerald-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-\[\#10B981\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-\[\#22C55E\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-\[\#2E7D32\]:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-emerald-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-emerald-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-emerald-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-emerald-605:not(:where([data-dashboard-print], [data-dashboard-print] *)) { color: var(--dash-success); }
+
+.dark .dashboard-shell .dashboard-workspace .dark\:text-amber-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:text-amber-400\/80:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:text-amber-400\/90:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:text-amber-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:text-amber-550:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dark .dashboard-shell .dashboard-workspace .dark\:text-yellow-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .hover\:text-amber-600:not(:where([data-dashboard-print], [data-dashboard-print] *)):hover,
+.dashboard-shell .dashboard-workspace .text-amber-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-amber-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-amber-505:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-amber-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-amber-700:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-amber-800:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-yellow-600:not(:where([data-dashboard-print], [data-dashboard-print] *)) { color: var(--dash-warning); }
+
+.dark .dashboard-shell .dashboard-workspace .dark\:text-blue-400:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-blue-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-blue-600:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-indigo-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-pink-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-purple-500:not(:where([data-dashboard-print], [data-dashboard-print] *)),
+.dashboard-shell .dashboard-workspace .text-sky-500:not(:where([data-dashboard-print], [data-dashboard-print] *)) { color: var(--dash-info); }
+
+.dashboard-shell .dashboard-workspace .focus\:ring-red-500:not(:where([data-dashboard-print], [data-dashboard-print] *)):focus { --tw-ring-color: var(--dash-danger); }

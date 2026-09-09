@@ -118,10 +118,10 @@ export const CustomerTab: React.FC<CustomerTabProps> = ({
 
   // Segment bar chart data
   const segmentChartData = [
-    { name: 'Active', count: data.segmentation.active, color: '#10b981' },
-    { name: 'VIP', count: data.segmentation.vip, color: '#3b82f6' },
-    { name: 'Dormant', count: data.segmentation.dormant, color: '#f59e0b' },
-    { name: 'Churned', count: data.segmentation.churned, color: '#ef4444' },
+    { name: 'Active', count: data.segmentation.active, color: 'var(--dash-success)' },
+    { name: 'VIP', count: data.segmentation.vip, color: 'var(--dash-info)' },
+    { name: 'Dormant', count: data.segmentation.dormant, color: 'var(--dash-warning)' },
+    { name: 'Churned', count: data.segmentation.churned, color: 'var(--dash-danger)' },
   ];
 
   // Helper for cohort cell background
@@ -203,8 +203,8 @@ export const CustomerTab: React.FC<CustomerTabProps> = ({
           <div className="h-[180px] mb-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={segmentChartData} margin={{ left: -25, right: 10 }}>
-                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fill: 'var(--dash-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'var(--dash-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={30}>
                   {segmentChartData.map((entry, index) => (
