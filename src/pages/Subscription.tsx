@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Check, ArrowRight, Sparkles, Percent, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 
@@ -16,12 +17,14 @@ interface Plan {
 }
 
 export const Subscription: React.FC = () => {
+  const navigate = useNavigate();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectingPlan, setSelectingPlan] = useState<Plan | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | '6month' | 'yearly'>('monthly');
   const [promoCode, setPromoCode] = useState('');
-  const promoApplied = false;
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [redeemingCode, setRedeemingCode] = useState(false);
   
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
@@ -44,8 +47,22 @@ export const Subscription: React.FC = () => {
     setIsCheckoutOpen(true);
   };
 
-  const handleApplyPromo = () => {
-    toast.error('Online purchases are unavailable. Redeem an existing license in dashboard billing.');
+  const handleApplyPromo = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+    const code = promoCode.trim();
+    if (!code || redeemingCode) return;
+
+    setRedeemingCode(true);
+    try {
+      const response = await api.post('/subscriptions/redeem', { code });
+      setPromoApplied(true);
+      toast.success(response.message || 'Subscription activated successfully!');
+      navigate('/dashboard', { replace: true });
+    } catch (err: any) {
+      toast.error(err.message || 'License activation failed. Please check the code and try again.');
+    } finally {
+      setRedeemingCode(false);
+    }
   };
 
   if (loading) {
@@ -80,28 +97,28 @@ export const Subscription: React.FC = () => {
         </div>
 
         {/* Promo Code Box */}
-        <div className="max-w-md mx-auto mb-16 bg-[#1f2937]/30 border border-[#374151]/40 rounded-2xl p-5 flex gap-3 items-center backdrop-blur-md">
+        <form onSubmit={handleApplyPromo} className="max-w-md mx-auto mb-16 bg-[#1f2937]/30 border border-[#374151]/40 rounded-2xl p-5 flex gap-3 items-center backdrop-blur-md">
           <div className="bg-[#FF6B35]/10 p-2.5 rounded-xl text-[#FF6B35]">
             <Percent className="w-5 h-5" />
           </div>
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Existing licenses can be redeemed in billing"
+              placeholder="Enter your license code"
               value={promoCode}
               onChange={(e) => setPromoCode(e.target.value)}
-              disabled={promoApplied}
+              disabled={promoApplied || redeemingCode}
               className="w-full bg-transparent text-sm text-white placeholder-gray-500 focus:outline-none disabled:text-gray-400"
             />
           </div>
           <button
-            onClick={handleApplyPromo}
-            disabled={promoApplied}
+            type="submit"
+            disabled={promoApplied || redeemingCode || !promoCode.trim()}
             className="px-4 py-2 bg-[#374151] hover:bg-[#4b5563] disabled:bg-[#FF6B35]/20 disabled:text-[#FF6B35] font-semibold text-xs rounded-xl transition-all"
           >
-            {promoApplied ? 'Applied' : 'Apply'}
+            {promoApplied ? 'Activated' : redeemingCode ? 'Applying...' : 'Apply'}
           </button>
-        </div>
+        </form>
 
         {/* Billing Cycle Switcher */}
         <div className="flex justify-center mb-12">

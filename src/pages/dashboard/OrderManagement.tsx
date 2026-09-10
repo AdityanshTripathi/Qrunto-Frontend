@@ -89,7 +89,7 @@ export const OrderManagement: React.FC = () => {
   const hasConnectedRef = useRef(false);
   const fetchOrdersRef = useRef<(silent?: boolean) => void>(() => undefined);
 
-  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | '7_DAYS' | '1_MONTH' | '1_YEAR' | 'CUSTOM'>('ALL');
+  const [dateFilter, setDateFilter] = useState<'TODAY' | '7_DAYS' | '1_MONTH' | '1_YEAR' | 'CUSTOM'>('TODAY');
   const [customDate, setCustomDate] = useState<string>('');
 
   // POS Loyalty lookup states
@@ -204,7 +204,7 @@ export const OrderManagement: React.FC = () => {
         params.set('date', localDate(now, restaurantTimeZone));
       } else if (dateFilter === 'CUSTOM' && customDate) {
         params.set('date', customDate);
-      } else if (dateFilter !== 'ALL' && dateFilter !== 'CUSTOM') {
+      } else if (dateFilter !== 'CUSTOM') {
         const days = dateFilter === '7_DAYS' ? 7 : dateFilter === '1_MONTH' ? 30 : 365;
         params.set('startDate', addDays(localDate(now, restaurantTimeZone), -days));
         params.set('endDate', now.toISOString());
@@ -549,7 +549,6 @@ export const OrderManagement: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider mr-1">Filter Date:</span>
           {[
-            { id: 'ALL', label: 'All time' },
             { id: 'TODAY', label: 'Today' },
             { id: '7_DAYS', label: '7 days' },
             { id: '1_MONTH', label: '1 month' },
