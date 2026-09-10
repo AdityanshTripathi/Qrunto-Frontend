@@ -50,7 +50,7 @@ export const navigationGroups: NavigationGroup[] = [
     label: 'Business',
     collapsible: true,
     items: [
-      { name: 'CRM Hub', href: '/dashboard/crm', icon: Smile },
+      { name: 'CRM', href: '/dashboard/crm', icon: Smile },
       { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
       { name: 'Billing Plan', href: '/dashboard/subscription', icon: CreditCard },
       { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },

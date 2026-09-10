@@ -1,0 +1,39 @@
+/* Staff workspace shares admin tokens and scoped component styles. */
+.dashboard-shell.waiter-shell { background: var(--dash-bg); color: var(--dash-text); font-family: 'Inter', sans-serif; }
+.waiter-shell > div { max-width: none; width: 100%; margin: 0; }
+.waiter-shell aside { width: 255px; background: var(--dash-card); backdrop-filter: none; }
+.dark .dashboard-shell.waiter-shell aside { background: #191c20; }
+.waiter-shell header { background: var(--dash-card); border-color: var(--dash-border); backdrop-filter: none; }
+.dark .dashboard-shell.waiter-shell header { background: #191c20; }
+.waiter-shell aside > div:first-child > div:first-child { min-height: 88px; padding: 20px 24px; }
+.waiter-shell aside h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.5px; }
+.waiter-shell aside nav { padding: 24px 16px; }
+.waiter-shell nav button { min-height: 44px; padding: 12px; font-size: 13px; box-shadow: none; color: var(--dash-muted); }
+.waiter-shell nav button > span > span { font-size: 13px; }
+.waiter-shell nav button svg { width: 18px; height: 18px; }
+.waiter-shell nav button > span:first-child { gap: 12px; }
+.dashboard-shell.waiter-shell nav button[aria-current='page'] { background: var(--dash-accent-soft); color: var(--dash-accent); font-weight: 600; }
+.waiter-shell nav button:hover { background: var(--dash-soft); color: var(--dash-text); }
+.waiter-shell nav button > span:last-child:not(:first-child) { background: var(--dash-accent-soft); color: var(--dash-accent); }
+.dashboard-shell.waiter-shell header h1 { font-size: 24px; letter-spacing: -0.6px; font-weight: 650; color: var(--dash-text); }
+.waiter-shell header { min-height: 88px; }
+.waiter-shell header > div:last-child { min-width: 0; }
+.waiter-shell header > div:last-child > span { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--dash-soft); }
+.waiter-shell .animate-ping, .waiter-shell .animate-pulse { animation: none; }
+.waiter-shell .font-mono { font-family: inherit; }
+.waiter-shell .waiter-content { min-width: 0; }
+.waiter-content h3 { color: var(--dash-text); font-weight: 600; }
+.waiter-content[data-section='dashboard'] > .space-y-6 > .grid:first-child > div { padding: 20px; min-width: 0; }
+.waiter-content[data-section='dashboard'] .text-xl { font-size: 26px; font-weight: 650; }
+.waiter-content[data-section='tables'] .grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); }
+.waiter-content[data-section='profile'] .justify-between { gap: 16px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.waiter-shell .fixed > .relative { max-height: 100dvh; overflow-y: auto; }
+.dashboard-shell.waiter-shell .fixed > .relative[class*='max-w-'] { max-height: calc(100dvh - 32px); padding: 0; }
+.waiter-shell aside > div:last-child { padding: 16px; }
+.waiter-shell aside > div:last-child > div { background: transparent; border: 0; padding: 8px; }
+.waiter-shell aside > div:last-child > button { color: var(--dash-muted); font-size: 12px; }
+@media (max-width: 640px) {
+  .waiter-shell > header h1 { font-size: 15px; letter-spacing: -0.3px; }
+  .waiter-shell > header { min-height: 80px; }
+  .waiter-content[data-section='dashboard'] > .space-y-6 > .grid:first-child > div { padding: 16px; flex-direction: column; align-items: flex-start; gap: 10px; }
+}

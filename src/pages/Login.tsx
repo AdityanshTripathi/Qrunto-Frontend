@@ -51,7 +51,7 @@ export const Login: React.FC = () => {
   return (
     <AuthLayout mode="login" title="Welcome back" subtitle="Sign in to manage your restaurant.">
       <form onSubmit={handleSubmit(onSubmit)} className="auth-form" noValidate>
-        <AuthField label="Email address" id="email" type="email" placeholder="you@example.com" autoComplete="email" error={errors.email?.message} {...register('email')} />
+        <AuthField label="Email address" id="email" type="email" placeholder="user@example.com" autoComplete="email" error={errors.email?.message} {...register('email')} />
         <AuthField label="Password" id="password" type="password" placeholder="Enter your password" autoComplete="current-password" error={errors.password?.message} {...register('password')} />
         <button type="submit" disabled={loading} className="auth-submit">{loading ? 'Signing in...' : 'Sign in'}</button>
       </form>

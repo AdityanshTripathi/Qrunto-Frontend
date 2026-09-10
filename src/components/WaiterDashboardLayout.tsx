@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   LayoutDashboard, QrCode, ShoppingBag, Bell, User, LogOut, Menu, X, Receipt
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { ThemeToggle } from './ThemeToggle';
+import './dashboard-premium.css';
+import './dashboard-workspace-colors.css';
+import './dashboard-component-colors.css';
+import './dashboard-workspace.css';
+import './waiter-component-colors.css';
+import './waiter-premium.css';
 
 interface WaiterDashboardLayoutProps {
   children?: React.ReactNode;
@@ -21,6 +27,20 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, [mobileMenuOpen]);
 
   const activeTab = searchParams.get('tab') || 'dashboard';
 
@@ -44,7 +64,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-[#111827] text-slate-900 dark:text-white flex flex-col">
+    <div className="dashboard-shell dashboard-workspace waiter-shell min-h-screen flex flex-col">
       {/* 1. Mobile Top Header Bar */}
       <header className="lg:hidden flex items-center justify-between border-b border-slate-200 dark:border-[#374151]/50 bg-white dark:bg-[#1f2937]/35 backdrop-blur-xl px-4 py-3 sticky top-0 z-30">
         <div className="flex items-center gap-2">
@@ -60,6 +80,8 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <button
+            aria-label="Open navigation"
+            aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen(true)}
             className="p-2 bg-slate-100 dark:bg-[#374151]/50 border border-slate-200 dark:border-[#4b5563]/40 rounded-xl text-slate-700 dark:text-gray-200 relative"
           >
@@ -92,6 +114,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
                   <h2 className="text-sm font-black text-slate-800 dark:text-white">Ordio Staff</h2>
                 </div>
                 <button
+                  aria-label="Close navigation"
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-1.5 bg-slate-100 border border-slate-200 dark:bg-[#1f2937] dark:border-[#374151] rounded-lg text-slate-500 dark:text-[#9ca3af]"
                 >
@@ -107,6 +130,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
                   return (
                     <button
                       key={link.tab}
+                      aria-current={isActive ? 'page' : undefined}
                       onClick={() => handleTabChange(link.tab)}
                       className={`w-full flex items-center justify-between py-3.5 px-4 rounded-xl transition-all ${
                         isActive 
@@ -185,6 +209,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
                 return (
                   <button
                     key={link.tab}
+                    aria-current={isActive ? 'page' : undefined}
                     onClick={() => handleTabChange(link.tab)}
                     className={`w-full flex items-center justify-between py-3 px-4 rounded-xl transition-all ${
                       isActive 
@@ -240,7 +265,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
         </aside>
 
         {/* 4. Desktop Main Content Layout */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="waiter-main flex-1 flex flex-col min-w-0">
           {/* Desktop Top Header Bar */}
           <header className="hidden lg:flex items-center justify-between px-8 py-5 border-b border-slate-200 dark:border-[#374151]/40 bg-white/80 dark:bg-[#111827]/60 backdrop-blur-md relative z-20">
             <div className="flex flex-col text-left">
@@ -258,7 +283,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
           </header>
 
           {/* Content Area */}
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 relative z-10 scrollbar-thin">
+          <main className="waiter-content flex-1 p-4 sm:p-6 md:p-8 relative scrollbar-thin" data-section={activeTab}>
             {children}
           </main>
         </div>

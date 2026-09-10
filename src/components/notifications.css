@@ -1,0 +1,38 @@
+/* Shared notification surfaces, including Sonner's body-level portal. */
+:root { --notice-card: #fffdfa; --notice-text: #201d19; --notice-muted: #655d54; --notice-border: #d5c9ba; --notice-soft: #faf2e9; --notice-accent: #a34418; }
+.dark { --notice-card: #1e2125; --notice-text: #f2f1ee; --notice-muted: #b3b7be; --notice-border: #393e45; --notice-soft: #282c31; --notice-accent: #f0ac7e; }
+[data-sonner-toaster] { font-family: 'Inter', sans-serif; }
+[data-sonner-toaster] [data-sonner-toast] {
+  background: var(--notice-card); color: var(--notice-text); border: 1px solid var(--notice-border);
+  border-radius: 12px; padding: 18px 42px 18px 18px; gap: 12px; box-shadow: 0 8px 32px #00000018;
+}
+[data-sonner-toast] [data-title] { font-size: 13px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+[data-sonner-toast] [data-description] { color: var(--notice-muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+[data-sonner-toast] [data-icon] { color: var(--notice-accent); }
+[data-sonner-toaster] [data-sonner-toast] [data-close-button] { left: auto; right: 7px; top: 7px; transform: none; width: 28px; height: 28px; background: var(--notice-soft); color: var(--notice-muted); border-color: var(--notice-border); }
+[data-sonner-toast] :is(button, a):focus-visible { outline: 2px solid var(--notice-accent); outline-offset: 3px; }
+.dashboard-shell .dash-notification-panel {
+  width: 390px; max-width: calc(100vw - 32px); border-radius: 14px;
+  box-shadow: 0 12px 40px #00000024; text-align: left;
+}
+.dash-notification-panel > div:first-child { padding: 18px 20px; gap: 12px; flex-wrap: wrap; }
+.dash-notification-panel > div:first-child > span { font-size: 15px; font-weight: 600; }
+.dash-notification-panel > div:first-child > button { min-height: 36px; border-radius: 6px; padding: 6px; }
+.dash-notification-panel > div:first-child > span > span { background: var(--dash-accent-soft); color: var(--dash-accent); border-color: transparent; font-weight: 600; }
+.dash-notification-panel > div:last-child { max-height: min(420px, calc(100dvh - 210px)); overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--dash-border) transparent; }
+.dashboard-shell .dash-notification-item { width: 100%; text-align: left; padding: 16px 20px; border-top: 1px solid var(--dash-border); background: var(--dash-card); }
+.dashboard-shell .dash-notification-item[data-unread='true'] { background: var(--dash-soft); }
+.dashboard-shell .dash-notification-item:hover { background: var(--dash-accent-soft); }
+.dashboard-shell .dash-notification-item > div:first-child { width: 36px; height: 36px; background: var(--dash-card); border-color: var(--dash-border); color: var(--dash-accent); border-radius: 10px; }
+.dashboard-shell .dash-notification-item p:first-child { color: var(--dash-text); white-space: normal; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; }
+.dashboard-shell .dash-notification-item p + p { color: var(--dash-muted); font-size: 12px; line-height: 1.6; display: block; overflow-wrap: anywhere; }
+.dashboard-shell .dash-notification-item span { color: var(--dash-muted); font-size: 10px; }
+.dashboard-shell .dash-notification-item .rounded-full { background: var(--dash-accent); }
+.dash-notification-item:focus-visible { position: relative; outline: 2px solid var(--dash-accent); outline-offset: -3px; }
+.dash-notification-empty { padding: 40px 24px; text-align: center; color: var(--dash-muted); font-size: 12px; line-height: 1.7; }
+.dash-notification-empty svg { margin: 0 auto 12px; color: var(--dash-accent); }
+.dash-notification-empty strong { display: block; color: var(--dash-text); font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.dashboard-shell .dash-unread-count { background: var(--dash-accent); color: var(--dash-card); border: 2px solid var(--dash-card); min-width: 19px; width: auto; height: 19px; padding-inline: 3px; font-weight: 600; }
+@media (max-width: 640px) {
+  .dashboard-shell .dash-notification-panel { position: fixed; top: 82px; left: 16px; right: 16px; width: auto; margin-top: 0; }
+}

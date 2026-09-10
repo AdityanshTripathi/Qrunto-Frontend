@@ -49,7 +49,7 @@ export const Register: React.FC = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="auth-form" noValidate>
         <AuthField label="Full name" id="name" type="text" placeholder="Your full name" autoComplete="name" error={errors.name?.message} {...register('name')} />
         <AuthField label="Restaurant name" id="restaurantName" type="text" placeholder="Your restaurant name" autoComplete="organization" error={errors.restaurantName?.message} {...register('restaurantName')} />
-        <AuthField label="Email address" id="email" type="email" placeholder="you@example.com" autoComplete="email" error={errors.email?.message} {...register('email')} />
+        <AuthField label="Email address" id="email" type="email" placeholder="user@example.com" autoComplete="email" error={errors.email?.message} {...register('email')} />
         <AuthField label="Password" id="password" type="password" placeholder="Create a password" autoComplete="new-password" hint="Use at least 6 characters." error={errors.password?.message} {...register('password')} />
         <button type="submit" disabled={loading} className="auth-submit">{loading ? 'Creating account...' : 'Create account'}</button>
       </form>

@@ -1,6 +1,8 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { useTheme } from './context/ThemeContext';
+import './components/notifications.css';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 import ScrollToTop from './components/ScrollToTop';
@@ -52,6 +54,7 @@ const LoadingFallback = () => (
 
 
 function App() {
+  const { theme } = useTheme();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
 
@@ -59,7 +62,7 @@ function App() {
     <BrowserRouter>
       <ScrollToTop />
       {/* Toast provider */}
-      <Toaster position="top-right" theme="dark" richColors closeButton />
+      <Toaster position="top-right" theme={theme} closeButton />
       
       <Suspense fallback={<LoadingFallback />}>
         <Routes>

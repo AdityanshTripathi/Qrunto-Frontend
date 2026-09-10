@@ -224,7 +224,7 @@ export const DashboardLayout: React.FC = () => {
     { name: 'Tables & QRs', path: '/dashboard/tables', icon: QrCode },
     { name: 'Inventory', path: '/dashboard/inventory', icon: Package },
     { name: 'Waiters', path: '/dashboard/waiters', icon: Users },
-    { name: 'CRM Hub', path: '/dashboard/crm', icon: Smile },
+    { name: 'CRM', path: '/dashboard/crm', icon: Smile },
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Billing Plan', path: '/dashboard/subscription', icon: CreditCard },
     { name: 'Settings', path: '/dashboard/settings', icon: SettingsIcon },
@@ -283,7 +283,7 @@ export const DashboardLayout: React.FC = () => {
               <button
                 ref={notificationButtonRef}
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
-                aria-label="Notifications" aria-expanded={isNotifOpen}
+                aria-label="Notifications" aria-expanded={isNotifOpen} aria-controls="dashboard-notifications"
                 className="dash-icon-button relative"
               >
                 {unreadCount > 0 ? (
@@ -292,8 +292,8 @@ export const DashboardLayout: React.FC = () => {
                   <Bell className="w-5 h-5" />
                 )}
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-black text-white flex items-center justify-center border border-[#111827]">
-                    {unreadCount}
+                  <span className="dash-unread-count absolute -top-1 -right-1 rounded-full text-[9px] flex items-center justify-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
@@ -304,7 +304,7 @@ export const DashboardLayout: React.FC = () => {
                   {/* Backdrop to close */}
                   <div className="fixed inset-0 z-40" onClick={() => setIsNotifOpen(false)}></div>
                   
-                  <div className="dash-notification-panel absolute right-0 mt-3 w-80 max-w-[calc(100vw-32px)] border rounded-xl shadow-xl z-50 overflow-hidden">
+                  <div id="dashboard-notifications" role="region" aria-label="Notifications" className="dash-notification-panel absolute right-0 mt-3 border z-50 overflow-hidden">
                     {/* Header */}
                     <div className="p-4 border-b border-slate-100 dark:border-[#374151]/50 flex items-center justify-between">
                       <span className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
@@ -328,8 +328,10 @@ export const DashboardLayout: React.FC = () => {
                     {/* Notification List */}
                     <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-[#374151]/35">
                       {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 text-xs font-medium">
-                          No notifications yet.
+                        <div className="dash-notification-empty">
+                          <Bell className="w-6 h-6" />
+                          <strong>You're all caught up</strong>
+                          New orders and restaurant updates will appear here.
                         </div>
                       ) : (
                         notifications.map((n) => {
@@ -347,12 +349,14 @@ export const DashboardLayout: React.FC = () => {
                           }
 
                           return (
-                            <div
+                            <button
+                              type="button"
+                              data-unread={!n.isRead}
                               key={n.id}
                               onClick={() => {
                                 if (!n.isRead) handleMarkRead(n.id);
                               }}
-                              className={`p-4 hover:bg-slate-50 dark:hover:bg-[#374151]/20 transition-colors cursor-pointer flex gap-3 ${
+                              className={`dash-notification-item transition-colors cursor-pointer flex gap-3 ${
                                 !n.isRead ? 'bg-slate-50/50 dark:bg-[#374151]/15' : ''
                               }`}
                             >
@@ -373,7 +377,7 @@ export const DashboardLayout: React.FC = () => {
                                   {new Date(n.createdAt).toLocaleTimeString([], { ...({ hour: '2-digit', minute: '2-digit' }), timeZone: restaurantTimeZone })}
                                 </span>
                               </div>
-                            </div>
+                            </button>
                           );
                         })
                       )}
