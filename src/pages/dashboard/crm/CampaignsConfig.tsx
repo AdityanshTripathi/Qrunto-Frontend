@@ -1,6 +1,6 @@
 import { useRestaurantTimezone } from '../../../lib/timezone';
 import React, { useEffect, useState } from 'react';
-import { useCRMStore, type Campaign } from '../../../store/crmStore';
+import { useCRMStore, type Campaign, type CampaignLog } from '../../../store/crmStore';
 import { Plus, Trash2, Loader2, X, Calendar, Mail, MessageSquare, Megaphone, Eye, BarChart } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../../lib/api';
@@ -10,6 +10,8 @@ export const CampaignsConfig: React.FC = () => {
   const {
     campaigns,
     campaignsLoading,
+    campaignsPagination,
+    campaignLogsPagination,
     fetchCampaigns,
     createCampaign,
     deleteCampaign,
@@ -23,8 +25,9 @@ export const CampaignsConfig: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   
   // Campaign logs state
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<CampaignLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [loadingMoreLogs, setLoadingMoreLogs] = useState(false);
 
   // Stats state
   const [stats, setStats] = useState({
@@ -96,15 +99,32 @@ export const CampaignsConfig: React.FC = () => {
   const openLogsModal = async (campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setIsLogsOpen(true);
+    setLogs([]);
     setLoadingLogs(true);
     try {
       const data = await fetchCampaignLogs(campaign.id);
       setLogs(data);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load campaign logs');
       setIsLogsOpen(false);
     } finally {
       setLoadingLogs(false);
+    }
+  };
+
+  const loadMoreLogs = async () => {
+    if (!selectedCampaign || !campaignLogsPagination.nextCursor) return;
+    setLoadingMoreLogs(true);
+    try {
+      const data = await fetchCampaignLogs(selectedCampaign.id, campaignLogsPagination.nextCursor);
+      setLogs((previous) => {
+        const existingIds = new Set(previous.map((log) => log.id));
+        return [...previous, ...data.filter((log) => !existingIds.has(log.id))];
+      });
+    } catch {
+      toast.error('Failed to load campaign logs');
+    } finally {
+      setLoadingMoreLogs(false);
     }
   };
 
@@ -222,9 +242,10 @@ export const CampaignsConfig: React.FC = () => {
           <p className="text-xs text-slate-400 mt-1">Configure your first campaign to alert customers of new menu items or loyalty rewards.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {campaigns.map((campaign) => (
-            <div key={campaign.id} className="bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/50 rounded-[24px] p-6 shadow-sm flex flex-col justify-between h-[270px]">
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {campaigns.map((campaign) => (
+              <div key={campaign.id} className="bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/50 rounded-[24px] p-6 shadow-sm flex flex-col justify-between h-[270px]">
               <div>
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/30 pb-3">
                   <div className="flex items-center gap-2">
@@ -296,9 +317,22 @@ export const CampaignsConfig: React.FC = () => {
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
+              </div>
+            ))}
+          </div>
+          {campaignsPagination.hasMore && campaignsPagination.nextCursor && (
+            <div className="flex justify-center">
+              <button
+                onClick={() => void fetchCampaigns(campaignsPagination.nextCursor!)}
+                disabled={campaignsLoading}
+                className="px-5 py-2.5 bg-[#FF6B35] hover:bg-[#e85a28] text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {campaignsLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {campaignsLoading ? 'Loading...' : 'Load more campaigns'}
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {/* CREATE CAMPAIGN MODAL */}
@@ -478,6 +512,18 @@ export const CampaignsConfig: React.FC = () => {
                     </div>
                   </div>
                 ))
+              )}
+              {!loadingLogs && campaignLogsPagination.hasMore && campaignLogsPagination.nextCursor && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={() => void loadMoreLogs()}
+                    disabled={loadingMoreLogs}
+                    className="px-4 py-2 bg-[#FF6B35] hover:bg-[#e85a28] text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {loadingMoreLogs && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    {loadingMoreLogs ? 'Loading...' : 'Load more logs'}
+                  </button>
+                </div>
               )}
             </div>
           </div>

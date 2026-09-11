@@ -19,6 +19,7 @@ import {
   Send,
   CheckCircle2,
   MessageCircle,
+  Loader2,
 } from 'lucide-react';
 import { useAuthStore, type User } from '../../store/authStore';
 import { api } from '../../lib/api';
@@ -27,6 +28,21 @@ import { SkeletonLoader } from '../../components/SkeletonLoader';
 
 const fmt = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+
+interface CursorPagination {
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+interface SuperAdminPayment {
+  id: string;
+  restaurantName: string;
+  orderNumber: string;
+  amount: number;
+  status: string;
+  paymentMethod: string | null;
+  createdAt: string;
+}
 
 export const SuperAdminDashboard: React.FC = () => {
   const { user, clearAuth, setAuth } = useAuthStore();
@@ -47,7 +63,9 @@ export const SuperAdminDashboard: React.FC = () => {
   const [restaurantsList, setRestaurantsList] = useState<any[]>([]);
   const [plansList, setPlansList] = useState<any[]>([]);
   const [licensesList, setLicensesList] = useState<any[]>([]);
-  const [paymentsList, setPaymentsList] = useState<any[]>([]);
+  const [paymentsList, setPaymentsList] = useState<SuperAdminPayment[]>([]);
+  const [transactionPagination, setTransactionPagination] = useState<CursorPagination>({ nextCursor: null, hasMore: false });
+  const [transactionsLoadingMore, setTransactionsLoadingMore] = useState(false);
   const [passcodeResets, setPasscodeResets] = useState<any[]>([]);
   
   // Modals / Forms States
@@ -125,9 +143,10 @@ export const SuperAdminDashboard: React.FC = () => {
   };
 
   // Fetch data depending on activeTab
-  const loadTabData = async () => {
+  const loadTabData = async (cursor?: string) => {
     try {
-      setLoading(true);
+      if (activeTab === 'transactions' && cursor) setTransactionsLoadingMore(true);
+      else setLoading(true);
       if (activeTab === 'overview') {
         const res = await api.get('/superadmin/dashboard-stats');
         setKpis(res.kpis);
@@ -151,8 +170,20 @@ export const SuperAdminDashboard: React.FC = () => {
           setLicensePlanId(plansRes.plans[0].id);
         }
       } else if (activeTab === 'transactions') {
-        const res = await api.get('/superadmin/transactions');
-        setPaymentsList(res.payments || []);
+        const path = cursor
+          ? `/superadmin/transactions?cursor=${encodeURIComponent(cursor)}`
+          : '/superadmin/transactions';
+        const res = await api.get(path);
+        const nextPayments: SuperAdminPayment[] = res.payments || [];
+        setPaymentsList((previous) => {
+          if (!cursor) return nextPayments;
+          const existingIds = new Set(previous.map((payment) => payment.id));
+          return [...previous, ...nextPayments.filter((payment) => !existingIds.has(payment.id))];
+        });
+        setTransactionPagination({
+          nextCursor: res.pagination?.nextCursor ?? null,
+          hasMore: res.pagination?.hasMore ?? false,
+        });
       } else if (activeTab === 'passcodes') {
         const res = await api.get('/superadmin/passcode-resets');
         setPasscodeResets(res.requests || []);
@@ -160,7 +191,8 @@ export const SuperAdminDashboard: React.FC = () => {
     } catch (err: any) {
       toast.error('Failed to load data: ' + err.message);
     } finally {
-      setLoading(false);
+      if (activeTab === 'transactions' && cursor) setTransactionsLoadingMore(false);
+      else setLoading(false);
     }
   };
 
@@ -816,6 +848,18 @@ export const SuperAdminDashboard: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+                {transactionPagination.hasMore && transactionPagination.nextCursor && (
+                  <div className="flex justify-center p-4 border-t border-slate-100 dark:border-[#374151]/30">
+                    <button
+                      onClick={() => void loadTabData(transactionPagination.nextCursor!)}
+                      disabled={transactionsLoadingMore}
+                      className="px-5 py-2.5 bg-[#FF6B35] hover:bg-[#e85a28] text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {transactionsLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {transactionsLoadingMore ? 'Loading...' : 'Load more transactions'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

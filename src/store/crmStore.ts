@@ -118,6 +118,22 @@ export interface Campaign {
   } | null;
 }
 
+export interface CampaignLog {
+  id: string;
+  status: 'PENDING' | 'SENT' | 'FAILED';
+  errorDetails?: string | null;
+  customer?: {
+    name: string;
+    phone: string | null;
+    email: string | null;
+  } | null;
+}
+
+interface CursorPagination {
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 export interface Ticket {
   id: string;
   brandId: string;
@@ -173,6 +189,8 @@ interface CRMState {
   // Campaign states
   campaigns: Campaign[];
   campaignsLoading: boolean;
+  campaignsPagination: CursorPagination;
+  campaignLogsPagination: CursorPagination;
 
   // Ticket states
   tickets: Ticket[];
@@ -218,7 +236,7 @@ interface CRMState {
   fetchSegmentMembers: (id: string) => Promise<Customer[]>;
 
   // Campaign actions
-  fetchCampaigns: () => Promise<void>;
+  fetchCampaigns: (cursor?: string) => Promise<void>;
   createCampaign: (data: {
     name: string;
     channel: 'SMS' | 'EMAIL' | 'PUSH';
@@ -228,7 +246,7 @@ interface CRMState {
     scheduledAt: string;
   }) => Promise<void>;
   deleteCampaign: (id: string) => Promise<void>;
-  fetchCampaignLogs: (id: string) => Promise<any[]>;
+  fetchCampaignLogs: (id: string, cursor?: string) => Promise<CampaignLog[]>;
 
   // Ticket actions
   fetchTickets: () => Promise<void>;
@@ -264,6 +282,8 @@ export const useCRMStore = create<CRMState>((set, get) => ({
 
   campaigns: [],
   campaignsLoading: false,
+  campaignsPagination: { nextCursor: null, hasMore: false },
+  campaignLogsPagination: { nextCursor: null, hasMore: false },
 
   tickets: [],
   ticketsLoading: false,
@@ -509,11 +529,33 @@ export const useCRMStore = create<CRMState>((set, get) => ({
   },
 
   // Campaign actions
-  fetchCampaigns: async () => {
+  fetchCampaigns: async (cursor) => {
     set({ campaignsLoading: true, error: null });
     try {
-      const response = await api.get('/crm/campaigns');
-      set({ campaigns: response.campaigns, campaignsLoading: false });
+      const path = cursor ? `/crm/campaigns?cursor=${encodeURIComponent(cursor)}` : '/crm/campaigns';
+      const response = await api.get(path);
+      const nextCampaigns: Campaign[] = response.campaigns || [];
+      set((state) => {
+        if (!cursor) {
+          return {
+            campaigns: nextCampaigns,
+            campaignsPagination: {
+              nextCursor: response.pagination?.nextCursor ?? null,
+              hasMore: response.pagination?.hasMore ?? false,
+            },
+            campaignsLoading: false,
+          };
+        }
+        const existingIds = new Set(state.campaigns.map((campaign) => campaign.id));
+        return {
+          campaigns: [...state.campaigns, ...nextCampaigns.filter((campaign) => !existingIds.has(campaign.id))],
+          campaignsPagination: {
+            nextCursor: response.pagination?.nextCursor ?? null,
+            hasMore: response.pagination?.hasMore ?? false,
+          },
+          campaignsLoading: false,
+        };
+      });
     } catch (err: any) {
       set({ error: err.message, campaignsLoading: false });
     }
@@ -543,12 +585,21 @@ export const useCRMStore = create<CRMState>((set, get) => ({
     }
   },
 
-  fetchCampaignLogs: async (id) => {
+  fetchCampaignLogs: async (id, cursor) => {
     set({ loading: true, error: null });
     try {
-      const response = await api.get(`/crm/campaigns/${id}/logs`);
-      set({ loading: false });
-      return response.logs;
+      const path = cursor
+        ? `/crm/campaigns/${id}/logs?cursor=${encodeURIComponent(cursor)}`
+        : `/crm/campaigns/${id}/logs`;
+      const response = await api.get(path);
+      set({
+        campaignLogsPagination: {
+          nextCursor: response.pagination?.nextCursor ?? null,
+          hasMore: response.pagination?.hasMore ?? false,
+        },
+        loading: false,
+      });
+      return response.logs || [];
     } catch (err: any) {
       set({ error: err.message, loading: false });
       throw err;
