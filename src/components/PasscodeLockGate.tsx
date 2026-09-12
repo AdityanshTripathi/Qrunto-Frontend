@@ -4,8 +4,10 @@ import { api } from '../lib/api';
 import { toast } from 'sonner';
 import { useAuthStore } from '../store/authStore';
 import {
-  hasValidPasscodeVerification,
-  savePasscodeVerification,
+  clearSecurityProof,
+  hasValidSecurityProof,
+  saveSecurityProof,
+  subscribeSecurityProofs,
   type ProtectedSection,
 } from '../lib/passcode-session';
 
@@ -40,8 +42,7 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
       setChecking(true);
       const res = await api.get('/settings/passcode/status');
 
-      // Check if verified in current tab session
-      const isVerified = hasValidPasscodeVerification(sessionStorage, user, section);
+      const isVerified = hasValidSecurityProof(section);
 
       if (!res.isPasscodeEnabled || !res.hasPasscodeSet || isVerified) {
         setIsLocked(false);
@@ -61,14 +62,19 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
     checkPasscodeStatus();
   }, [checkPasscodeStatus]);
 
+  useEffect(() => subscribeSecurityProofs(() => {
+    setIsLocked(!hasValidSecurityProof(section));
+  }), [section]);
+
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!passcode) return;
     setSubmitting(true);
     try {
-      const res = await api.post('/settings/passcode/verify', { passcode });
-      if (res.success && user) {
-        savePasscodeVerification(sessionStorage, user, section);
+      const res = await api.post('/settings/passcode/verify', { passcode, scope: section });
+      if (res.success && res.proof && res.expiresAt) {
+        saveSecurityProof(section, res.proof, res.expiresAt);
+        setPasscode('');
         setIsLocked(false);
         toast.success('Access unlocked successfully!');
       }
@@ -107,8 +113,8 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
     try {
       const res = await api.post('/settings/passcode/set', { passcode: newPasscode });
       toast.success(res.message || 'Passcode reset successfully!');
-      if (user) savePasscodeVerification(sessionStorage, user, section);
-      setIsLocked(false);
+      clearSecurityProof(section);
+      setIsLocked(true);
       // Refresh passcode state
       checkPasscodeStatus();
     } catch (err: any) {

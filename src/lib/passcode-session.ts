@@ -1,60 +1,36 @@
-import type { User } from '../store/authStore';
-import { clearPasscodeSessions, type StorageLike } from './session-lifecycle';
-
 export type ProtectedSection = 'analytics' | 'subscription' | 'settings';
 
-const PASSCODE_PREFIX = 'ordio_passcode_verified:';
-const PASSCODE_TTL_MS = 30 * 60 * 1000;
+interface SecurityProof { value: string; expiresAt: number; }
 
-interface PasscodeVerification {
-  userId: string;
-  restaurantId: string;
-  section: ProtectedSection;
-  expiresAt: number;
+// Deliberately module-only: reloads and persistent-storage edits cannot restore proofs.
+const proofs = new Map<ProtectedSection, SecurityProof>();
+const listeners = new Set<() => void>();
+const notify = () => { for (const listener of listeners) listener(); };
+
+export function saveSecurityProof(section: ProtectedSection, value: string, expiresAt: string): void {
+  const expiry = Date.parse(expiresAt);
+  if (!value || !Number.isFinite(expiry) || expiry <= Date.now()) throw new Error('Invalid security proof response.');
+  proofs.set(section, { value, expiresAt: expiry });
+  notify();
 }
 
-const keyFor = (section: ProtectedSection) => `${PASSCODE_PREFIX}${section}`;
-
-export { clearPasscodeSessions };
-
-export function savePasscodeVerification(
-  storage: StorageLike,
-  user: User,
-  section: ProtectedSection,
-  now = Date.now(),
-): void {
-  const restaurantId = user.restaurants[0]?.id;
-  if (!restaurantId) throw new Error('A restaurant is required to verify this section.');
-  storage.setItem(keyFor(section), JSON.stringify({
-    userId: user.id,
-    restaurantId,
-    section,
-    expiresAt: now + PASSCODE_TTL_MS,
-  } satisfies PasscodeVerification));
+export function getSecurityProof(section: ProtectedSection, now = Date.now()): string | null {
+  const proof = proofs.get(section);
+  if (!proof) return null;
+  if (proof.expiresAt <= now) { proofs.delete(section); notify(); return null; }
+  return proof.value;
 }
 
-export function hasValidPasscodeVerification(
-  storage: StorageLike,
-  user: User | null,
-  section: ProtectedSection,
-  now = Date.now(),
-): boolean {
-  const key = keyFor(section);
-  try {
-    storage.removeItem('ordio_passcode_verified');
-    const raw = storage.getItem(key);
-    const restaurantId = user?.restaurants[0]?.id;
-    if (!raw || !user || !restaurantId) return false;
-    const verification = JSON.parse(raw) as PasscodeVerification;
-    const valid = verification.userId === user.id
-      && verification.restaurantId === restaurantId
-      && verification.section === section
-      && Number.isFinite(verification.expiresAt)
-      && verification.expiresAt > now;
-    if (!valid) storage.removeItem(key);
-    return valid;
-  } catch {
-    storage.removeItem(key);
-    return false;
-  }
+export function hasValidSecurityProof(section: ProtectedSection, now = Date.now()): boolean {
+  return getSecurityProof(section, now) !== null;
+}
+
+export function clearSecurityProof(section?: ProtectedSection): void {
+  if (section) proofs.delete(section); else proofs.clear();
+  notify();
+}
+
+export function subscribeSecurityProofs(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }

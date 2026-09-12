@@ -73,6 +73,7 @@ function createApiHarness({ refreshStatus = 200, impersonated = false, validSupp
     '../store/authStore': { useAuthStore: { getState: () => state } },
     '../config/backend': { API_BASE_URL: 'https://api.ordio.test/api' },
     './session-lifecycle': { getValidSupportSession: () => validSupportSession },
+    './passcode-session': { getSecurityProof: () => null, clearSecurityProof() {} },
   });
 
   return {
@@ -136,7 +137,6 @@ test('AUTH-004: expired impersonation never refreshes and restores only a valida
   const adminBackup = {
     user: { id: 'admin', role: 'SUPER_ADMIN', restaurants: [] },
     accessToken: 'admin-access',
-    refreshToken: 'admin-refresh',
   };
   const harness = createApiHarness({ impersonated: true, validSupportSession: adminBackup });
   const previousStorage = global.localStorage;
@@ -144,7 +144,9 @@ test('AUTH-004: expired impersonation never refreshes and restores only a valida
   try {
     await assert.rejects(harness.api.get('/orders'), /SuperAdmin session has been restored/);
     assert.equal(harness.getRefreshCalls(), 0);
-    assert.deepEqual(harness.state.setAuthCalls[0], adminBackup);
+    assert.deepEqual(harness.state.setAuthCalls[0].user, adminBackup.user);
+    assert.equal(harness.state.setAuthCalls[0].accessToken, adminBackup.accessToken);
+    assert.equal(harness.state.setAuthCalls[0].refreshToken, undefined);
   } finally {
     if (previousStorage === undefined) delete global.localStorage;
     else global.localStorage = previousStorage;
@@ -167,7 +169,7 @@ test('AUTH-004: invalid impersonation backup ends the session without attempting
   }
 });
 
-test('AUTH-004: normal sessions persist refresh tokens while access-only impersonation removes them', () => {
+test('AUTH-004: neither normal nor impersonated frontend sessions persist refresh tokens', () => {
   const values = new Map();
   const previousStorage = global.localStorage;
   global.localStorage = {
@@ -181,19 +183,20 @@ test('AUTH-004: normal sessions persist refresh tokens while access-only imperso
         clearInvalidSupportSession() {},
         teardownFrontendSession() {},
       },
+      '../lib/passcode-session': { clearSecurityProof() {} },
     });
     const normalUser = { id: 'normal', role: 'RESTAURANT_OWNER', restaurants: [{ id: 'restaurant-a' }] };
-    useAuthStore.getState().setAuth(normalUser, 'normal-access', 'normal-refresh');
-    assert.equal(values.get('qr_refresh_token'), 'normal-refresh');
+    useAuthStore.getState().setAuth(normalUser, 'normal-access');
+    assert.equal(values.has('qr_refresh_token'), false);
 
     const impersonated = { ...normalUser, id: 'impersonated', supportSessionId: 'flow-1' };
-    useAuthStore.getState().setAuth(impersonated, 'impersonated-access', null);
+    useAuthStore.getState().setAuth(impersonated, 'impersonated-access');
     assert.equal(values.get('qr_access_token'), 'impersonated-access');
     assert.equal(values.has('qr_refresh_token'), false);
-    assert.equal(useAuthStore.getState().refreshToken, null);
+    assert.equal('refreshToken' in useAuthStore.getState(), false);
 
     const source = fs.readFileSync(path.join(root, 'src/pages/dashboard/SuperAdminDashboard.tsx'), 'utf8');
-    assert.match(source, /setAuth\(mockOwnerUser, res\.token, null\)/);
+    assert.match(source, /setAuth\(mockOwnerUser, res\.token\)/);
   } finally {
     if (previousStorage === undefined) delete global.localStorage;
     else global.localStorage = previousStorage;
@@ -212,25 +215,15 @@ test('CFG-001: production rejects loopback and non-HTTPS APIs while development 
   });
 });
 
-test('SEC-001: passcode verification is scoped by user, restaurant, section and expiry', () => {
-  const lifecycle = { clearPasscodeSessions() {} };
-  const { savePasscodeVerification, hasValidPasscodeVerification } = loadTypeScriptModule('src/lib/passcode-session.ts', {
-    './session-lifecycle': lifecycle,
-  });
-  const values = new Map();
-  const storage = {
-    getItem: (key) => values.has(key) ? values.get(key) : null,
-    setItem: (key, value) => values.set(key, value),
-    removeItem: (key) => values.delete(key),
-  };
-  const userA = { id: 'a', role: 'RESTAURANT_OWNER', restaurants: [{ id: 'restaurant-a' }] };
-  const userB = { id: 'b', role: 'RESTAURANT_OWNER', restaurants: [{ id: 'restaurant-b' }] };
-  savePasscodeVerification(storage, userA, 'analytics', 1_000);
-  assert.equal(hasValidPasscodeVerification(storage, userA, 'analytics', 1_001), true);
-  assert.equal(hasValidPasscodeVerification(storage, userA, 'settings', 1_001), false);
-  assert.equal(hasValidPasscodeVerification(storage, userB, 'analytics', 1_001), false);
-  savePasscodeVerification(storage, userA, 'analytics', 1_000);
-  assert.equal(hasValidPasscodeVerification(storage, userA, 'analytics', 1_000 + 30 * 60 * 1000), false);
+test('SEC-001: proofs are scoped, expire, and live only in memory', () => {
+  const { saveSecurityProof, getSecurityProof, clearSecurityProof } = loadTypeScriptModule('src/lib/passcode-session.ts');
+  const expiresAt = new Date(Date.now() + 10_000).toISOString();
+  saveSecurityProof('analytics', 'server-issued-proof', expiresAt);
+  assert.equal(getSecurityProof('analytics'), 'server-issued-proof');
+  assert.equal(getSecurityProof('settings'), null);
+  clearSecurityProof('analytics');
+  assert.equal(getSecurityProof('analytics'), null);
+  assert.doesNotMatch(fs.readFileSync(path.join(root, 'src/lib/passcode-session.ts'), 'utf8'), /localStorage|sessionStorage/);
 });
 
 test('SEC-001: centralized session teardown removes every passcode verification key', () => {
@@ -249,7 +242,9 @@ test('SEC-001: centralized session teardown removes every passcode verification 
   const previousSessionStorage = global.sessionStorage;
   global.sessionStorage = storage(sessionValues);
   try {
-    const { teardownFrontendSession } = loadTypeScriptModule('src/lib/session-lifecycle.ts');
+    const { teardownFrontendSession } = loadTypeScriptModule('src/lib/session-lifecycle.ts', {
+      './passcode-session': { clearSecurityProof() {} },
+    });
     teardownFrontendSession(storage(localValues));
     assert.equal(sessionValues.size, 0);
     assert.equal(localValues.has('admin_access_token'), false);

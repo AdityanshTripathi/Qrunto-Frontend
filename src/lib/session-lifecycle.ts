@@ -1,4 +1,5 @@
 import type { User } from '../store/authStore';
+import { clearSecurityProof } from './passcode-session';
 
 export interface StorageLike {
   getItem: (key: string) => string | null;
@@ -58,6 +59,7 @@ export function clearSupportSession(storage: StorageLike): void {
 
 export function clearPasscodeSessions(storage: StorageLike): void {
   for (const key of PASSCODE_SESSION_KEYS) storage.removeItem(key);
+  clearSecurityProof();
 }
 
 export function teardownFrontendSession(storage: StorageLike): void {

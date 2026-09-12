@@ -2,10 +2,19 @@ import { withRequestTimeout } from './request-timeout';
 import { useAuthStore } from '../store/authStore';
 import { API_BASE_URL as BASE_URL } from '../config/backend';
 import { getValidSupportSession } from './session-lifecycle';
+import { clearSecurityProof, getSecurityProof, type ProtectedSection } from './passcode-session';
 
 
 interface RequestOptions extends RequestInit {
   body?: any;
+}
+
+function securityScopeFor(path: string): ProtectedSection | null {
+  const pathname = path.split('?')[0];
+  if (pathname.startsWith('/analytics/') && pathname !== '/analytics/overview') return 'analytics';
+  if (pathname === '/settings' || pathname === '/settings/passcode/toggle') return 'settings';
+  if (pathname === '/subscriptions' || pathname === '/subscriptions/purchase' || pathname === '/subscriptions/redeem') return 'subscription';
+  return null;
 }
 
 function request(path: string, options: RequestOptions = {}) {
@@ -116,6 +125,11 @@ async function performRequest(path: string, options: RequestOptions) {
   if (initialStore.accessToken && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${initialStore.accessToken}`);
   }
+  const securityScope = securityScopeFor(path);
+  if (securityScope && !headers.has('X-Security-Proof')) {
+    const proof = getSecurityProof(securityScope);
+    if (proof) headers.set('X-Security-Proof', proof);
+  }
 
   let bodyData = options.body;
   if (bodyData && typeof bodyData === 'object' && !(bodyData instanceof FormData)) {
@@ -164,6 +178,7 @@ async function performRequest(path: string, options: RequestOptions) {
     }
 
     if (!response.ok) {
+      if (securityScope && (response.status === 401 || response.status === 403)) clearSecurityProof(securityScope);
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || errorData.message || `Request failed with status ${response.status}`);
     }
