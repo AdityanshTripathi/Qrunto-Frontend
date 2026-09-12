@@ -73,7 +73,6 @@ function createApiHarness({ refreshStatus = 200, impersonated = false, validSupp
     '../store/authStore': { useAuthStore: { getState: () => state } },
     '../config/backend': { API_BASE_URL: 'https://api.ordio.test/api' },
     './session-lifecycle': { getValidSupportSession: () => validSupportSession },
-    './passcode-session': { getSecurityProof: () => null, clearSecurityProof() {} },
   });
 
   return {
@@ -183,7 +182,6 @@ test('AUTH-004: neither normal nor impersonated frontend sessions persist refres
         clearInvalidSupportSession() {},
         teardownFrontendSession() {},
       },
-      '../lib/passcode-session': { clearSecurityProof() {} },
     });
     const normalUser = { id: 'normal', role: 'RESTAURANT_OWNER', restaurants: [{ id: 'restaurant-a' }] };
     useAuthStore.getState().setAuth(normalUser, 'normal-access');
@@ -213,45 +211,6 @@ test('CFG-001: production rejects loopback and non-HTTPS APIs while development 
     apiBaseUrl: 'http://localhost:5000/api',
     socketUrl: 'http://localhost:5000',
   });
-});
-
-test('SEC-001: proofs are scoped, expire, and live only in memory', () => {
-  const { saveSecurityProof, getSecurityProof, clearSecurityProof } = loadTypeScriptModule('src/lib/passcode-session.ts');
-  const expiresAt = new Date(Date.now() + 10_000).toISOString();
-  saveSecurityProof('analytics', 'server-issued-proof', expiresAt);
-  assert.equal(getSecurityProof('analytics'), 'server-issued-proof');
-  assert.equal(getSecurityProof('settings'), null);
-  clearSecurityProof('analytics');
-  assert.equal(getSecurityProof('analytics'), null);
-  assert.doesNotMatch(fs.readFileSync(path.join(root, 'src/lib/passcode-session.ts'), 'utf8'), /localStorage|sessionStorage/);
-});
-
-test('SEC-001: centralized session teardown removes every passcode verification key', () => {
-  const localValues = new Map([['admin_access_token', 'admin-token']]);
-  const sessionValues = new Map([
-    ['ordio_passcode_verified', 'true'],
-    ['ordio_passcode_verified:analytics', '{}'],
-    ['ordio_passcode_verified:subscription', '{}'],
-    ['ordio_passcode_verified:settings', '{}'],
-  ]);
-  const storage = (values) => ({
-    getItem: (key) => values.has(key) ? values.get(key) : null,
-    setItem: (key, value) => values.set(key, value),
-    removeItem: (key) => values.delete(key),
-  });
-  const previousSessionStorage = global.sessionStorage;
-  global.sessionStorage = storage(sessionValues);
-  try {
-    const { teardownFrontendSession } = loadTypeScriptModule('src/lib/session-lifecycle.ts', {
-      './passcode-session': { clearSecurityProof() {} },
-    });
-    teardownFrontendSession(storage(localValues));
-    assert.equal(sessionValues.size, 0);
-    assert.equal(localValues.has('admin_access_token'), false);
-  } finally {
-    if (previousSessionStorage === undefined) delete global.sessionStorage;
-    else global.sessionStorage = previousSessionStorage;
-  }
 });
 
 test('OPS-001: locks block duplicates, validate finite decimals, and unlock after failure', async () => {

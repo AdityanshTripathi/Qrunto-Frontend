@@ -11,7 +11,6 @@ import {
   Award,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { PasscodeLockGate } from '../../components/PasscodeLockGate';
 import { ExecutiveTab } from './analytics/ExecutiveTab';
 import { SalesTab } from './analytics/SalesTab';
 import { OrderTab } from './analytics/OrderTab';
@@ -21,11 +20,7 @@ import { LoyaltyTab } from './analytics/LoyaltyTab';
 
 
 export const Analytics: React.FC = () => {
-  return (
-    <PasscodeLockGate section="analytics">
-      <AnalyticsContent />
-    </PasscodeLockGate>
-  );
+  return <AnalyticsContent />;
 };
 
 const TABS = [

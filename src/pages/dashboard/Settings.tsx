@@ -15,14 +15,11 @@ import {
   Save,
   Loader2,
   Camera,
-  Lock,
 } from 'lucide-react';
 
 import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { api } from '../../lib/api';
-import { PasscodeLockGate } from '../../components/PasscodeLockGate';
-import { useCallback } from 'react';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -94,11 +91,7 @@ const compressLogo = (file: File, maxSize = 300, quality = 0.85): Promise<string
   });
 
 export const Settings: React.FC = () => {
-  return (
-    <PasscodeLockGate section="settings">
-      <SettingsContent />
-    </PasscodeLockGate>
-  );
+  return <SettingsContent />;
 };
 
 const SettingsContent: React.FC = () => {
@@ -110,87 +103,6 @@ const SettingsContent: React.FC = () => {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isCompressingLogo, setIsCompressingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
-
-  // Passcode States
-  const [passcodeEnabled, setPasscodeEnabled] = useState(false);
-  const [hasPasscodeSet, setHasPasscodeSet] = useState(false);
-  const [passcodeRequest, setPasscodeRequest] = useState<any | null>(null);
-  const [currentPasscode, setCurrentPasscode] = useState('');
-  const [passcodeNew, setPasscodeNew] = useState('');
-  const [passcodeConfirm, setPasscodeConfirm] = useState('');
-  const [isPasscodeSubmitting, setIsPasscodeSubmitting] = useState(false);
-  const [isVerifyOpen, setIsVerifyOpen] = useState(false);
-
-  const fetchPasscodeStatus = useCallback(async () => {
-    try {
-      const res = await api.get('/settings/passcode/status');
-      setPasscodeEnabled(res.isPasscodeEnabled);
-      setHasPasscodeSet(res.hasPasscodeSet);
-      setPasscodeRequest(res.activeRequest);
-    } catch (err: any) {
-      console.error('Failed to load passcode status:', err);
-    }
-  }, []);
-
-  const handleSetPasscode = async () => {
-    if (!passcodeNew || passcodeNew.length < 4) {
-      toast.error('Passcode must be at least 4 characters.');
-      return;
-    }
-    if (passcodeNew !== passcodeConfirm) {
-      toast.error('Passcodes do not match.');
-      return;
-    }
-    setIsPasscodeSubmitting(true);
-    try {
-      const res = await api.post('/settings/passcode/set', {
-        passcode: passcodeNew,
-        oldPasscode: currentPasscode || undefined,
-      });
-      toast.success(res.message || 'Passcode updated successfully!');
-      setPasscodeNew('');
-      setPasscodeConfirm('');
-      setCurrentPasscode('');
-      fetchPasscodeStatus();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update passcode.');
-    } finally {
-      setIsPasscodeSubmitting(false);
-    }
-  };
-
-  const handleTogglePasscode = async () => {
-    if (!currentPasscode) {
-      toast.error('Please enter your passcode to confirm.');
-      return;
-    }
-    try {
-      const res = await api.post('/settings/passcode/toggle', {
-        isPasscodeEnabled: !passcodeEnabled,
-        passcode: currentPasscode,
-      });
-      toast.success(res.message);
-      setIsVerifyOpen(false);
-      setCurrentPasscode('');
-      fetchPasscodeStatus();
-    } catch (err: any) {
-      toast.error(err.message || 'Verification failed.');
-    }
-  };
-
-  const handleRequestReset = async () => {
-    try {
-      const res = await api.post('/settings/passcode/reset-request');
-      toast.success(res.message || 'Passcode reset request sent!');
-      fetchPasscodeStatus();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to send reset request.');
-    }
-  };
-
-  useEffect(() => {
-    fetchPasscodeStatus();
-  }, [fetchPasscodeStatus]);
 
   const {
     register,
@@ -515,155 +427,6 @@ const SettingsContent: React.FC = () => {
         </div>
 
         {/* ── Security & Access Lock ───────────────────────────────────────── */}
-        <div className="bg-white dark:bg-[#1f2937]/20 border border-slate-200 dark:border-[#374151]/30 rounded-[28px] p-5 sm:p-6 space-y-5">
-          <h3 className="text-sm font-bold text-[#FF6B35] uppercase tracking-wider flex items-center gap-2">
-            <Lock className="w-4 h-4" />
-            Security & Access Lock
-          </h3>
-
-          <div className="space-y-4">
-            {/* Toggle Row */}
-            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#111827]/30 border border-slate-200 dark:border-[#374151]/40 rounded-2xl">
-              <div>
-                <h4 className="text-sm font-bold text-slate-800 dark:text-white">Enable Passcode Lock</h4>
-                <p className="text-xs text-slate-500 dark:text-[#9ca3af] mt-1">
-                  Locks Analytics, Billing Plan, and Settings sections with a security passcode.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (!hasPasscodeSet) {
-                    toast.error('Please set a passcode first.');
-                    return;
-                  }
-                  setIsVerifyOpen(true);
-                }}
-                className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${passcodeEnabled ? 'bg-[#FF6B35]' : 'bg-slate-300 dark:bg-[#374151]'
-                  }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${passcodeEnabled ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                />
-              </button>
-            </div>
-
-            {/* Toggle Verification Modal Inline */}
-            {isVerifyOpen && (
-              <div className="p-4 border border-orange-500/25 bg-orange-500/5 rounded-2xl space-y-3">
-                <p className="text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">
-                  Verify Passcode to {passcodeEnabled ? 'Disable' : 'Enable'}
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    value={currentPasscode}
-                    onChange={(e) => setCurrentPasscode(e.target.value)}
-                    placeholder="Enter current passcode"
-                    className="flex-1 bg-white dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#FF6B35]"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleTogglePasscode}
-                    className="px-4 py-2 bg-[#FF6B35] hover:bg-orange-600 text-white font-semibold rounded-xl text-xs transition-all"
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsVerifyOpen(false);
-                      setCurrentPasscode('');
-                    }}
-                    className="px-3 py-2 border border-slate-300 dark:border-[#374151]/80 text-slate-700 dark:text-gray-300 rounded-xl text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Change or Set Passcode Form */}
-            <div className="p-5 bg-slate-50 dark:bg-[#111827]/30 border border-slate-200 dark:border-[#374151]/40 rounded-2xl space-y-4">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">
-                {hasPasscodeSet ? 'Change Passcode' : 'Set Passcode'}
-              </h4>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Current passcode (only if passcode is set and reset is NOT approved) */}
-                {hasPasscodeSet && (!passcodeRequest || passcodeRequest.status !== 'APPROVED') && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Current Passcode</label>
-                    <input
-                      type="password"
-                      value={currentPasscode}
-                      onChange={(e) => setCurrentPasscode(e.target.value)}
-                      placeholder="••••"
-                      className="w-full bg-white dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-[#FF6B35]"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">New Passcode</label>
-                  <input
-                    type="password"
-                    value={passcodeNew}
-                    onChange={(e) => setPasscodeNew(e.target.value)}
-                    placeholder="••••"
-                    className="w-full bg-white dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-[#FF6B35]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Confirm New Passcode</label>
-                  <input
-                    type="password"
-                    value={passcodeConfirm}
-                    onChange={(e) => setPasscodeConfirm(e.target.value)}
-                    placeholder="••••"
-                    className="w-full bg-white dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-[#FF6B35]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center flex-wrap gap-2 pt-2">
-                {/* Reset Request Link */}
-                {hasPasscodeSet ? (
-                  <div>
-                    {(!passcodeRequest || passcodeRequest.status === 'REJECTED') ? (
-                      <button
-                        type="button"
-                        onClick={handleRequestReset}
-                        className="text-xs font-semibold text-[#FF6B35] hover:underline"
-                      >
-                        Forgot Passcode? Send Reset Request
-                      </button>
-                    ) : (
-                      <span className={`text-xs font-bold ${passcodeRequest.status === 'PENDING' ? 'text-amber-500' : 'text-emerald-500'
-                        }`}>
-                        Reset Request: {passcodeRequest.status === 'PENDING' ? 'Pending Admin Approval' : 'Approved! Set passcode without current.'}
-                      </span>
-                    )}
-                  </div>
-                ) : <div />}
-
-                <button
-                  type="button"
-                  onClick={handleSetPasscode}
-                  disabled={isPasscodeSubmitting || !passcodeNew || passcodeNew !== passcodeConfirm}
-                  className="px-4 py-2 bg-[#FF6B35] hover:bg-orange-600 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-all"
-                >
-                  {isPasscodeSubmitting ? 'Saving...' : hasPasscodeSet ? 'Update Passcode' : 'Set & Enable Passcode'}
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
         {/* Save Button */}
         <div className="flex justify-end">
 

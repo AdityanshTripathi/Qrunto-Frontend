@@ -14,7 +14,6 @@ import {
   Sparkles,
   Trash2,
   Pencil,
-  Lock,
   MessageSquare,
   Send,
   CheckCircle2,
@@ -47,7 +46,7 @@ interface SuperAdminPayment {
 
 export const SuperAdminDashboard: React.FC = () => {
   const { setAuth } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'overview' | 'restaurants' | 'plans' | 'licenses' | 'transactions' | 'passcodes' | 'settings' | 'whatsapp'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'restaurants' | 'plans' | 'licenses' | 'transactions' | 'settings' | 'whatsapp'>('overview');
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<any>({
     totalRestaurants: 0,
@@ -67,7 +66,6 @@ export const SuperAdminDashboard: React.FC = () => {
   const [paymentsList, setPaymentsList] = useState<SuperAdminPayment[]>([]);
   const [transactionPagination, setTransactionPagination] = useState<CursorPagination>({ nextCursor: null, hasMore: false });
   const [transactionsLoadingMore, setTransactionsLoadingMore] = useState(false);
-  const [passcodeResets, setPasscodeResets] = useState<any[]>([]);
   
   // Modals / Forms States
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
@@ -185,9 +183,6 @@ export const SuperAdminDashboard: React.FC = () => {
           nextCursor: res.pagination?.nextCursor ?? null,
           hasMore: res.pagination?.hasMore ?? false,
         });
-      } else if (activeTab === 'passcodes') {
-        const res = await api.get('/superadmin/passcode-resets');
-        setPasscodeResets(res.requests || []);
       }
     } catch (err: any) {
       toast.error('Failed to load data: ' + err.message);
@@ -331,17 +326,6 @@ export const SuperAdminDashboard: React.FC = () => {
   };
 
   // Delete Plan
-  // Passcode reset request actions
-  const handlePasscodeResetAction = async (requestId: string, action: 'approve' | 'reject') => {
-    try {
-      const res = await api.patch(`/superadmin/passcode-resets/${requestId}/action`, { action });
-      toast.success(res.message);
-      loadTabData();
-    } catch (err: any) {
-      toast.error(err.message || 'Action failed');
-    }
-  };
-
   const handleDeletePlan = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this subscription plan? Associated subscriptions and codes will also be cleaned up.')) {
       return;
@@ -417,7 +401,6 @@ export const SuperAdminDashboard: React.FC = () => {
               { id: 'restaurants', name: 'Restaurants', icon: Store },
               { id: 'plans', name: 'Subscriptions', icon: CreditCard },
               { id: 'licenses', name: 'License Codes', icon: QrCode },
-              { id: 'passcodes', name: 'Passcode Resets', icon: Lock },
               { id: 'transactions', name: 'Transactions', icon: DollarSign },
               { id: 'whatsapp', name: 'WhatsApp Manager', icon: MessageSquare },
               { id: 'settings', name: 'Platform Settings', icon: SettingsIcon },
@@ -472,7 +455,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 <SkeletonLoader type="charts" />
               </div>
             )}
-            {(activeTab === 'restaurants' || activeTab === 'licenses' || activeTab === 'transactions' || activeTab === 'passcodes') && (
+            {(activeTab === 'restaurants' || activeTab === 'licenses' || activeTab === 'transactions') && (
               <SkeletonLoader type="table" count={5} />
             )}
             {activeTab === 'plans' && (
@@ -874,84 +857,6 @@ export const SuperAdminDashboard: React.FC = () => {
                     </button>
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* TAB: PASSCODE RESETS */}
-            {activeTab === 'passcodes' && (
-              <div className="bg-white dark:bg-[#1f2937]/25 border border-slate-200/60 dark:border-[#374151]/30 rounded-3xl overflow-hidden shadow-sm dark:shadow-none animate-in fade-in duration-200">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 dark:bg-[#1f2937]/60 border-b border-slate-100 dark:border-[#374151]/50 text-slate-500 dark:text-[#9ca3af] font-bold">
-                        <th className="p-4">Restaurant</th>
-                        <th className="p-4">Owner Name / Email</th>
-                        <th className="p-4">Requested At</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-[#374151]/30">
-                      {passcodeResets.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="p-8 text-center text-slate-500 dark:text-gray-400">
-                            No passcode reset requests found.
-                          </td>
-                        </tr>
-                      ) : (
-                        passcodeResets.map((req) => (
-                          <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1f2937]/10 transition-colors">
-                            <td className="p-4">
-                              <p className="font-bold text-sm text-slate-800 dark:text-white">{req.restaurant.name}</p>
-                              <p className="text-[10px] text-slate-400 dark:text-gray-500 font-mono mt-0.5">{req.restaurant.slug}</p>
-                            </td>
-                            <td className="p-4">
-                              <p className="font-semibold text-slate-850 dark:text-white">{req.restaurant.owner.name}</p>
-                              <p className="text-slate-500 dark:text-gray-400">{req.restaurant.owner.email}</p>
-                            </td>
-                            <td className="p-4 text-slate-650 dark:text-gray-300">
-                              {new Date(req.requestedAt).toLocaleString()}
-                            </td>
-                            <td className="p-4">
-                              <span className={`px-2.5 py-1 rounded-lg font-bold text-[10px] uppercase border ${
-                                req.status === 'PENDING'
-                                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
-                                  : req.status === 'APPROVED'
-                                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-                                  : req.status === 'COMPLETED'
-                                  ? 'bg-blue-500/10 border-blue-500/20 text-blue-500'
-                                  : 'bg-red-500/10 border-red-500/20 text-red-500'
-                              }`}>
-                                {req.status}
-                              </span>
-                            </td>
-                            <td className="p-4 text-right space-x-2">
-                              {req.status === 'PENDING' && (
-                                <>
-                                  <button
-                                    onClick={() => handlePasscodeResetAction(req.id, 'approve')}
-                                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-[10px] font-bold text-white transition-all shadow"
-                                  >
-                                    Approve
-                                  </button>
-                                  <button
-                                    onClick={() => handlePasscodeResetAction(req.id, 'reject')}
-                                    className="px-3 py-1.5 bg-red-500 hover:bg-red-650 rounded-xl text-[10px] font-bold text-white transition-all shadow"
-                                  >
-                                    Reject
-                                  </button>
-                                </>
-                              )}
-                              {req.status !== 'PENDING' && (
-                                <span className="text-slate-400 dark:text-gray-500 italic text-[11px]">Processed</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
               </div>
             )}
 

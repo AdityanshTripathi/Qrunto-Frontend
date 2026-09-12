@@ -801,14 +801,14 @@ export const Landing: React.FC = () => {
                           Floor Staff Coordination Layer
                         </span>
                         <h3 className="text-3xl sm:text-4xl font-extrabold text-white font-inter-tight">
-                          Passcode-Protected Mobile Staff Portal & Live Floor Matrix
+                          Role-Based Mobile Staff Portal & Live Floor Matrix
                         </h3>
                         <p className="text-slate-300 text-base leading-relaxed">
                           Equip floor staff with an ultra-fast mobile interface. Waiters can take manual walk-in POS orders, manage table occupancy, receive instant guest service requests, and settle bills with split payment controls.
                         </p>
                         <div className="space-y-3 pt-2">
                           {[
-                            '4-Digit PIN passcode lock for secure waiter profile switching',
+                            'Role-based access for secure waiter profile switching',
                             'Live visual floor map matrix (Idle, Ordering, Eating, Bill Requested)',
                             'Instant buzzer notifications when guests request water or the bill',
                             'Offline-resilient order entry and thermal printer invoice generation'
@@ -920,7 +920,7 @@ export const Landing: React.FC = () => {
                             '8 Specialized analytics tabs (Sales, Menu, Orders, Loyalty, Financial)',
                             'Customer RFM segmentation (Recency, Frequency, Monetary spend)',
                             'Automated birthday & anniversary WhatsApp celebration rewards',
-                            'Passcode-protected privacy lock for sensitive financial numbers'
+                            'Role-based privacy controls for sensitive financial numbers'
                           ].map((pt) => (
                             <div key={pt} className="flex items-center gap-3 text-sm text-slate-300 font-medium">
                               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -1135,16 +1135,16 @@ export const Landing: React.FC = () => {
                 </div>
               </div>
 
-              {/* Bento Card 2: Passcode Lock & Security */}
+              {/* Bento Card 2: Security */}
               <div className="md:col-span-5 bg-[#0E121B] border border-white/[0.08] rounded-3xl p-8 space-y-5 hover:border-[#FF6B00]/50 transition-all group">
                 <div className="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-400 flex items-center justify-center">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div>
                   <span className="text-xs font-mono text-blue-400 uppercase font-bold">Security Engine</span>
-                  <h3 className="text-2xl font-bold text-white mt-1">Passcode Lock &amp; RBAC Gate</h3>
+                  <h3 className="text-2xl font-bold text-white mt-1">RBAC Security</h3>
                   <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-                    Protect sensitive revenue metrics, subscription billing, and backend configuration behind a restaurant passcode gate with automated reset request approvals.
+                    Protect sensitive revenue metrics, subscription billing, and backend configuration with authenticated role-based access controls.
                   </p>
                 </div>
                 <div className="pt-3 border-t border-white/[0.06] text-xs font-mono text-slate-400">
@@ -1415,7 +1415,7 @@ export const Landing: React.FC = () => {
                 },
                 {
                   q: 'Can waiters take manual orders or print physical bills?',
-                  a: 'Yes. Floor staff can access the passcode-protected Waiter Portal to punch in walk-in POS orders, reassign tables, print KOT tickets on thermal printers, and settle bills with cash or card.'
+                  a: 'Yes. Floor staff can access the role-based Waiter Portal to punch in walk-in POS orders, reassign tables, print KOT tickets on thermal printers, and settle bills with cash or card.'
                 },
                 {
                   q: 'How does automated recipe inventory deduction work?',

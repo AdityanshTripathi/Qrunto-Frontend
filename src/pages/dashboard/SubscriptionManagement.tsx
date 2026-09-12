@@ -5,7 +5,6 @@ import { CreditCard, Calendar, ShieldCheck, ArrowRight, Loader2, Sparkles, Check
 import { api } from '../../lib/api';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { toast } from 'sonner';
-import { PasscodeLockGate } from '../../components/PasscodeLockGate';
 
 
 interface Plan {
@@ -25,11 +24,7 @@ interface Subscription {
 }
 
 export const SubscriptionManagement: React.FC = () => {
-  return (
-    <PasscodeLockGate section="subscription">
-      <SubscriptionManagementContent />
-    </PasscodeLockGate>
-  );
+  return <SubscriptionManagementContent />;
 };
 
 const SubscriptionManagementContent: React.FC = () => {

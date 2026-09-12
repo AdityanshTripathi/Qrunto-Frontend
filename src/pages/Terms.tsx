@@ -47,7 +47,7 @@ export const Terms: React.FC = () => {
         <section className="space-y-3">
           <h2 className="text-base sm:text-lg font-extrabold text-slate-900">6. Waiter Accounts</h2>
           <p className="text-slate-650">
-            Authorized waiters and staff may manage tables, orders, and customer requests. Waiters are responsible for maintaining the privacy and security of their passcode/login details.
+            Authorized waiters and staff may manage tables, orders, and customer requests. Waiters are responsible for maintaining the privacy and security of their login details.
           </p>
         </section>
 

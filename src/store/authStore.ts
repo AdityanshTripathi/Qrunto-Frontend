@@ -3,7 +3,6 @@ import {
   clearInvalidSupportSession,
   teardownFrontendSession,
 } from '../lib/session-lifecycle';
-import { clearSecurityProof } from '../lib/passcode-session';
 
 export interface User {
   restaurantTimezone?: string;
@@ -79,8 +78,6 @@ export const useAuthStore = create<AuthState>((set) => {
 
     updateAccessToken: (accessToken) => {
       try {
-        // Proofs are bound to the exact access token and cannot survive rotation.
-        clearSecurityProof();
         localStorage.setItem('qr_access_token', accessToken);
       } catch (e) {
         console.error('Failed to update access token in localStorage', e);
