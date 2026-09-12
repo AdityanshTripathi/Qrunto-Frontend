@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
-import { API_BASE_URL as BASE_URL, SOCKET_URL } from '../../config/backend';
+import { SOCKET_URL } from '../../config/backend';
+import { api } from '../../lib/api';
 
 interface Table {
   id: string;
@@ -99,11 +100,7 @@ export const BillsPage: React.FC = () => {
 
     try {
       // 1. Fetch unread notifications
-      const notifRes = await fetch(`${BASE_URL}/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const notifData = await notifRes.json();
-      if (!notifRes.ok) throw new Error(notifData.error || 'Failed to fetch notifications');
+      const notifData = await api.get('/notifications');
       
       // Filter BILLING notifications that are unread
       const billingReqs = (notifData.notifications || []).filter(
@@ -112,11 +109,7 @@ export const BillsPage: React.FC = () => {
       setBillRequests(billingReqs);
 
       // 2. Fetch active orders
-      const ordersRes = await fetch(`${BASE_URL}/orders?limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const ordersData = await ordersRes.json();
-      if (!ordersRes.ok) throw new Error(ordersData.error || 'Failed to fetch orders');
+      const ordersData = await api.get('/orders?limit=100');
       setOrders(ordersData.orders || []);
       setSelectedOrder(current => current ? ordersData.orders?.find((order: Order) => order.id === current.id) ?? null : null);
 
@@ -132,14 +125,9 @@ export const BillsPage: React.FC = () => {
     if (!token) return;
     const fetchSettings = async () => {
       try {
-        const res = await fetch(`${BASE_URL}/settings`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setRestaurantDetails(data.restaurant);
-          setRestaurantSettings(data.settings);
-        }
+        const data = await api.get('/settings');
+        setRestaurantDetails(data.restaurant);
+        setRestaurantSettings(data.settings);
       } catch (err) {
         console.error('Failed to load settings in BillsPage:', err);
       }
@@ -199,11 +187,7 @@ export const BillsPage: React.FC = () => {
   const handleDismissRequest = async (notifId: string) => {
     if (!token) return;
     try {
-      const res = await fetch(`${BASE_URL}/notifications/${notifId}/read`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to resolve request');
+      await api.patch(`/notifications/${notifId}/read`);
       toast.success('Request dismissed');
       fetchData(true);
     } catch (err: any) {
@@ -218,24 +202,12 @@ export const BillsPage: React.FC = () => {
     setSettlingId(orderId);
 
     try {
-      const res = await fetch(`${BASE_URL}/orders/${orderId}/pay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ paymentMethod: method }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to register payment');
+      await api.post(`/orders/${orderId}/pay`, { paymentMethod: method });
 
       toast.success(`Bill settled via ${method}! Order status updated to SERVED.`);
       
       // Auto dismiss/read the notification
-      await fetch(`${BASE_URL}/notifications/${notifId}/read`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.patch(`/notifications/${notifId}/read`);
 
       fetchData(true);
     } catch (err: any) {

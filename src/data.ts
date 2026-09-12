@@ -12,13 +12,14 @@ import {
   CreditCard,
   Settings as SettingsIcon,
 } from 'lucide-react'
+import type { Capability } from './lib/capabilities'
 
 export interface NavigationItem {
   name: string
   href: string
   icon: React.ComponentType<{ className?: string }>
   badge?: string
-  roles?: string[]
+  capability: Capability
 }
 
 export interface NavigationGroup {
@@ -31,29 +32,29 @@ export const navigationGroups: NavigationGroup[] = [
   {
     label: 'Overview',
     items: [
-      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-      { name: 'Active Orders', href: '/dashboard/orders', icon: ShoppingBag },
+      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, capability: 'owner.dashboard' },
+      { name: 'Active Orders', href: '/dashboard/orders', icon: ShoppingBag, capability: 'orders.manage' },
     ],
   },
   {
     label: 'Management',
     collapsible: true,
     items: [
-      { name: 'Menu Items', href: '/dashboard/menu', icon: Utensils },
-      { name: 'Categories', href: '/dashboard/categories', icon: Tags },
-      { name: 'Tables & QRs', href: '/dashboard/tables', icon: QrCode },
-      { name: 'Inventory', href: '/dashboard/inventory', icon: Package },
-      { name: 'Waiters', href: '/dashboard/waiters', icon: Users },
+      { name: 'Menu Items', href: '/dashboard/menu', icon: Utensils, capability: 'menu.manage' },
+      { name: 'Categories', href: '/dashboard/categories', icon: Tags, capability: 'categories.manage' },
+      { name: 'Tables & QRs', href: '/dashboard/tables', icon: QrCode, capability: 'tables.manage' },
+      { name: 'Inventory', href: '/dashboard/inventory', icon: Package, capability: 'inventory.manage' },
+      { name: 'Waiters', href: '/dashboard/waiters', icon: Users, capability: 'waiters.manage' },
     ],
   },
   {
     label: 'Business',
     collapsible: true,
     items: [
-      { name: 'CRM', href: '/dashboard/crm', icon: Smile },
-      { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-      { name: 'Billing Plan', href: '/dashboard/subscription', icon: CreditCard },
-      { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
+      { name: 'CRM', href: '/dashboard/crm', icon: Smile, capability: 'crm.manage' },
+      { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3, capability: 'analytics.view' },
+      { name: 'Billing Plan', href: '/dashboard/subscription', icon: CreditCard, capability: 'subscription.manage' },
+      { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon, capability: 'settings.manage' },
     ],
   },
 ]

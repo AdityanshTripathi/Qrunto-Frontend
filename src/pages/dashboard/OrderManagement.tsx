@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
-import { API_BASE_URL as BASE_URL, SOCKET_URL } from '../../config/backend';
+import { SOCKET_URL } from '../../config/backend';
+import { api } from '../../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type OrderStatus = 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED' | 'PAID';
@@ -114,14 +115,9 @@ export const OrderManagement: React.FC = () => {
     const fetchLoyaltyBalance = async () => {
       setLoadingLoyalty(true);
       try {
-        const res = await fetch(`${BASE_URL}/crm/loyalty/balance?phone=${encodeURIComponent(selectedOrder.customerPhone!)}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setCustomerLoyalty(data);
-          setRedeemPointsAmount(Math.min(data.pointsBalance, Math.floor(selectedOrder.totalAmount)));
-        }
+        const data = await api.get(`/crm/loyalty/balance?phone=${encodeURIComponent(selectedOrder.customerPhone!)}`);
+        setCustomerLoyalty(data);
+        setRedeemPointsAmount(Math.min(data.pointsBalance, Math.floor(selectedOrder.totalAmount)));
       } catch (err) {
         console.error('Failed to fetch loyalty details:', err);
       } finally {
@@ -136,16 +132,7 @@ export const OrderManagement: React.FC = () => {
     if (!selectedOrder || !token || redeemPointsAmount <= 0) return;
     setRedeemSubmitting(true);
     try {
-      const res = await fetch(`${BASE_URL}/orders/${selectedOrder.id}/loyalty-discount`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ pointsToRedeem: redeemPointsAmount }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to apply discount');
+      const data = await api.post(`/orders/${selectedOrder.id}/loyalty-discount`, { pointsToRedeem: redeemPointsAmount });
 
       toast.success(`Applied loyalty discount of ₹${redeemPointsAmount}`);
       
@@ -154,14 +141,9 @@ export const OrderManagement: React.FC = () => {
       setOrders((prev) => prev.map((o) => (o.id === selectedOrder.id ? data.order : o)));
       
       // Re-fetch loyalty balance to show new points balance
-      const balanceRes = await fetch(`${BASE_URL}/crm/loyalty/balance?phone=${encodeURIComponent(selectedOrder.customerPhone!)}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const balanceData = await balanceRes.json();
-      if (balanceRes.ok) {
-        setCustomerLoyalty(balanceData);
-        setRedeemPointsAmount(0);
-      }
+      const balanceData = await api.get(`/crm/loyalty/balance?phone=${encodeURIComponent(selectedOrder.customerPhone!)}`);
+      setCustomerLoyalty(balanceData);
+      setRedeemPointsAmount(0);
     } catch (err: any) {
       toast.error(err.message || 'Failed to apply discount');
     } finally {
@@ -210,18 +192,12 @@ export const OrderManagement: React.FC = () => {
         params.set('endDate', now.toISOString());
       }
 
-      const ordersRequest = fetch(BASE_URL + '/orders?' + params.toString(), {
-        headers: { Authorization: 'Bearer ' + token },
-      });
+      const ordersRequest = api.get('/orders?' + params.toString());
       const statsRequest = cursor
         ? Promise.resolve(null)
-        : fetch(BASE_URL + '/orders/stats', {
-            headers: { Authorization: 'Bearer ' + token },
-          });
+        : api.get('/orders/stats');
 
-      const [ordersRes, statsRes] = await Promise.all([ordersRequest, statsRequest]);
-      const ordersData = await ordersRes.json();
-      if (!ordersRes.ok) throw new Error(ordersData.error || 'Failed to fetch orders');
+      const [ordersData, statsData] = await Promise.all([ordersRequest, statsRequest]);
 
       const preserveLoadedPages = !cursor && silent && loadedMoreRef.current;
       setOrders((previous) => {
@@ -266,9 +242,7 @@ export const OrderManagement: React.FC = () => {
         hasMore: ordersData.pagination?.hasMore ?? false,
       });
 
-      if (statsRes) {
-        const statsData = await statsRes.json();
-        if (!statsRes.ok) throw new Error(statsData.error || 'Failed to fetch order stats');
+      if (statsData) {
         setStats(statsData.stats);
       }
     } catch (err: any) {
@@ -324,25 +298,13 @@ export const OrderManagement: React.FC = () => {
     if (!token) return;
     setUpdatingId(orderId);
     try {
-      const res = await fetch(`${BASE_URL}/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update order status');
+      const data = await api.patch(`/orders/${orderId}/status`, { status: nextStatus });
 
       toast.success(`Order status updated to ${nextStatus}`);
       setOrders((prev) => prev.map((o) => (o.id === orderId ? data.order : o)));
 
-      const statsRes = await fetch(`${BASE_URL}/orders/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const statsData = await statsRes.json();
-      if (statsRes.ok) setStats(statsData.stats);
+      const statsData = await api.get('/orders/stats');
+      setStats(statsData.stats);
 
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(data.order);

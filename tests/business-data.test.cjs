@@ -45,6 +45,7 @@ function renderTab(name, data) {
     require: name => {
       if(name==='react')return {...React,useEffect:()=>{}};
       if(name==='sonner')return {toast:{error:()=>{}}};
+      if(name==='../../../lib/api')return {api:{get:async()=>({})}};
       if(name==='lucide-react'||name==='recharts')return new Proxy({}, {get:()=>box});
       throw Error('Unexpected dependency '+name);
     }, console,

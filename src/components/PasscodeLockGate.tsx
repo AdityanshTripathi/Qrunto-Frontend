@@ -2,10 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Lock, Key, AlertCircle, RefreshCw, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { api } from '../lib/api';
 import { toast } from 'sonner';
+import { useAuthStore } from '../store/authStore';
+import {
+  hasValidPasscodeVerification,
+  savePasscodeVerification,
+  type ProtectedSection,
+} from '../lib/passcode-session';
 
 interface PasscodeLockGateProps {
   children: React.ReactNode;
-  section: 'analytics' | 'subscription' | 'settings';
+  section: ProtectedSection;
 }
 
 interface ActiveRequest {
@@ -15,6 +21,7 @@ interface ActiveRequest {
 }
 
 export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, section }) => {
+  const user = useAuthStore((state) => state.user);
   const [isLocked, setIsLocked] = useState(true);
   const [checking, setChecking] = useState(true);
   const [passcode, setPasscode] = useState('');
@@ -34,7 +41,7 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
       const res = await api.get('/settings/passcode/status');
 
       // Check if verified in current tab session
-      const isVerified = sessionStorage.getItem('ordio_passcode_verified') === 'true';
+      const isVerified = hasValidPasscodeVerification(sessionStorage, user, section);
 
       if (!res.isPasscodeEnabled || !res.hasPasscodeSet || isVerified) {
         setIsLocked(false);
@@ -48,7 +55,7 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
     } finally {
       setChecking(false);
     }
-  }, []);
+  }, [section, user]);
 
   useEffect(() => {
     checkPasscodeStatus();
@@ -60,8 +67,8 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
     setSubmitting(true);
     try {
       const res = await api.post('/settings/passcode/verify', { passcode });
-      if (res.success) {
-        sessionStorage.setItem('ordio_passcode_verified', 'true');
+      if (res.success && user) {
+        savePasscodeVerification(sessionStorage, user, section);
         setIsLocked(false);
         toast.success('Access unlocked successfully!');
       }
@@ -100,7 +107,7 @@ export const PasscodeLockGate: React.FC<PasscodeLockGateProps> = ({ children, se
     try {
       const res = await api.post('/settings/passcode/set', { passcode: newPasscode });
       toast.success(res.message || 'Passcode reset successfully!');
-      sessionStorage.setItem('ordio_passcode_verified', 'true');
+      if (user) savePasscodeVerification(sessionStorage, user, section);
       setIsLocked(false);
       // Refresh passcode state
       checkPasscodeStatus();

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { AuthLayout, AuthField } from '../components/auth/AuthLayout';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
+import { defaultRouteForRole } from '../lib/capabilities';
 
 const LoginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -36,11 +37,7 @@ export const Login: React.FC = () => {
       toast.success('Welcome back!');
       
       // Redirect based on role
-      if (response.user.role === 'WAITER') {
-        navigate('/waiter-dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+      navigate(defaultRouteForRole(response.user.role));
     } catch (err: any) {
       toast.error(err.message || 'Login failed. Please check your credentials.');
     } finally {

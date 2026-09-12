@@ -46,6 +46,7 @@ import {
 import { currentUser, navigationGroups, type NavigationItem } from '../../data'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/authStore'
+import { hasCapability } from '@/lib/capabilities'
 
 const menuButtonClassName = 'dash-nav-item gap-2.5 [&_svg]:shrink-0';
 const sidebarGroupLabelClassName = 'dash-nav-group';
@@ -147,7 +148,10 @@ export function DashboardSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-3 px-4 py-3 group-data-[collapsible=icon]:overflow-auto!">
-        {navigationGroups.map((group) => {
+        {navigationGroups.map((group) => ({
+          ...group,
+          items: group.items.filter(item => hasCapability(user?.role, item.capability)),
+        })).filter(group => group.items.length > 0).map((group) => {
           const isCollapsible = group.collapsible ?? false
 
           if (isCollapsible) {

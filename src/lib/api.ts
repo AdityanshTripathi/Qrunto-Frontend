@@ -1,6 +1,7 @@
 import { withRequestTimeout } from './request-timeout';
 import { useAuthStore } from '../store/authStore';
 import { API_BASE_URL as BASE_URL } from '../config/backend';
+import { getValidSupportSession } from './session-lifecycle';
 
 
 interface RequestOptions extends RequestInit {
@@ -14,9 +15,73 @@ function request(path: string, options: RequestOptions = {}) {
   );
 }
 
+let refreshPromise: Promise<string> | null = null;
+let refreshIdentity: string | null = null;
+
+function refreshAccessToken(): Promise<string> {
+  const session = useAuthStore.getState();
+  const sessionIdentity = `${session.user?.id || ''}:${session.refreshToken || ''}`;
+  if (refreshPromise) {
+    if (refreshIdentity === sessionIdentity) return refreshPromise;
+    return refreshPromise.catch(() => undefined).then(() => refreshAccessToken());
+  }
+
+  refreshPromise = withRequestTimeout(async (signal) => {
+    const refreshToken = session.refreshToken;
+    if (!refreshToken) throw new Error('Your session has expired. Please sign in again.');
+
+    const response = await fetch(`${BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) throw new Error('Your session has expired. Please sign in again.');
+    const data = await response.json();
+    if (!data.accessToken) throw new Error('The refresh response did not include an access token.');
+    const latestSession = useAuthStore.getState();
+    if (latestSession.user?.id !== session.user?.id || latestSession.refreshToken !== refreshToken) {
+      throw new Error('The authenticated session changed while refreshing.');
+    }
+    useAuthStore.getState().updateAccessToken(data.accessToken);
+    return data.accessToken as string;
+  }).catch((error) => {
+    const latestSession = useAuthStore.getState();
+    if (latestSession.user?.id === session.user?.id && latestSession.refreshToken === session.refreshToken) {
+      latestSession.clearAuth();
+    }
+    throw error;
+  }).finally(() => {
+    refreshPromise = null;
+    refreshIdentity = null;
+  });
+  refreshIdentity = sessionIdentity;
+
+  return refreshPromise;
+}
+
+function endExpiredImpersonation(): never {
+  const store = useAuthStore.getState();
+  let supportSession = null;
+  try {
+    supportSession = getValidSupportSession(localStorage, store.user);
+  } catch {
+    // Storage can be unavailable in restricted browser contexts.
+  }
+
+  if (supportSession) {
+    store.setAuth(supportSession.user, supportSession.accessToken, supportSession.refreshToken);
+    throw new Error('The support session expired. The SuperAdmin session has been restored.');
+  }
+
+  store.clearAuth();
+  throw new Error('Your session has expired. Please sign in again.');
+}
+
 async function performRequest(path: string, options: RequestOptions) {
   const url = `${BASE_URL}${path}`;
-  const store = useAuthStore.getState();
+  const initialStore = useAuthStore.getState();
 
   // Clone headers
   const headers = new Headers(options.headers);
@@ -27,8 +92,8 @@ async function performRequest(path: string, options: RequestOptions) {
   }
 
   // Attach Authorization header if token exists
-  if (store.accessToken && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${store.accessToken}`);
+  if (initialStore.accessToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${initialStore.accessToken}`);
   }
 
   let bodyData = options.body;
@@ -45,44 +110,19 @@ async function performRequest(path: string, options: RequestOptions) {
   try {
     let response = await fetch(url, fetchOptions);
 
-    // If 401 Unauthorized, attempt token refresh
+    // A request is retried at most once, and the refresh endpoint never recurses.
     if (response.status === 401 && path !== '/auth/refresh' && path !== '/auth/login') {
-      if (store.refreshToken) {
-        console.log('Access token expired, attempting refresh...');
-        
-        const refreshResponse = await fetch(`${BASE_URL}/auth/refresh`, {
-          method: 'POST',
-          signal: options.signal,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refreshToken: store.refreshToken }),
-        });
-
-        if (refreshResponse.ok) {
-          const data = await refreshResponse.json();
-          const newAccessToken = data.accessToken;
-          
-          // Update access token in store
-          store.updateAccessToken(newAccessToken);
-
-          // Update Authorization header for original request retry
-          headers.set('Authorization', `Bearer ${newAccessToken}`);
-          fetchOptions.headers = headers;
-
-          // Retry original request
-          console.log('Token refresh successful, retrying original request...');
-          response = await fetch(url, fetchOptions);
-        } else {
-          // Refresh token failed, clear auth session
-          console.error('Refresh token expired or invalid, logging out...');
-          store.clearAuth();
-        }
-      } else if (store.accessToken) {
-        // No refresh token but we had an access token, clear auth session
-        console.error('Unauthorized response with no refresh token, logging out...');
-        store.clearAuth();
+      const currentStore = useAuthStore.getState();
+      if (currentStore.user?.supportSessionId && !currentStore.refreshToken) {
+        endExpiredImpersonation();
       }
+      if (!currentStore.refreshToken) currentStore.clearAuth();
+      else await refreshAccessToken();
+
+      const latestAccessToken = useAuthStore.getState().accessToken;
+      if (!latestAccessToken) throw new Error('Your session has expired. Please sign in again.');
+      headers.set('Authorization', `Bearer ${latestAccessToken}`);
+      response = await fetch(url, { ...fetchOptions, headers });
     }
 
     if (!response.ok) {

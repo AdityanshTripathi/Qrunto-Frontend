@@ -18,7 +18,6 @@ import { OrderTab } from './analytics/OrderTab';
 import { MenuTab } from './analytics/MenuTab';
 import { CustomerTab } from './analytics/CustomerTab';
 import { LoyaltyTab } from './analytics/LoyaltyTab';
-import { API_BASE_URL as BASE_URL } from '../../config/backend';
 
 
 export const Analytics: React.FC = () => {
@@ -79,7 +78,6 @@ const AnalyticsContent: React.FC = () => {
             startDate={startDate}
             endDate={endDate}
             token={token}
-            baseUrl={BASE_URL}
             refreshTrigger={refreshTrigger}
           />
         );
@@ -89,7 +87,6 @@ const AnalyticsContent: React.FC = () => {
             startDate={startDate}
             endDate={endDate}
             token={token}
-            baseUrl={BASE_URL}
             refreshTrigger={refreshTrigger}
           />
         );
@@ -99,7 +96,6 @@ const AnalyticsContent: React.FC = () => {
             startDate={startDate}
             endDate={endDate}
             token={token}
-            baseUrl={BASE_URL}
             refreshTrigger={refreshTrigger}
           />
         );
@@ -109,7 +105,6 @@ const AnalyticsContent: React.FC = () => {
             startDate={startDate}
             endDate={endDate}
             token={token}
-            baseUrl={BASE_URL}
             refreshTrigger={refreshTrigger}
           />
         );
@@ -119,7 +114,6 @@ const AnalyticsContent: React.FC = () => {
             startDate={startDate}
             endDate={endDate}
             token={token}
-            baseUrl={BASE_URL}
             refreshTrigger={refreshTrigger}
           />
         );
@@ -129,7 +123,6 @@ const AnalyticsContent: React.FC = () => {
             startDate={startDate}
             endDate={endDate}
             token={token}
-            baseUrl={BASE_URL}
             refreshTrigger={refreshTrigger}
           />
         );

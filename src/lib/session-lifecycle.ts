@@ -18,6 +18,13 @@ const SUPPORT_KEYS = [
   SUPPORT_CONTEXT_KEY,
 ] as const;
 
+const PASSCODE_SESSION_KEYS = [
+  'ordio_passcode_verified',
+  'ordio_passcode_verified:analytics',
+  'ordio_passcode_verified:subscription',
+  'ordio_passcode_verified:settings',
+] as const;
+
 interface SupportSessionContext {
   flowId: string;
   adminUserId: string;
@@ -49,10 +56,19 @@ export function clearSupportSession(storage: StorageLike): void {
   for (const key of SUPPORT_KEYS) storage.removeItem(key);
 }
 
+export function clearPasscodeSessions(storage: StorageLike): void {
+  for (const key of PASSCODE_SESSION_KEYS) storage.removeItem(key);
+}
+
 export function teardownFrontendSession(storage: StorageLike): void {
   try {
     clearSupportSession(storage);
   } finally {
+    try {
+      clearPasscodeSessions(sessionStorage);
+    } catch {
+      // Session storage may be unavailable in tests or restricted browser contexts.
+    }
     for (const teardown of sessionTeardowns) teardown();
   }
 }

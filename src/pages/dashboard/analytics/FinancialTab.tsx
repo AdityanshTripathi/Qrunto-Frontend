@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { api } from '../../../lib/api';
 import {
   CreditCard,
   Layers,
@@ -44,7 +45,6 @@ interface FinancialTabProps {
   startDate: string;
   endDate: string;
   token: string | null;
-  baseUrl: string;
   refreshTrigger: number;
 }
 
@@ -57,7 +57,6 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
   startDate,
   endDate,
   token,
-  baseUrl,
   refreshTrigger,
 }) => {
   const [data, setData] = useState<FinancialAnalyticsData | null>(null);
@@ -67,18 +66,14 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${baseUrl}/analytics/financials?startDate=${startDate}&endDate=${endDate}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || 'Failed to fetch financial analytics');
+      const resData = await api.get(`/analytics/financials?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
     } catch (err: any) {
       toast.error(err.message || 'Error fetching financial analytics');
     } finally {
       setLoading(false);
     }
-  }, [token, startDate, endDate, baseUrl]);
+  }, [token, startDate, endDate]);
 
   useEffect(() => {
     fetchFinancialAnalytics();

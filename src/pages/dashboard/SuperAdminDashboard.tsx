@@ -239,7 +239,7 @@ export const SuperAdminDashboard: React.FC = () => {
         supportSessionId,
       };
 
-      setAuth(mockOwnerUser, res.token, res.token);
+      setAuth(mockOwnerUser, res.token, null);
       saveSupportSession(localStorage, {
         flowId: supportSessionId,
         impersonatedRestaurantId: restId,

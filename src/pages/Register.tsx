@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { AuthLayout, AuthField } from '../components/auth/AuthLayout';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
+import { defaultRouteForRole } from '../lib/capabilities';
 
 const RegisterSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -36,7 +37,7 @@ export const Register: React.FC = () => {
       const response = await api.post('/auth/register', data);
       setAuth(response.user, response.tokens.accessToken, response.tokens.refreshToken);
       toast.success('Registration successful! Setup your subscription to get started.');
-      navigate('/dashboard');
+      navigate(defaultRouteForRole(response.user.role));
     } catch (err: any) {
       toast.error(err.message || 'Registration failed. Please try again.');
     } finally {

@@ -25,7 +25,7 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
-  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  setAuth: (user: User, accessToken: string, refreshToken: string | null) => void;
   updateAccessToken: (accessToken: string) => void;
   clearAuth: () => void;
 }
@@ -70,7 +70,8 @@ export const useAuthStore = create<AuthState>((set) => {
         teardownFrontendSession(localStorage);
         localStorage.setItem('qr_user', JSON.stringify(user));
         localStorage.setItem('qr_access_token', accessToken);
-        localStorage.setItem('qr_refresh_token', refreshToken);
+        if (refreshToken) localStorage.setItem('qr_refresh_token', refreshToken);
+        else localStorage.removeItem('qr_refresh_token');
       } catch (e) {
         console.error('Failed to save auth to localStorage', e);
       }

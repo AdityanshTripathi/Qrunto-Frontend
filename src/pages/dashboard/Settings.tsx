@@ -22,7 +22,6 @@ import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { api } from '../../lib/api';
 import { PasscodeLockGate } from '../../components/PasscodeLockGate';
-import { API_BASE_URL as BASE_URL } from '../../config/backend';
 import { useCallback } from 'react';
 
 
@@ -221,11 +220,7 @@ const SettingsContent: React.FC = () => {
     const loadSettings = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${BASE_URL}/settings`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to fetch settings');
+        const data = await api.get('/settings');
 
         setValue('name', data.restaurant.name || '');
         setValue('phone', data.restaurant.phone || '');
@@ -278,13 +273,7 @@ const SettingsContent: React.FC = () => {
     setSaving(true);
 
     try {
-      const res = await fetch(`${BASE_URL}/settings`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const data = await api.patch('/settings', {
           name: payload.name,
           phone: payload.phone || null,
           email: payload.email || null,
@@ -295,12 +284,7 @@ const SettingsContent: React.FC = () => {
           currency: payload.currency,
           taxPercentage: Number(payload.taxPercentage),
           businessHours,
-        }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || 'Failed to update settings');
       const currentUser = useAuthStore.getState().user;
       if (currentUser) useAuthStore.setState({ user: { ...currentUser, restaurantTimezone: data.restaurant.timezone, restaurants: currentUser.restaurants.map(r => r.id === data.restaurant.id ? { ...r, timezone: data.restaurant.timezone } : r) } });
       toast.success('Restaurant settings saved successfully!');

@@ -1,6 +1,8 @@
 import { useRestaurantTimezone } from '../../../lib/timezone';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../../lib/api';
+import { useAuthStore } from '../../../store/authStore';
+import { parseFiniteNumber, withActionLock } from '../../../lib/inventory-safety';
 import { toast } from 'sonner';
 import { 
   Package, 
@@ -37,8 +39,22 @@ const getConversionFactor = (materialUnit: string): number => {
 
 export const InventoryDashboard: React.FC = () => {
   const restaurantTimeZone = useRestaurantTimezone();
+  const user = useAuthStore((state) => state.user);
+  const currentRestaurantId = user?.restaurants[0]?.id || '';
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [loading, setLoading] = useState(true);
+  const actionLocks = useRef(new Set<string>());
+  const [inFlightActions, setInFlightActions] = useState<Set<string>>(new Set());
+
+  const runInventoryAction = (key: string, action: () => Promise<void>) =>
+    withActionLock(actionLocks.current, key, action, (changedKey, active) => {
+      setInFlightActions((previous) => {
+        const next = new Set(previous);
+        if (active) next.add(changedKey);
+        else next.delete(changedKey);
+        return next;
+      });
+    });
 
   // Core Data State
   const [metrics, setMetrics] = useState<any>({
@@ -152,7 +168,7 @@ export const InventoryDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchCoreData();
-  }, [activeTab]);
+  }, [activeTab, user?.id, currentRestaurantId]);
 
   const fetchCoreData = async () => {
     setLoading(true);
@@ -206,8 +222,7 @@ export const InventoryDashboard: React.FC = () => {
         // Wait, to fetch other branch restaurants, we can check settings or auth user details.
         // Let's call /superadmin/restaurants or get user restaurants from store
         // Let's use user restaurants first.
-        const storeUser = JSON.parse(localStorage.getItem('auth_store') || '{}')?.state?.user;
-        setRestaurants(storeUser?.restaurants || []);
+        setRestaurants(user?.restaurants || []);
       }
     } catch (err: any) {
       toast.error('Failed to load inventory data: ' + err.message);
@@ -219,32 +234,34 @@ export const InventoryDashboard: React.FC = () => {
   // Raw Material Submit Handler
   const handleItemSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const payload = {
-        ...itemForm,
-        supplierId: itemForm.supplierId || null,
-        openingStock: Number(itemForm.openingStock),
-        currentStock: Number(itemForm.currentStock),
-        minimumStockLevel: Number(itemForm.minimumStockLevel),
-        maximumStockLevel: Number(itemForm.maximumStockLevel),
-        reorderQuantity: Number(itemForm.reorderQuantity),
-        purchasePrice: Number(itemForm.purchasePrice),
-        averageCost: Number(itemForm.averageCost || itemForm.purchasePrice)
-      };
+    await runInventoryAction('item:save', async () => {
+      try {
+        const payload = {
+          ...itemForm,
+          supplierId: itemForm.supplierId || null,
+          openingStock: parseFiniteNumber(itemForm.openingStock, { field: 'Opening stock', min: 0 }),
+          currentStock: parseFiniteNumber(itemForm.currentStock, { field: 'Current stock', min: 0 }),
+          minimumStockLevel: parseFiniteNumber(itemForm.minimumStockLevel, { field: 'Minimum stock', min: 0 }),
+          maximumStockLevel: parseFiniteNumber(itemForm.maximumStockLevel, { field: 'Maximum stock', min: 0 }),
+          reorderQuantity: parseFiniteNumber(itemForm.reorderQuantity, { field: 'Reorder quantity', min: 0 }),
+          purchasePrice: parseFiniteNumber(itemForm.purchasePrice, { field: 'Purchase price', min: 0 }),
+          averageCost: parseFiniteNumber(itemForm.averageCost || itemForm.purchasePrice, { field: 'Average cost', min: 0 }),
+        };
 
-      if (editingItem) {
-        await api.put(`/inventory/raw-materials/${editingItem.id}`, payload);
-        toast.success('Raw material updated successfully');
-      } else {
-        await api.post('/inventory/raw-materials', payload);
-        toast.success('Raw material created successfully');
+        if (editingItem) {
+          await api.put(`/inventory/raw-materials/${editingItem.id}`, payload);
+          toast.success('Raw material updated successfully');
+        } else {
+          await api.post('/inventory/raw-materials', payload);
+          toast.success('Raw material created successfully');
+        }
+        setShowItemModal(false);
+        setEditingItem(null);
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
       }
-      setShowItemModal(false);
-      setEditingItem(null);
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    });
   };
 
   const handleEditItem = (item: any) => {
@@ -271,25 +288,27 @@ export const InventoryDashboard: React.FC = () => {
   // Supplier Submit Handler
   const handleSupplierSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const payload = {
-        ...supplierForm,
-        creditDays: Number(supplierForm.creditDays)
-      };
+    await runInventoryAction('supplier:save', async () => {
+      try {
+        const payload = {
+          ...supplierForm,
+          creditDays: parseFiniteNumber(supplierForm.creditDays, { field: 'Credit days', min: 0 }),
+        };
 
-      if (editingSupplier) {
-        await api.put(`/inventory/suppliers/${editingSupplier.id}`, payload);
-        toast.success('Supplier updated successfully');
-      } else {
-        await api.post('/inventory/suppliers', payload);
-        toast.success('Supplier created successfully');
+        if (editingSupplier) {
+          await api.put(`/inventory/suppliers/${editingSupplier.id}`, payload);
+          toast.success('Supplier updated successfully');
+        } else {
+          await api.post('/inventory/suppliers', payload);
+          toast.success('Supplier created successfully');
+        }
+        setShowSupplierModal(false);
+        setEditingSupplier(null);
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
       }
-      setShowSupplierModal(false);
-      setEditingSupplier(null);
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    });
   };
 
   const handleEditSupplier = (supplier: any) => {
@@ -309,148 +328,181 @@ export const InventoryDashboard: React.FC = () => {
   // Recipe Submit Handler
   const handleRecipeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await api.post('/inventory/recipes', recipeForm);
-      toast.success('Recipe configured successfully');
-      setShowRecipeModal(false);
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    await runInventoryAction('recipe:save', async () => {
+      try {
+        const ingredients = recipeForm.ingredients.map((ingredient, index) => ({
+          ...ingredient,
+          quantity: parseFiniteNumber(ingredient.quantity, { field: `Ingredient ${index + 1} quantity`, min: 0, allowZero: false }),
+        }));
+        await api.post('/inventory/recipes', { ...recipeForm, ingredients });
+        toast.success('Recipe configured successfully');
+        setShowRecipeModal(false);
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
   };
 
   // PO Submit Handler
   const handlePOSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const subtotal = poForm.items.reduce((acc, curr) => acc + curr.totalCost, 0);
-      const gstAmount = subtotal * 0.05; // Assumed 5% standard GST
-      const grandTotal = subtotal + gstAmount;
+    await runInventoryAction('purchase:create', async () => {
+      try {
+        const items = poForm.items.map((item, index) => {
+          const quantity = parseFiniteNumber(item.quantity, { field: `Purchase item ${index + 1} quantity`, min: 0, allowZero: false });
+          const unitPrice = parseFiniteNumber(item.unitPrice, { field: `Purchase item ${index + 1} unit price`, min: 0 });
+          return { ...item, quantity, unitPrice, totalCost: quantity * unitPrice };
+        });
+        const subtotal = items.reduce((acc, curr) => acc + curr.totalCost, 0);
+        const gstAmount = subtotal * 0.05; // Assumed 5% standard GST
+        const grandTotal = subtotal + gstAmount;
 
-      const payload = {
-        ...poForm,
-        subtotal,
-        gstAmount,
-        grandTotal,
-        status: 'PENDING'
-      };
+        const payload = {
+          ...poForm,
+          items,
+          subtotal,
+          gstAmount,
+          grandTotal,
+          status: 'PENDING',
+        };
 
-      await api.post('/inventory/purchases', payload);
-      toast.success('Purchase Order created successfully');
-      setShowPOModal(false);
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+        await api.post('/inventory/purchases', payload);
+        toast.success('Purchase Order created successfully');
+        setShowPOModal(false);
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
   };
 
   const handleReceivePO = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await api.post(`/inventory/purchases/${receivingPO.id}/receive`, receiveForm);
-      toast.success('Purchase received, stock added, average costs updated');
-      setShowReceiveModal(false);
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    if (!receivingPO) return;
+    await runInventoryAction(`purchase:receive:${receivingPO.id}`, async () => {
+      try {
+        await api.post(`/inventory/purchases/${receivingPO.id}/receive`, receiveForm);
+        toast.success('Purchase received, stock added, average costs updated');
+        setShowReceiveModal(false);
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
   };
 
   // Wastage Submit Handler
   const handleWastageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const payload = {
-        ...wastageForm,
-        quantity: Number(wastageForm.quantity)
-      };
-      await api.post('/inventory/wastage', payload);
-      toast.success('Wastage event recorded successfully');
-      setShowWastageModal(false);
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    await runInventoryAction('wastage:create', async () => {
+      try {
+        const payload = {
+          ...wastageForm,
+          quantity: parseFiniteNumber(wastageForm.quantity, { field: 'Wastage quantity', min: 0, allowZero: false }),
+        };
+        await api.post('/inventory/wastage', payload);
+        toast.success('Wastage event recorded successfully');
+        setShowWastageModal(false);
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
   };
 
   // Audit Submit Handler
   const handleAuditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const payload = {
-        notes: auditForm.notes,
-        items: auditForm.items.map(item => ({
-          rawMaterialId: item.rawMaterialId,
-          actualStock: Number(item.actualStock),
-          notes: item.notes || null
-        }))
-      };
-      await api.post('/inventory/audits', payload);
-      toast.success('Physical count audit recorded successfully');
-      setShowAuditModal(false);
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    await runInventoryAction('audit:create', async () => {
+      try {
+        const payload = {
+          notes: auditForm.notes,
+          items: auditForm.items.map(item => ({
+            rawMaterialId: item.rawMaterialId,
+            actualStock: parseFiniteNumber(item.actualStock, { field: `${item.name} actual stock`, min: 0 }),
+            notes: item.notes || null,
+          })),
+        };
+        await api.post('/inventory/audits', payload);
+        toast.success('Physical count audit recorded successfully');
+        setShowAuditModal(false);
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
   };
 
   // Transfer Submit Handler
   const handleTransferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const payload = {
-        ...transferForm,
-        items: transferForm.items.map(item => ({
-          ...item,
-          quantity: Number(item.quantity)
-        }))
-      };
-      await api.post('/inventory/transfers', payload);
-      toast.success('Stock transfer request initiated successfully');
-      setShowTransferModal(false);
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    await runInventoryAction('transfer:create', async () => {
+      try {
+        if (!transferForm.destBranchId || transferForm.destBranchId === currentRestaurantId) {
+          throw new Error('Select a different destination restaurant.');
+        }
+        const payload = {
+          ...transferForm,
+          items: transferForm.items.map((item, index) => ({
+            ...item,
+            quantity: parseFiniteNumber(item.quantity, { field: `Transfer item ${index + 1} quantity`, min: 0, allowZero: false }),
+          })),
+        };
+        await api.post('/inventory/transfers', payload);
+        toast.success('Stock transfer request initiated successfully');
+        setShowTransferModal(false);
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
   };
 
   const handleApproveTransfer = async (id: string) => {
-    try {
-      await api.post(`/inventory/transfers/${id}/approve`);
-      toast.success('Transfer approved and stocks transferred successfully');
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    await runInventoryAction(`transfer:decision:${id}`, async () => {
+      try {
+        await api.post(`/inventory/transfers/${id}/approve`);
+        toast.success('Transfer approved and stocks transferred successfully');
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
   };
 
   const handleRejectTransfer = async (id: string) => {
-    try {
-      await api.post(`/inventory/transfers/${id}/reject`);
-      toast.success('Transfer rejected, stocks returned successfully');
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    await runInventoryAction(`transfer:decision:${id}`, async () => {
+      try {
+        await api.post(`/inventory/transfers/${id}/reject`);
+        toast.success('Transfer rejected, stocks returned successfully');
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
   };
 
   const handleManualAdjust = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const payload = {
-        rawMaterialId: adjustingItem.id,
-        quantityChange: Number(adjustForm.quantityChange),
-        actionType: adjustForm.actionType,
-        reason: adjustForm.reason
-      };
-      await api.post('/inventory/raw-materials/adjust', payload);
-      toast.success('Manual stock adjustment successful');
-      setShowAdjustModal(false);
-      setAdjustingItem(null);
-      fetchCoreData();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    if (!adjustingItem) return;
+    await runInventoryAction(`adjust:${adjustingItem.id}`, async () => {
+      try {
+        const payload = {
+          rawMaterialId: adjustingItem.id,
+          quantityChange: parseFiniteNumber(adjustForm.quantityChange, { field: 'Quantity change', allowZero: false }),
+          actionType: adjustForm.actionType,
+          reason: adjustForm.reason,
+        };
+        await api.post('/inventory/raw-materials/adjust', payload);
+        toast.success('Manual stock adjustment successful');
+        setShowAdjustModal(false);
+        setAdjustingItem(null);
+        fetchCoreData();
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    });
   };
 
   // Filter items
@@ -1097,8 +1149,7 @@ export const InventoryDashboard: React.FC = () => {
                         </tr>
                       ) : (
                         transferRecords.map(tr => {
-                          const currentRestId = JSON.parse(localStorage.getItem('auth_store') || '{}')?.state?.user?.restaurantId;
-                          const isDest = tr.destBranchId === currentRestId;
+                          const isDest = tr.destBranchId === currentRestaurantId;
                           const isPending = tr.status === 'PENDING';
 
                           return (
@@ -1128,13 +1179,15 @@ export const InventoryDashboard: React.FC = () => {
                                   <div className="flex gap-2">
                                     <button
                                       onClick={() => handleApproveTransfer(tr.id)}
-                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] tracking-wider uppercase rounded-lg py-1 px-2.5 transition-all"
+                                      disabled={inFlightActions.has(`transfer:decision:${tr.id}`)}
+                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] tracking-wider uppercase rounded-lg py-1 px-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                       Approve
                                     </button>
                                     <button
                                       onClick={() => handleRejectTransfer(tr.id)}
-                                      className="bg-red-500 hover:bg-red-600 text-white font-extrabold text-[10px] tracking-wider uppercase rounded-lg py-1 px-2.5 transition-all"
+                                      disabled={inFlightActions.has(`transfer:decision:${tr.id}`)}
+                                      className="bg-red-500 hover:bg-red-600 text-white font-extrabold text-[10px] tracking-wider uppercase rounded-lg py-1 px-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                       Reject
                                     </button>
@@ -1269,7 +1322,8 @@ export const InventoryDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#FF6B35] hover:bg-orange-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95"
+                  disabled={inFlightActions.has('item:save')}
+                  className="bg-[#FF6B35] hover:bg-orange-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingItem ? 'Save Updates' : 'Add Material'}
                 </button>
@@ -1334,7 +1388,8 @@ export const InventoryDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#FF6B35] hover:bg-orange-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95"
+                  disabled={inFlightActions.has('supplier:save')}
+                  className="bg-[#FF6B35] hover:bg-orange-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingSupplier ? 'Save Updates' : 'Add Supplier'}
                 </button>
@@ -1393,7 +1448,8 @@ export const InventoryDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#FF6B35] hover:bg-orange-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95"
+                  disabled={inFlightActions.has(`adjust:${adjustingItem.id}`)}
+                  className="bg-[#FF6B35] hover:bg-orange-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save Stock Levels
                 </button>
@@ -1508,7 +1564,8 @@ export const InventoryDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#FF6B35] hover:bg-orange-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95"
+                  disabled={inFlightActions.has('recipe:save')}
+                  className="bg-[#FF6B35] hover:bg-orange-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save Recipe
                 </button>
@@ -1635,7 +1692,8 @@ export const InventoryDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#FF6B35] hover:bg-orange-600 text-white py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95 rounded-xl uppercase tracking-wider"
+                  disabled={inFlightActions.has('purchase:create')}
+                  className="bg-[#FF6B35] hover:bg-orange-600 text-white py-3 px-5 transition-all shadow-md shadow-[#FF6B35]/25 active:scale-95 rounded-xl uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Submit PO
                 </button>
@@ -1688,7 +1746,8 @@ export const InventoryDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-emerald-600/25 active:scale-95"
+                  disabled={!receivingPO || inFlightActions.has(`purchase:receive:${receivingPO.id}`)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-emerald-600/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Mark Received
                 </button>
@@ -1774,7 +1833,8 @@ export const InventoryDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-red-500 hover:bg-red-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-red-500/25 active:scale-95"
+                  disabled={inFlightActions.has('wastage:create')}
+                  className="bg-red-500 hover:bg-red-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-red-500/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Log Wastage
                 </button>
@@ -1858,7 +1918,8 @@ export const InventoryDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-indigo-600/25 active:scale-95"
+                  disabled={inFlightActions.has('audit:create')}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-indigo-600/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Record Audit
                 </button>
@@ -1892,7 +1953,7 @@ export const InventoryDashboard: React.FC = () => {
                 >
                   <option value="">Select branch...</option>
                   {restaurants
-                    .filter(r => r.id !== JSON.parse(localStorage.getItem('auth_store') || '{}')?.state?.user?.restaurantId)
+                    .filter(r => r.id !== currentRestaurantId)
                     .map(r => (
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
@@ -1980,7 +2041,8 @@ export const InventoryDashboard: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-emerald-600/25 active:scale-95"
+                  disabled={inFlightActions.has('transfer:create')}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl py-3 px-5 transition-all shadow-md shadow-emerald-600/25 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Initiate Transfer
                 </button>

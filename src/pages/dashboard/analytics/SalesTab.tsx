@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { api } from '../../../lib/api';
 import {
   TrendingUp,
   Calendar,
@@ -62,7 +63,6 @@ interface SalesTabProps {
   startDate: string;
   endDate: string;
   token: string | null;
-  baseUrl: string;
   refreshTrigger: number;
 }
 
@@ -75,7 +75,6 @@ export const SalesTab: React.FC<SalesTabProps> = ({
   startDate,
   endDate,
   token,
-  baseUrl,
   refreshTrigger,
 }) => {
   const [data, setData] = useState<SalesData | null>(null);
@@ -85,18 +84,14 @@ export const SalesTab: React.FC<SalesTabProps> = ({
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${baseUrl}/analytics/sales?startDate=${startDate}&endDate=${endDate}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || 'Failed to fetch sales analytics');
+      const resData = await api.get(`/analytics/sales?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
     } catch (err: any) {
       toast.error(err.message || 'Error fetching sales analytics');
     } finally {
       setLoading(false);
     }
-  }, [token, startDate, endDate, baseUrl]);
+  }, [token, startDate, endDate]);
 
   useEffect(() => {
     fetchSales();
