@@ -22,6 +22,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useAuthStore, type User } from '../../store/authStore';
+import { saveSupportSession } from '../../lib/session-lifecycle';
 import { api } from '../../lib/api';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
@@ -45,7 +46,7 @@ interface SuperAdminPayment {
 }
 
 export const SuperAdminDashboard: React.FC = () => {
-  const { user, clearAuth, setAuth } = useAuthStore();
+  const { clearAuth, setAuth } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'restaurants' | 'plans' | 'licenses' | 'transactions' | 'passcodes' | 'settings' | 'whatsapp'>('overview');
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<any>({
@@ -214,13 +215,19 @@ export const SuperAdminDashboard: React.FC = () => {
   // Login As Restaurant
   const handleLoginAs = async (restId: string) => {
     try {
+      const adminSession = useAuthStore.getState();
+      if (
+        adminSession.user?.role !== 'SUPER_ADMIN' ||
+        !adminSession.accessToken ||
+        !adminSession.refreshToken
+      ) {
+        throw new Error('The SuperAdmin session is no longer valid. Please sign in again.');
+      }
+
       const res = await api.post(`/superadmin/restaurants/${restId}/login-as`, {});
       toast.success(`Logging in as Owner of ${res.restaurantName}...`);
-      
-      // Save Admin session
-      localStorage.setItem('admin_user', JSON.stringify(user));
-      localStorage.setItem('admin_access_token', localStorage.getItem('qr_access_token') || '');
-      localStorage.setItem('admin_refresh_token', localStorage.getItem('qr_refresh_token') || '');
+
+      const supportSessionId = crypto.randomUUID();
 
       // Mock user object for AuthStore
       const mockOwnerUser: User = {
@@ -228,10 +235,19 @@ export const SuperAdminDashboard: React.FC = () => {
         name: res.ownerName,
         email: 'owner@ordio.in',
         role: 'RESTAURANT_OWNER',
-        restaurants: [{ id: restId, name: res.restaurantName, slug: 'dummy-slug' }]
+        restaurants: [{ id: restId, name: res.restaurantName, slug: 'dummy-slug' }],
+        supportSessionId,
       };
 
       setAuth(mockOwnerUser, res.token, res.token);
+      saveSupportSession(localStorage, {
+        flowId: supportSessionId,
+        impersonatedRestaurantId: restId,
+        expiresAt: Date.now() + 60 * 60 * 1000,
+        user: adminSession.user,
+        accessToken: adminSession.accessToken,
+        refreshToken: adminSession.refreshToken,
+      });
       
       // Force reload to dashboard (which will mount Restaurant DashboardLayout)
       setTimeout(() => {

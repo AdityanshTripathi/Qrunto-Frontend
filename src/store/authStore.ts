@@ -1,4 +1,8 @@
 import { create } from 'zustand';
+import {
+  clearInvalidSupportSession,
+  teardownFrontendSession,
+} from '../lib/session-lifecycle';
 
 export interface User {
   restaurantTimezone?: string;
@@ -6,6 +10,7 @@ export interface User {
   name: string;
   email: string;
   role: 'SUPER_ADMIN' | 'RESTAURANT_OWNER' | 'STAFF' | 'WAITER';
+  supportSessionId?: string;
   restaurants: Array<{
     id: string;
     name: string;
@@ -48,6 +53,12 @@ export const useAuthStore = create<AuthState>((set) => {
   const initialAccessToken = getStoredVal('qr_access_token');
   const initialRefreshToken = getStoredVal('qr_refresh_token');
 
+  try {
+    clearInvalidSupportSession(localStorage, initialUser);
+  } catch {
+    // Storage may be unavailable in restricted browser contexts.
+  }
+
   return {
     user: initialUser,
     accessToken: initialAccessToken,
@@ -56,6 +67,7 @@ export const useAuthStore = create<AuthState>((set) => {
 
     setAuth: (user, accessToken, refreshToken) => {
       try {
+        teardownFrontendSession(localStorage);
         localStorage.setItem('qr_user', JSON.stringify(user));
         localStorage.setItem('qr_access_token', accessToken);
         localStorage.setItem('qr_refresh_token', refreshToken);
@@ -76,6 +88,7 @@ export const useAuthStore = create<AuthState>((set) => {
 
     clearAuth: () => {
       try {
+        teardownFrontendSession(localStorage);
         localStorage.removeItem('qr_user');
         localStorage.removeItem('qr_access_token');
         localStorage.removeItem('qr_refresh_token');

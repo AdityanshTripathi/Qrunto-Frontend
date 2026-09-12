@@ -19,6 +19,11 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/api';
+import {
+  clearInvalidSupportSession,
+  clearSupportSession,
+  getValidSupportSession,
+} from '../lib/session-lifecycle';
 import { toast } from 'sonner';
 import { ThemeToggle } from './ThemeToggle';
 import { DashboardMenuButton } from './DashboardMenuButton';
@@ -38,6 +43,21 @@ export const DashboardLayout: React.FC = () => {
   const [checkingSub, setCheckingSub] = useState(true);
   const [hasSub, setHasSub] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
+  const supportSession = (() => {
+    try {
+      return getValidSupportSession(localStorage, user);
+    } catch {
+      return null;
+    }
+  })();
+
+  useEffect(() => {
+    try {
+      clearInvalidSupportSession(localStorage, user);
+    } catch {
+      // Storage may be unavailable in restricted browser contexts.
+    }
+  }, [user]);
 
   interface Notification {
     id: string;
@@ -235,25 +255,22 @@ export const DashboardLayout: React.FC = () => {
   const currentRoute = navLinks.find(link => link.path === currentPath)?.name || 'Overview';
 
   const handleReturnToAdmin = () => {
-    const adminUser = localStorage.getItem('admin_user');
-    const adminToken = localStorage.getItem('admin_access_token');
-    const adminRefresh = localStorage.getItem('admin_refresh_token');
-
-    if (adminUser && adminToken && adminRefresh) {
-      localStorage.removeItem('admin_user');
-      localStorage.removeItem('admin_access_token');
-      localStorage.removeItem('admin_refresh_token');
-
-      setAuth(JSON.parse(adminUser), adminToken, adminRefresh);
-      window.location.href = '/dashboard';
+    const validSession = getValidSupportSession(localStorage, user);
+    if (!validSession) {
+      clearSupportSession(localStorage);
+      toast.error('This support session has expired. Please sign in again.');
+      return;
     }
+
+    setAuth(validSession.user, validSession.accessToken, validSession.refreshToken);
+    window.location.href = '/dashboard';
   };
 
   return (
     <SidebarProvider>
       <div className="dashboard-shell min-h-screen flex flex-col w-full">
         {/* ⚠️ Admin Bypass Banner */}
-        {localStorage.getItem('admin_access_token') && (
+        {supportSession && (
           <div className="w-full bg-amber-500 text-black py-2 px-4 text-center text-xs font-black flex items-center justify-center gap-2 z-50 shrink-0">
             <span>⚠️ You are logged in as Owner of {user?.restaurants[0]?.name || 'this restaurant'} (Support Session).</span>
             <button
