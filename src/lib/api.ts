@@ -20,44 +20,65 @@ let refreshIdentity: string | null = null;
 
 function refreshAccessToken(): Promise<string> {
   const session = useAuthStore.getState();
-  const sessionIdentity = `${session.user?.id || ''}:${session.refreshToken || ''}`;
+  const userId = session.user?.id;
+  const accessToken = session.accessToken;
+
+  if (!userId || !accessToken) {
+    return Promise.reject(new Error('Your session has expired. Please sign in again.'));
+  }
+
+  const sessionIdentity = `${userId}:${accessToken}`;
+
   if (refreshPromise) {
     if (refreshIdentity === sessionIdentity) return refreshPromise;
     return refreshPromise.catch(() => undefined).then(() => refreshAccessToken());
   }
 
   refreshPromise = withRequestTimeout(async (signal) => {
-    const refreshToken = session.refreshToken;
-    if (!refreshToken) throw new Error('Your session has expired. Please sign in again.');
-
     const response = await fetch(`${BASE_URL}/auth/refresh`, {
       method: 'POST',
+      credentials: 'include',
       signal,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
     });
 
-    if (!response.ok) throw new Error('Your session has expired. Please sign in again.');
+    if (!response.ok) {
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+
     const data = await response.json();
-    if (!data.accessToken) throw new Error('The refresh response did not include an access token.');
+
+    if (!data.accessToken) {
+      throw new Error('The refresh response did not include an access token.');
+    }
+
     const latestSession = useAuthStore.getState();
-    if (latestSession.user?.id !== session.user?.id || latestSession.refreshToken !== refreshToken) {
+
+    if (
+      latestSession.user?.id !== userId ||
+      latestSession.accessToken !== accessToken
+    ) {
       throw new Error('The authenticated session changed while refreshing.');
     }
-    useAuthStore.getState().updateAccessToken(data.accessToken);
+
+    latestSession.updateAccessToken(data.accessToken);
     return data.accessToken as string;
   }).catch((error) => {
     const latestSession = useAuthStore.getState();
-    if (latestSession.user?.id === session.user?.id && latestSession.refreshToken === session.refreshToken) {
+
+    if (
+      latestSession.user?.id === userId &&
+      latestSession.accessToken === accessToken
+    ) {
       latestSession.clearAuth();
     }
+
     throw error;
   }).finally(() => {
     refreshPromise = null;
     refreshIdentity = null;
   });
-  refreshIdentity = sessionIdentity;
 
+  refreshIdentity = sessionIdentity;
   return refreshPromise;
 }
 
@@ -71,7 +92,7 @@ function endExpiredImpersonation(): never {
   }
 
   if (supportSession) {
-    store.setAuth(supportSession.user, supportSession.accessToken, supportSession.refreshToken);
+    store.setAuth(supportSession.user, supportSession.accessToken);
     throw new Error('The support session expired. The SuperAdmin session has been restored.');
   }
 
@@ -102,6 +123,7 @@ async function performRequest(path: string, options: RequestOptions) {
   }
 
   const fetchOptions: RequestInit = {
+    credentials: 'include',
     ...options,
     headers,
     body: bodyData,
@@ -111,16 +133,32 @@ async function performRequest(path: string, options: RequestOptions) {
     let response = await fetch(url, fetchOptions);
 
     // A request is retried at most once, and the refresh endpoint never recurses.
-    if (response.status === 401 && path !== '/auth/refresh' && path !== '/auth/login') {
+    if (
+      response.status === 401 &&
+      path !== '/auth/refresh' &&
+      path !== '/auth/login' &&
+      path !== '/auth/logout'
+    ) {
       const currentStore = useAuthStore.getState();
-      if (currentStore.user?.supportSessionId && !currentStore.refreshToken) {
+
+      // Impersonation is intentionally access-token-only. Never use the
+      // SuperAdmin refresh cookie while acting as a restaurant owner.
+      if (currentStore.user?.supportSessionId) {
         endExpiredImpersonation();
       }
-      if (!currentStore.refreshToken) currentStore.clearAuth();
-      else await refreshAccessToken();
+
+      if (!currentStore.user) {
+        currentStore.clearAuth();
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+
+      await refreshAccessToken();
 
       const latestAccessToken = useAuthStore.getState().accessToken;
-      if (!latestAccessToken) throw new Error('Your session has expired. Please sign in again.');
+      if (!latestAccessToken) {
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+
       headers.set('Authorization', `Bearer ${latestAccessToken}`);
       response = await fetch(url, { ...fetchOptions, headers });
     }
@@ -140,6 +178,27 @@ async function performRequest(path: string, options: RequestOptions) {
   }
 }
 
+async function logoutSession(): Promise<void> {
+  try {
+    await withRequestTimeout(async (signal) => {
+      const response = await fetch(`${BASE_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Logout failed with status ${response.status}`);
+      }
+    });
+  } catch (error) {
+    // Local teardown must still happen if the network/server is unavailable.
+    console.error('Server logout failed:', error);
+  } finally {
+    useAuthStore.getState().clearAuth();
+  }
+}
+
 export const api = {
   get: (path: string, options?: Omit<RequestOptions, 'method'>) => 
     request(path, { ...options, method: 'GET' }),
@@ -155,4 +214,6 @@ export const api = {
     
   delete: (path: string, options?: Omit<RequestOptions, 'method'>) => 
     request(path, { ...options, method: 'DELETE' }),
+
+  logout: logoutSession,
 };

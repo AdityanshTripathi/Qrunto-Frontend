@@ -1,9 +1,7 @@
 import React from 'react';
-import { useAuthStore } from '../store/authStore';
+import { api } from '../lib/api';
 
 export const Unauthorized: React.FC = () => {
-  const clearAuth = useAuthStore((state) => state.clearAuth);
-
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-[#111827] flex items-center justify-center p-6">
       <section className="max-w-md text-center space-y-4">
@@ -14,7 +12,7 @@ export const Unauthorized: React.FC = () => {
         </p>
         <button
           type="button"
-          onClick={clearAuth}
+          onClick={() => void api.logout()}
           className="rounded-xl bg-[#FF6B35] px-5 py-3 text-sm font-bold text-white"
         >
           Sign out

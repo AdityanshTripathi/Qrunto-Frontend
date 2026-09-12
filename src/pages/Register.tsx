@@ -35,7 +35,7 @@ export const Register: React.FC = () => {
     setLoading(true);
     try {
       const response = await api.post('/auth/register', data);
-      setAuth(response.user, response.tokens.accessToken, response.tokens.refreshToken);
+      setAuth(response.user, response.tokens.accessToken);
       toast.success('Registration successful! Setup your subscription to get started.');
       navigate(defaultRouteForRole(response.user.role));
     } catch (err: any) {

@@ -8,6 +8,7 @@ export interface StorageLike {
 
 const SUPPORT_USER_KEY = 'admin_user';
 const SUPPORT_ACCESS_TOKEN_KEY = 'admin_access_token';
+// Legacy key retained only so older browser state is securely purged.
 const SUPPORT_REFRESH_TOKEN_KEY = 'admin_refresh_token';
 const SUPPORT_CONTEXT_KEY = 'admin_support_session';
 
@@ -35,7 +36,6 @@ interface SupportSessionContext {
 export interface SupportSessionBackup {
   user: User;
   accessToken: string;
-  refreshToken: string;
 }
 
 interface SaveSupportSessionInput extends SupportSessionBackup {
@@ -80,7 +80,6 @@ export function saveSupportSession(
   clearSupportSession(storage);
   storage.setItem(SUPPORT_USER_KEY, JSON.stringify(input.user));
   storage.setItem(SUPPORT_ACCESS_TOKEN_KEY, input.accessToken);
-  storage.setItem(SUPPORT_REFRESH_TOKEN_KEY, input.refreshToken);
   storage.setItem(
     SUPPORT_CONTEXT_KEY,
     JSON.stringify({
@@ -102,9 +101,8 @@ export function getValidSupportSession(
   try {
     const rawUser = storage.getItem(SUPPORT_USER_KEY);
     const accessToken = storage.getItem(SUPPORT_ACCESS_TOKEN_KEY);
-    const refreshToken = storage.getItem(SUPPORT_REFRESH_TOKEN_KEY);
     const rawContext = storage.getItem(SUPPORT_CONTEXT_KEY);
-    if (!rawUser || !accessToken || !refreshToken || !rawContext) return null;
+    if (!rawUser || !accessToken || !rawContext) return null;
 
     const user = JSON.parse(rawUser) as User;
     const context = JSON.parse(rawContext) as SupportSessionContext;
@@ -122,7 +120,7 @@ export function getValidSupportSession(
       return null;
     }
 
-    return { user, accessToken, refreshToken };
+    return { user, accessToken };
   } catch {
     return null;
   }

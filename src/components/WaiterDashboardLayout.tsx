@@ -4,6 +4,7 @@ import {
   LayoutDashboard, QrCode, ShoppingBag, Bell, User, LogOut, Menu, X, Receipt
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { api } from '../lib/api';
 import { ThemeToggle } from './ThemeToggle';
 import './dashboard-premium.css';
 import './dashboard-workspace-colors.css';
@@ -23,7 +24,7 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
   helpCount = 0, 
   billCount = 0 
 }) => {
-  const { user, clearAuth } = useAuthStore();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -58,8 +59,8 @@ export const WaiterDashboardLayout: React.FC<WaiterDashboardLayoutProps> = ({
     setMobileMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    clearAuth();
+  const handleLogout = async () => {
+    await api.logout();
     navigate('/login');
   };
 

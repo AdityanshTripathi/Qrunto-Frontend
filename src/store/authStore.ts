@@ -23,9 +23,8 @@ export interface User {
 interface AuthState {
   user: User | null;
   accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
-  setAuth: (user: User, accessToken: string, refreshToken: string | null) => void;
+  setAuth: (user: User, accessToken: string) => void;
   updateAccessToken: (accessToken: string) => void;
   clearAuth: () => void;
 }
@@ -51,9 +50,10 @@ export const useAuthStore = create<AuthState>((set) => {
 
   const initialUser = getStoredUser();
   const initialAccessToken = getStoredVal('qr_access_token');
-  const initialRefreshToken = getStoredVal('qr_refresh_token');
 
   try {
+    // Remove refresh tokens left by pre-HttpOnly frontend versions.
+    localStorage.removeItem('qr_refresh_token');
     clearInvalidSupportSession(localStorage, initialUser);
   } catch {
     // Storage may be unavailable in restricted browser contexts.
@@ -62,20 +62,18 @@ export const useAuthStore = create<AuthState>((set) => {
   return {
     user: initialUser,
     accessToken: initialAccessToken,
-    refreshToken: initialRefreshToken,
     isAuthenticated: !!initialAccessToken,
 
-    setAuth: (user, accessToken, refreshToken) => {
+    setAuth: (user, accessToken) => {
       try {
         teardownFrontendSession(localStorage);
         localStorage.setItem('qr_user', JSON.stringify(user));
         localStorage.setItem('qr_access_token', accessToken);
-        if (refreshToken) localStorage.setItem('qr_refresh_token', refreshToken);
-        else localStorage.removeItem('qr_refresh_token');
+        localStorage.removeItem('qr_refresh_token');
       } catch (e) {
         console.error('Failed to save auth to localStorage', e);
       }
-      set({ user, accessToken, refreshToken, isAuthenticated: true });
+      set({ user, accessToken, isAuthenticated: true });
     },
 
     updateAccessToken: (accessToken) => {
@@ -96,7 +94,7 @@ export const useAuthStore = create<AuthState>((set) => {
       } catch (e) {
         console.error('Failed to clear localStorage', e);
       }
-      set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
+      set({ user: null, accessToken: null, isAuthenticated: false });
     },
   };
 });

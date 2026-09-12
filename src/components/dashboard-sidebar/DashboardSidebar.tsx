@@ -46,6 +46,7 @@ import {
 import { currentUser, navigationGroups, type NavigationItem } from '../../data'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/authStore'
+import { api } from '../../lib/api'
 import { hasCapability } from '@/lib/capabilities'
 
 const menuButtonClassName = 'dash-nav-item gap-2.5 [&_svg]:shrink-0';
@@ -87,7 +88,7 @@ export function DashboardSidebar() {
   const { resolvedTheme, setTheme } = useTheme()
   const { state, toggleSidebar, isMobile, openMobile, setOpenMobile } = useSidebar()
   const sidebarRef = useRef<HTMLDivElement>(null)
-  const { user, clearAuth } = useAuthStore()
+  const { user } = useAuthStore()
   const isDark = resolvedTheme === 'dark'
 
   useEffect(() => {
@@ -263,7 +264,7 @@ export function DashboardSidebar() {
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={() => clearAuth()}>
+                  <DropdownMenuItem variant="destructive" onClick={() => void api.logout()}>
                     <LogOutIcon className="size-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>

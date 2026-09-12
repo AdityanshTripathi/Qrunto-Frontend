@@ -46,7 +46,7 @@ interface SuperAdminPayment {
 }
 
 export const SuperAdminDashboard: React.FC = () => {
-  const { clearAuth, setAuth } = useAuthStore();
+  const { setAuth } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'restaurants' | 'plans' | 'licenses' | 'transactions' | 'passcodes' | 'settings' | 'whatsapp'>('overview');
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<any>({
@@ -218,8 +218,7 @@ export const SuperAdminDashboard: React.FC = () => {
       const adminSession = useAuthStore.getState();
       if (
         adminSession.user?.role !== 'SUPER_ADMIN' ||
-        !adminSession.accessToken ||
-        !adminSession.refreshToken
+        !adminSession.accessToken
       ) {
         throw new Error('The SuperAdmin session is no longer valid. Please sign in again.');
       }
@@ -239,14 +238,13 @@ export const SuperAdminDashboard: React.FC = () => {
         supportSessionId,
       };
 
-      setAuth(mockOwnerUser, res.token, null);
+      setAuth(mockOwnerUser, res.token);
       saveSupportSession(localStorage, {
         flowId: supportSessionId,
         impersonatedRestaurantId: restId,
         expiresAt: Date.now() + 60 * 60 * 1000,
         user: adminSession.user,
         accessToken: adminSession.accessToken,
-        refreshToken: adminSession.refreshToken,
       });
       
       // Force reload to dashboard (which will mount Restaurant DashboardLayout)
@@ -445,7 +443,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
         <div className="p-4 border-t border-slate-100 dark:border-[#374151]/35">
           <button
-            onClick={() => clearAuth()}
+            onClick={() => void api.logout()}
             className="w-full flex items-center gap-4 py-3 px-4 text-red-500 hover:text-red-600 hover:bg-red-500/5 rounded-xl transition-all"
           >
             <LogOut className="w-5 h-5" />

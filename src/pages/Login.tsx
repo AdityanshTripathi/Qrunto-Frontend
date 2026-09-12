@@ -33,7 +33,7 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
       const response = await api.post('/auth/login', data);
-      setAuth(response.user, response.tokens.accessToken, response.tokens.refreshToken);
+      setAuth(response.user, response.tokens.accessToken);
       toast.success('Welcome back!');
       
       // Redirect based on role

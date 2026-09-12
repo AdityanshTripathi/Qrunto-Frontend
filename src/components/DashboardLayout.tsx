@@ -262,7 +262,7 @@ export const DashboardLayout: React.FC = () => {
       return;
     }
 
-    setAuth(validSession.user, validSession.accessToken, validSession.refreshToken);
+    setAuth(validSession.user, validSession.accessToken);
     window.location.href = '/dashboard';
   };
 
