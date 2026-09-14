@@ -63,7 +63,7 @@ test('A11Y-001: dashboard order and subscription dialogs use the shared wrapper'
 
 test('A11Y-001: remaining active modal flows use the shared dialog wrapper', () => {
   for (const relativePath of [
-    'src/pages/dashboard/inventory/InventoryDashboard.tsx',
+    'src/pages/dashboard/inventory/InventoryDialogs.tsx',
     'src/pages/dashboard/MenuManagement.tsx',
     'src/pages/dashboard/TableManagement.tsx',
     'src/pages/dashboard/SuperAdminDashboard.tsx',
@@ -81,4 +81,32 @@ test('A11Y-001: remaining active modal flows use the shared dialog wrapper', () 
   }
   const hook = read('src/hooks/useAccessibleDialog.ts');
   assert.match(hook, /activeDialogs\.at\(-1\) !== dialog/);
+});
+
+test('Staff workspace uses the dashboard sidebar framework without exposing owner navigation', () => {
+  const layout = read('src/components/WaiterDashboardLayout.tsx');
+  const sidebar = read('src/components/dashboard-sidebar/StaffSidebar.tsx');
+  assert.match(layout, /<SidebarProvider>/);
+  assert.match(layout, /<StaffSidebar/);
+  assert.match(layout, /<DashboardMenuButton \/>/);
+  assert.match(sidebar, /collapsible="icon"/);
+  assert.match(sidebar, /Staff workspace/);
+  assert.match(sidebar, /<DropdownMenuContent side="top"/);
+  assert.match(sidebar, /Light Mode/);
+  assert.match(sidebar, /Log out/);
+  assert.match(sidebar, /event\.key === 'Escape'/);
+  assert.match(sidebar, /event\.key !== 'Tab'/);
+  assert.doesNotMatch(sidebar, /owner\.dashboard|menu\.manage|analytics\.view/);
+});
+
+test('GST toggle persists settings and suppresses GST registration details on bills', () => {
+  const settings = read('src/pages/dashboard/Settings.tsx');
+  const bills = read('src/pages/dashboard/BillsPage.tsx');
+  assert.match(settings, /gstEnabled: boolean/);
+  assert.match(settings, /setValue\('gstEnabled', data\.settings\.gstEnabled \?\? true\)/);
+  assert.match(settings, /gstEnabled: payload\.gstEnabled/);
+  assert.match(settings, /role="switch"/);
+  assert.match(settings, /Charge GST/);
+  assert.match(settings, /disabled=\{!watchedGstEnabled\}/);
+  assert.match(bills, /restaurantSettings\.gstEnabled && restaurantDetails\?\.gstNumber/);
 });

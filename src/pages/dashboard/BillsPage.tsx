@@ -68,6 +68,7 @@ interface RestaurantDetails {
 
 interface RestaurantSettings {
   currency: string;
+  gstEnabled: boolean;
   taxPercentage: number;
 }
 
@@ -82,7 +83,7 @@ export const BillsPage: React.FC = () => {
   const [billRequests, setBillRequests] = useState<BillRequest[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [restaurantDetails, setRestaurantDetails] = useState<RestaurantDetails | null>(null);
-  const [restaurantSettings, setRestaurantSettings] = useState<RestaurantSettings>({ currency: 'INR', taxPercentage: 0 });
+  const [restaurantSettings, setRestaurantSettings] = useState<RestaurantSettings>({ currency: 'INR', gstEnabled: true, taxPercentage: 0 });
   
   const [loading, setLoading] = useState(true);
   const [socketConnected, setSocketConnected] = useState(false);
@@ -135,7 +136,7 @@ export const BillsPage: React.FC = () => {
       try {
         const data = await api.get('/settings');
         setRestaurantDetails(data.restaurant);
-        setRestaurantSettings(data.settings);
+        setRestaurantSettings({ ...data.settings, gstEnabled: data.settings.gstEnabled ?? true });
       } catch (err) {
         console.error('Failed to load settings in BillsPage:', err);
       }
@@ -326,7 +327,7 @@ export const BillsPage: React.FC = () => {
             <h2 className="text-sm font-black tracking-tight uppercase truncate max-w-[180px]">
               {restaurantDetails?.name || 'Restaurant'}
             </h2>
-            <p className="text-[9px] text-slate-350 mt-0.5">Tax Invoice / Bill Statement</p>
+            <p className="text-[9px] text-slate-350 mt-0.5">{restaurantSettings.gstEnabled ? 'Tax Invoice' : 'Bill Statement'}</p>
             {restaurantDetails?.phone && (
               <p className="text-[8px] text-slate-400">Tel: {restaurantDetails.phone}</p>
             )}
@@ -342,7 +343,7 @@ export const BillsPage: React.FC = () => {
         {/* Restaurant Details */}
         <div className="text-[10px] text-slate-505 mb-3 space-y-0.5">
           {restaurantDetails?.address && <p>{restaurantDetails.address}</p>}
-          {restaurantDetails?.gstNumber && (
+          {restaurantSettings.gstEnabled && restaurantDetails?.gstNumber && (
             <p className="font-semibold text-slate-705">GSTIN: {restaurantDetails.gstNumber}</p>
           )}
         </div>

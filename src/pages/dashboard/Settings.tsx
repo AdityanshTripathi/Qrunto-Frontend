@@ -30,6 +30,7 @@ interface SettingsInputs {
   email: string;
   address: string;
   gstNumber: string;
+  gstEnabled: boolean;
   currency: string;
   taxPercentage: number;
   logoUrl?: string | null;
@@ -117,6 +118,7 @@ const SettingsContent: React.FC = () => {
       email: '',
       address: '',
       gstNumber: '',
+      gstEnabled: true,
       currency: 'INR',
       timezone: timezone(undefined),
       taxPercentage: 0,
@@ -124,6 +126,7 @@ const SettingsContent: React.FC = () => {
     },
   });
   const watchedTaxPercentage = useWatch({ control, name: 'taxPercentage' });
+  const watchedGstEnabled = useWatch({ control, name: 'gstEnabled' });
 
 
   // Load Settings
@@ -140,6 +143,7 @@ const SettingsContent: React.FC = () => {
         setValue('email', data.restaurant.email || '');
         setValue('address', data.restaurant.address || '');
         setValue('gstNumber', data.restaurant.gstNumber || '');
+        setValue('gstEnabled', data.settings.gstEnabled ?? true);
         setValue('timezone', timezone(data.restaurant.timezone));
         setValue('currency', data.settings.currency || 'INR');
         setValue('taxPercentage', data.settings.taxPercentage ?? 0);
@@ -195,6 +199,7 @@ const SettingsContent: React.FC = () => {
           logoUrl: logoPreview || null,
           timezone: payload.timezone,
           currency: payload.currency,
+          gstEnabled: payload.gstEnabled,
           taxPercentage: Number(payload.taxPercentage),
           businessHours,
       });
@@ -326,19 +331,20 @@ const SettingsContent: React.FC = () => {
               </div>
             </div>
 
-            {/* GST */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase tracking-wide">GST Number</label>
-              <div className="relative">
-                <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="e.g. 07AAAAA1111A1Z1"
-                  {...register('gstNumber')}
-                  className="w-full bg-slate-50 dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-2xl py-3 pl-11 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50 focus:border-[#FF6B35]/40 transition-all text-sm"
-                />
+            {watchedGstEnabled && (
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase tracking-wide">GST Number</label>
+                <div className="relative">
+                  <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="e.g. 07AAAAA1111A1Z1"
+                    {...register('gstNumber')}
+                    className="w-full bg-slate-50 dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-2xl py-3 pl-11 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50 focus:border-[#FF6B35]/40 transition-all text-sm"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
 
@@ -389,6 +395,43 @@ const SettingsContent: React.FC = () => {
               </div>
             </div>
 
+            <div className={`md:col-span-2 flex flex-col gap-2.5 rounded-xl border px-3.5 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between ${watchedGstEnabled ? 'border-[#FF6B35]/30 bg-[#FFF7F2] dark:border-[#FF6B35]/30 dark:bg-[#FF6B35]/5' : 'border-slate-200 bg-slate-50 dark:border-[#374151]/40 dark:bg-[#111827]/30'}`}>
+              <div className="flex items-center gap-2.5">
+                <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${watchedGstEnabled ? 'bg-[#FF6B35]/15 text-[#C2410C]' : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`} aria-hidden="true">
+                  <Percent className="size-3" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">Charge GST</p>
+                    <span className={`size-2 rounded-full ${watchedGstEnabled ? 'bg-emerald-500' : 'bg-slate-400'}`} aria-hidden="true" />
+                  </div>
+                  <p className="mt-0.5 text-xs leading-4 text-slate-600 dark:text-[#9ca3af]">
+                    {watchedGstEnabled
+                      ? 'GST will be added to new bills and your GSTIN will be displayed.'
+                      : 'New bills will not include GST or display a GSTIN.'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center justify-between gap-2.5 sm:justify-end">
+                <div className="sm:text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Status</p>
+                  <p className={`mt-0.5 text-xs font-bold ${watchedGstEnabled ? 'text-[#C2410C] dark:text-[#FF8A5C]' : 'text-slate-600 dark:text-slate-300'}`}>
+                    {watchedGstEnabled ? 'Enabled' : 'Disabled'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={watchedGstEnabled}
+                  aria-label="Charge GST"
+                  onClick={() => setValue('gstEnabled', !watchedGstEnabled, { shouldDirty: true })}
+                  className={`relative h-7 w-14 shrink-0 rounded-full border p-0.5 shadow-inner transition-all duration-300 ease-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${watchedGstEnabled ? 'border-[#A83B12] bg-[#C4511E]' : 'border-slate-600 bg-slate-500 dark:border-slate-500 dark:bg-slate-600'}`}
+                >
+                  <span className={`relative block size-6 rounded-full border border-black/5 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.25)] transition-transform duration-300 ease-out ${watchedGstEnabled ? 'translate-x-7' : 'translate-x-0'}`} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
             {/* Tax % */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 dark:text-[#9ca3af] uppercase tracking-wide">Tax / GST Rate (%)</label>
@@ -397,19 +440,20 @@ const SettingsContent: React.FC = () => {
                 <input
                   type="number"
                   step="0.01"
+                  disabled={!watchedGstEnabled}
                   placeholder="e.g. 5"
                   {...register('taxPercentage', {
                     valueAsNumber: true,
                     min: { value: 0, message: 'Cannot be negative' },
                     max: { value: 100, message: 'Cannot exceed 100%' },
                   })}
-                  className="w-full bg-slate-50 dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-2xl py-3 pl-11 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50 focus:border-[#FF6B35]/40 transition-all text-sm"
+                  className="w-full bg-slate-50 dark:bg-[#111827]/40 border border-slate-300 dark:border-[#374151]/50 rounded-2xl py-3 pl-11 pr-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/50 focus:border-[#FF6B35]/40 transition-all text-sm disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
               {errors.taxPercentage && <p className="text-rose-400 text-xs">{errors.taxPercentage.message}</p>}
 
               {/* CGST, SGST Component Breakdown Display */}
-              <div className="mt-3 bg-slate-50 dark:bg-[#111827]/30 border border-slate-200 dark:border-[#374151]/30 rounded-2xl p-4 space-y-2.5">
+              {watchedGstEnabled && <div className="mt-3 bg-slate-50 dark:bg-[#111827]/30 border border-slate-200 dark:border-[#374151]/30 rounded-2xl p-4 space-y-2.5">
                 <p className="text-[10px] text-slate-400 uppercase font-black tracking-wider">GST Component Breakdown (India)</p>
                 <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
                   <div className="flex justify-between border-r border-slate-200 dark:border-[#374151]/20 pr-4">
@@ -421,7 +465,7 @@ const SettingsContent: React.FC = () => {
                     <span className="text-slate-900 dark:text-white">{(Number(watchedTaxPercentage || 0) / 2).toFixed(2)}%</span>
                   </div>
                 </div>
-              </div>
+              </div>}
             </div>
 
           </div>

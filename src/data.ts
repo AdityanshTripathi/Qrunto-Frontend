@@ -44,7 +44,7 @@ export const navigationGroups: NavigationGroup[] = [
       { name: 'Categories', href: '/dashboard/categories', icon: Tags, capability: 'categories.manage' },
       { name: 'Tables & QRs', href: '/dashboard/tables', icon: QrCode, capability: 'tables.manage' },
       { name: 'Inventory', href: '/dashboard/inventory', icon: Package, capability: 'inventory.manage' },
-      { name: 'Waiters', href: '/dashboard/waiters', icon: Users, capability: 'waiters.manage' },
+      { name: 'Staff', href: '/dashboard/waiters', icon: Users, capability: 'waiters.manage' },
     ],
   },
   {
