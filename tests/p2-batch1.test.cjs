@@ -121,3 +121,13 @@ test('RT-001: dashboard and realtime pages use serialized refreshes with reconne
   assert.match(dashboard, /socket\.off\('NEW_ORDER'/);
   assert.match(dashboard, /hasConnectedRef\.current\) handleUpdate\(\)/);
 });
+
+test('Orders: initial load resolves the skeleton while background refreshes stay coalesced', () => {
+  const source = fs.readFileSync(path.join(root, 'src/pages/dashboard/OrderManagement.tsx'), 'utf8');
+  assert.match(source, /const \[loading, setLoading\] = useState\(true\)/);
+  assert.match(source, /const initialOrdersLoadRef = useRef\(true\)/);
+  assert.match(source, /const silent = !initialOrdersLoadRef\.current;\s*initialOrdersLoadRef\.current = false;\s*return fetchOrdersAndStats\(silent\)/);
+  assert.match(source, /useEffect\(\(\) => \{\s*void refreshOrders\(\);\s*\}, \[refreshOrders\]\)/);
+  assert.match(source, /else if \(!silent\) setLoading\(false\)/);
+  assert.match(source, /loading \? \(\s*<SkeletonLoader[\s\S]*?\) : filteredOrders\.length === 0/);
+});

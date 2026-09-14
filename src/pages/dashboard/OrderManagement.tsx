@@ -84,6 +84,7 @@ export const OrderManagement: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [pagination, setPagination] = useState<OrderPagination>({ nextCursor: null, hasMore: false });
   const loadedMoreRef = useRef(false);
+  const initialOrdersLoadRef = useRef(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>('ALL');
@@ -270,7 +271,11 @@ export const OrderManagement: React.FC = () => {
     }
   }, [token, activeTab, dateFilter, customDate, restaurantTimeZone]);
 
-  const refreshOrders = useCoalescedRefresh(() => fetchOrdersAndStats(true));
+  const refreshOrders = useCoalescedRefresh(() => {
+    const silent = !initialOrdersLoadRef.current;
+    initialOrdersLoadRef.current = false;
+    return fetchOrdersAndStats(silent);
+  });
 
   useEffect(() => {
     void refreshOrders();
