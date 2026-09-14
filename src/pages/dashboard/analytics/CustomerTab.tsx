@@ -82,15 +82,17 @@ export const CustomerTab: React.FC<CustomerTabProps> = ({
     try {
       const resData = await api.get(`/analytics/customers?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
-    } catch (err: any) {
-      toast.error(err.message || 'Error fetching customer analytics');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error fetching customer analytics');
     } finally {
       setLoading(false);
     }
   }, [token, startDate, endDate]);
 
   useEffect(() => {
-    fetchCustomerAnalytics();
+    let cancelled = false;
+    void Promise.resolve().then(() => { if (!cancelled) return fetchCustomerAnalytics(); });
+    return () => { cancelled = true; };
   }, [fetchCustomerAnalytics, refreshTrigger]);
 
   if (loading) {

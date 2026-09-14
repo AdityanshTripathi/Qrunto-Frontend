@@ -1,9 +1,4 @@
-import {
-  useRestaurantTimezone,
-  localDate,
-  addDays,
-  localHour,
-} from '../../lib/timezone';
+import { useRestaurantTimezone, localDate, addDays, localHour } from '../../lib/timezone';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RefreshCw } from 'lucide-react';
@@ -13,6 +8,8 @@ import { toast } from 'sonner';
 import { io, Socket } from 'socket.io-client';
 import { SOCKET_URL } from '../../config/backend';
 import { OverviewContent } from './OverviewContent';
+import { useCoalescedRefresh } from '../../hooks/useCoalescedRefresh';
+import { buildSalesChartData } from '../../lib/dashboard-data';
 export interface KPIStats {
   totalRevenue: number;
   totalOrdersCount: number;
@@ -75,7 +72,7 @@ export const DashboardOverview: React.FC = () => {
   const [topItems, setTopItems] = useState<TopItem[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [allOrders, setAllOrders] = useState<Order[]>([]);
-  const [inventoryMetrics, setInventoryMetrics] = useState<any>(null);
+  const [inventoryMetrics, setInventoryMetrics] = useState<{ lowStockItems: number; totalValue: number } | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [orderStats, setOrderStats] = useState({
     active: 0,
@@ -91,19 +88,9 @@ export const DashboardOverview: React.FC = () => {
     'today',
   );
 
-  const dashboardRequestRef = useRef<Promise<void> | null>(null);
-  const dashboardRefreshQueuedRef = useRef(false);
+  const hasConnectedRef = useRef(false);
 
-  const fetchDashboardData = useCallback(
-    (queueIfBusy = false): Promise<void> => {
-      if (dashboardRequestRef.current) {
-        if (queueIfBusy) dashboardRefreshQueuedRef.current = true;
-        return dashboardRequestRef.current;
-      }
-
-      const request = (async () => {
-        do {
-          dashboardRefreshQueuedRef.current = false;
+  const loadDashboardData = useCallback(async () => {
           try {
             const inventoryRequest = api
               .get('/inventory/reports/dashboard-metrics')
@@ -161,27 +148,16 @@ export const DashboardOverview: React.FC = () => {
             } else {
               setInventoryMetrics(inventoryResult.data?.metrics ?? null);
             }
-          } catch (err: any) {
+          } catch (err: unknown) {
             setError('Unable to refresh dashboard data. Please try again.');
-            toast.error('Failed to load dashboard data: ' + err.message);
+            toast.error('Failed to load dashboard data: ' + (err instanceof Error ? err.message : 'Unable to complete the request.'));
           } finally {
             setLoading(false);
           }
-        } while (dashboardRefreshQueuedRef.current);
-      })();
-
-      dashboardRequestRef.current = request;
-      void request.finally(() => {
-        if (dashboardRequestRef.current === request)
-          dashboardRequestRef.current = null;
-      });
-      return request;
-    },
-    [],
-  );
+  }, []);
+  const fetchDashboardData = useCoalescedRefresh(loadDashboardData);
 
   useEffect(() => {
-    setLoading(true);
     void fetchDashboardData();
   }, [fetchDashboardData]);
 
@@ -196,20 +172,32 @@ export const DashboardOverview: React.FC = () => {
       auth: { token: accessToken },
     });
 
-    const handleUpdate = () => {
-      void fetchDashboardData(true);
+    const handleUpdate = () => void fetchDashboardData();
+    const handleConnect = () => {
+      if (hasConnectedRef.current) handleUpdate();
+      else hasConnectedRef.current = true;
     };
 
+    socket.on('connect', handleConnect);
     socket.on('NEW_ORDER', handleUpdate);
     socket.on('ITEM_ADDED', handleUpdate);
     socket.on('ORDER_UPDATED', handleUpdate);
 
     return () => {
+      socket.off('connect', handleConnect);
+      socket.off('NEW_ORDER', handleUpdate);
+      socket.off('ITEM_ADDED', handleUpdate);
+      socket.off('ORDER_UPDATED', handleUpdate);
       socket.disconnect();
     };
   }, [user, accessToken, fetchDashboardData]);
 
-  const getSalesChartData = () => {
+  const getSalesChartData = () => buildSalesChartData(allOrders, salesPeriod, restaurantTimeZone, {
+    localDate,
+    localHour,
+    addDays,
+  });
+  /*
     const paidServedOrders = allOrders.filter(
       (o) => o && o.status && ['SERVED', 'PAID'].includes(o.status),
     );
@@ -292,11 +280,12 @@ export const DashboardOverview: React.FC = () => {
     }
     return monthData;
   };
+  */
 
   const refresh = async () => {
     setRefreshing(true);
     try {
-      await fetchDashboardData(true);
+      await fetchDashboardData();
     } finally {
       setRefreshing(false);
     }

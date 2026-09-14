@@ -11,12 +11,12 @@ import {
   Award,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { ExecutiveTab } from './analytics/ExecutiveTab';
-import { SalesTab } from './analytics/SalesTab';
-import { OrderTab } from './analytics/OrderTab';
-import { MenuTab } from './analytics/MenuTab';
-import { CustomerTab } from './analytics/CustomerTab';
-import { LoyaltyTab } from './analytics/LoyaltyTab';
+const ExecutiveTab = React.lazy(() => import('./analytics/ExecutiveTab').then((module) => ({ default: module.ExecutiveTab })));
+const SalesTab = React.lazy(() => import('./analytics/SalesTab').then((module) => ({ default: module.SalesTab })));
+const OrderTab = React.lazy(() => import('./analytics/OrderTab').then((module) => ({ default: module.OrderTab })));
+const MenuTab = React.lazy(() => import('./analytics/MenuTab').then((module) => ({ default: module.MenuTab })));
+const CustomerTab = React.lazy(() => import('./analytics/CustomerTab').then((module) => ({ default: module.CustomerTab })));
+const LoyaltyTab = React.lazy(() => import('./analytics/LoyaltyTab').then((module) => ({ default: module.LoyaltyTab })));
 
 
 export const Analytics: React.FC = () => {
@@ -31,6 +31,14 @@ const TABS = [
   { id: 'menu', name: 'Menu', icon: Grid },
   { id: 'loyalty', name: 'Loyalty', icon: Award },
 ];
+
+const presetRange = (preset: string, timeZone: string) => {
+  const today = localDate(new Date(), timeZone);
+  const end = preset === 'yesterday' ? addDays(today, -1) : today;
+  const start = preset === 'thisMonth' ? today.slice(0, 7) + '-01'
+    : preset === '7d' ? addDays(today, -7) : preset === '30d' ? addDays(today, -30) : end;
+  return { start, end };
+};
 
 const AnalyticsContent: React.FC = () => {
   const restaurantTimeZone = useRestaurantTimezone();
@@ -51,15 +59,18 @@ const AnalyticsContent: React.FC = () => {
 
   const handlePresetChange = (p: string) => {
     setPreset(p);
-    const today = localDate(new Date(), restaurantTimeZone);
-    const end = p === 'yesterday' ? addDays(today, -1) : today;
-    const start = p === 'thisMonth' ? today.slice(0, 7) + '-01'
-      : p === '7d' ? addDays(today, -7) : p === '30d' ? addDays(today, -30) : end;
+    const { start, end } = presetRange(p, restaurantTimeZone);
     setStartDate(start);
     setEndDate(end);
   };
 
-  useEffect(() => { handlePresetChange(preset); }, [restaurantTimeZone]);
+  useEffect(() => {
+    const { start, end } = presetRange(preset, restaurantTimeZone);
+    void Promise.resolve().then(() => {
+      setStartDate(start);
+      setEndDate(end);
+    });
+  }, [preset, restaurantTimeZone]);
 
   const triggerRefresh = () => {
     setRefreshTrigger((prev) => prev + 1);
@@ -238,7 +249,9 @@ const AnalyticsContent: React.FC = () => {
 
       {/* ─── Active Tab Content ─── */}
       <div className="transition-all duration-300">
-        {renderTabContent()}
+        <React.Suspense fallback={<div className="p-8 text-center text-sm text-slate-500">Loading analytics…</div>}>
+          {renderTabContent()}
+        </React.Suspense>
       </div>
     </div>
   );

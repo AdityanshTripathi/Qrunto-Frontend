@@ -1,12 +1,5 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import * as React from 'react'
-
-export function useDashboardNavigation() {
-  const location = useLocation()
-  return {
-    pathname: location.pathname
-  }
-}
 
 interface DashboardLinkProps extends Omit<React.ComponentPropsWithoutRef<typeof NavLink>, 'to'> {
   href: string

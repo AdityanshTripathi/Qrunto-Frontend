@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import {
   ArrowRight,
   ShoppingBag,
@@ -94,6 +95,7 @@ export function OverviewContent({
   setPeriod,
   chart,
 }: Props) {
+  const [renderStartedAt] = useState(() => Date.now());
   const summary = isStaff
     ? [
         {
@@ -156,7 +158,7 @@ export function OverviewContent({
   const expiry = subscription?.endDate ? new Date(subscription.endDate) : null;
   const validExpiry = expiry && !Number.isNaN(expiry.getTime()) ? expiry : null;
   const daysLeft = validExpiry
-    ? Math.ceil((validExpiry.getTime() - Date.now()) / 86400000)
+    ? Math.ceil((validExpiry.getTime() - renderStartedAt) / 86400000)
     : null;
   const subscriptionNeedsAttention =
     subscription &&

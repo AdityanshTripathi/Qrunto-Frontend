@@ -1,8 +1,9 @@
 import { invoiceDiscount } from '../lib/invoice';
+import { preparePdfCaptureStyles } from '../lib/pdf-capture-styles';
 import { timezone } from '../lib/timezone';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../context/theme-context';
 import { toast } from 'sonner';
 import {
   ShoppingCart, Plus, Minus, Trash2, Star, Search, ChevronRight,
@@ -15,6 +16,7 @@ import bannerLight from '../assets/banner_light.jpg';
 import bannerDark from '../assets/banner_dark.jpg';
 import menuIcon from '../assets/menu_icon.jpg';
 import { API_BASE_URL as BASE_URL } from '../config/backend';
+import { AccessibleDialog } from '../components/AccessibleDialog';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Restaurant { timezone?: string; id: string; name: string; slug: string; logoUrl: string | null; }
@@ -48,9 +50,13 @@ interface PlacedOrder {
   taxAmount: number; totalAmount: number; tableNumber: string; itemCount: number; createdAt: string;
   customerName?: string | null; customerPhone?: string | null;
 }
+interface TrackingOrderItem { id: string; name: string; quantity: number; unitPrice: number; totalPrice: number; }
+interface TrackingOrder extends PlacedOrder { paymentStatus?: string; paymentMethod?: string; items?: TrackingOrderItem[]; }
 
-const fmt = (amount: number, _currency = 'INR') =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+const fmt = (amount: number, currency = 'INR') => {
+  void currency;
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+};
 
 
 const getCookie = (name: string): string | null => {
@@ -123,7 +129,7 @@ export const CustomerMenu: React.FC = () => {
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod] = useState<'ONLINE' | 'COUNTER' | 'WAITER'>('WAITER');
-  const [trackingOrder, setTrackingOrder] = useState<any>(null);
+  const [trackingOrder, setTrackingOrder] = useState<TrackingOrder | null>(null);
 
   // CRM Loyalty States
   const [loyaltyPoints, setLoyaltyPoints] = useState<number>(0);
@@ -160,8 +166,8 @@ export const CustomerMenu: React.FC = () => {
       if (!res.ok) throw new Error(data.error || 'Assistance request failed');
       toast.success(data.message);
       setIsAssistanceOpen(false);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to send assistance request');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send assistance request');
     } finally {
       setSendingAssistance(false);
     }
@@ -261,6 +267,7 @@ export const CustomerMenu: React.FC = () => {
   const featuredItems = menuItems
     .filter((i) => i.isFeatured && (!filterVeg || isItemVeg(i)))
     .slice(0, 8);
+  const currentSlideIndex = featuredItems.length ? activeSlideIndex % featuredItems.length : 0;
 
   const recommendedItems = menuItems
     .filter((item) => item.isCompleteYourMeal !== false && !cart.some((c) => c.menuItemId === item.id))
@@ -271,14 +278,11 @@ export const CustomerMenu: React.FC = () => {
   // Auto-slide effect for Carousel
   useEffect(() => {
     if (featuredItems.length <= 1) return;
-    if (activeSlideIndex >= featuredItems.length) {
-      setActiveSlideIndex(0);
-    }
     const interval = setInterval(() => {
       setActiveSlideIndex((prev) => (prev + 1) % featuredItems.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [featuredItems.length, activeSlideIndex]);
+  }, [featuredItems.length]);
 
   useEffect(() => {
     if (!placedOrder || !slug) return;
@@ -331,12 +335,17 @@ export const CustomerMenu: React.FC = () => {
 
   // CRM Loyalty Balance Check Debouncer
   useEffect(() => {
+    let cancelled = false;
     if (!customerPhone || customerPhone.trim().length < 10 || !slug) {
-      setLoyaltyPoints(0);
-      setLoyaltyTier(null);
-      setRedeemPointsChecked(false);
-      setPointsToRedeemInput(0);
-      return;
+      void Promise.resolve().then(() => {
+        if (!cancelled) {
+          setLoyaltyPoints(0);
+          setLoyaltyTier(null);
+          setRedeemPointsChecked(false);
+          setPointsToRedeemInput(0);
+        }
+      });
+      return () => { cancelled = true; };
     }
 
     const fetchBalance = async () => {
@@ -356,7 +365,10 @@ export const CustomerMenu: React.FC = () => {
     };
 
     const debounceTimer = setTimeout(fetchBalance, 500);
-    return () => clearTimeout(debounceTimer);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounceTimer);
+    };
   }, [customerPhone, slug]);
 
   const handlePlaceOrder = async () => {
@@ -397,8 +409,8 @@ export const CustomerMenu: React.FC = () => {
       }
 
       toast.success(activeCookieOrder ? 'Items added to order!' : 'Order placed successfully!', { duration: 3000 });
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to place order. Please try again.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to place order. Please try again.');
     } finally { setIsPlacingOrder(false); }
   };
 
@@ -410,42 +422,20 @@ export const CustomerMenu: React.FC = () => {
     }
     setIsDownloadingInvoice(true);
     const toastId = toast.loading('Generating PDF invoice...');
+    let restoreCaptureStyles: (() => void) | undefined;
     try {
       // Load PDF tools only when an invoice is requested, before changing capture styles.
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import('html2canvas'),
         import('jspdf'),
       ]);
-      // Temporarily set styling for best quality canvas capture
-      const originalStyle = element.style.cssText;
-      
-      // Ensure the background is white and text is dark during PDF capture (in case customer is on Dark Mode)
-      element.style.background = '#ffffff';
-      element.style.color = '#111827';
-      element.style.padding = '24px';
-      
-      // Select all text elements inside and enforce dark colors for high contrast print/pdf
-      const textElements = element.querySelectorAll('span, p, h2, td, th');
-      const originalColors: string[] = [];
-      textElements.forEach((el, index) => {
-        const htmlEl = el as HTMLElement;
-        originalColors[index] = htmlEl.style.color;
-        // Don't change orange colored highlight totals and text inside elements with keep-color class
-        if (!htmlEl.className.includes('text-[#D97757]') && !htmlEl.closest('.keep-color')) {
-          htmlEl.style.setProperty('color', '#1f2937', 'important');
-        }
-      });
+      // Restore these temporary capture styles on every exit path, including PDF failures.
+      restoreCaptureStyles = preparePdfCaptureStyles(element);
 
       const canvas = await html2canvas(element, {
         scale: 2, // higher scale for crisp high-res text
         useCORS: true,
         backgroundColor: '#ffffff',
-      });
-
-      // Restore original styling
-      element.style.cssText = originalStyle;
-      textElements.forEach((el, index) => {
-        (el as HTMLElement).style.color = originalColors[index];
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -489,6 +479,7 @@ export const CustomerMenu: React.FC = () => {
       console.error('Failed to generate invoice PDF', err);
       toast.error('Failed to download invoice. Please try again.', { id: toastId });
     } finally {
+      restoreCaptureStyles?.();
       setIsDownloadingInvoice(false);
     }
   };
@@ -637,7 +628,7 @@ export const CustomerMenu: React.FC = () => {
           <div className={`${t.card} rounded-3xl border ${t.cardBorder} p-5 shadow-sm`}>
             <h4 className={`font-bold text-sm mb-3 ${t.text}`}>Bill Summary</h4>
             <div className="space-y-2 mb-3">
-              {trackingOrder?.items?.map((item: any) => (
+              {trackingOrder?.items?.map((item) => (
                 <div key={item.id} className={`flex justify-between text-xs ${t.subtext}`}>
                   <span>{item.name} <strong className={t.text}>× {item.quantity}</strong></span>
                   <span className={t.text}>{fmt(item.totalPrice, settings.currency)}</span>
@@ -750,8 +741,8 @@ export const CustomerMenu: React.FC = () => {
         </div>
 
         {/* Invoice Modal */}
-        {isInvoiceModalOpen && isPaid && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {isInvoiceModalOpen && isPaid && (
+          <AccessibleDialog isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} ariaLabel="Invoice" className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm no-print" onClick={() => setIsInvoiceModalOpen(false)} />
             <div className={`relative w-full max-w-md ${t.header} rounded-3xl overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200 text-left border ${t.cardBorder} flex flex-col max-h-[90vh]`}>
               {/* Header */}
@@ -854,7 +845,7 @@ export const CustomerMenu: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-200">
-                        {trackingOrder?.items?.map((item: any, idx: number) => (
+                        {trackingOrder?.items?.map((item, idx) => (
                           <tr key={item.id} className={`align-middle ${idx % 2 === 1 ? 'bg-slate-50 dark:bg-slate-800/10' : ''}`}>
                             <td className="py-2 px-2.5 sm:py-2.5 sm:px-3 font-bold text-slate-800 dark:text-white">{item.name}</td>
                             <td className="py-2 px-2.5 sm:py-2.5 sm:px-3 text-center text-slate-600 dark:text-slate-400">{item.quantity}</td>
@@ -946,7 +937,7 @@ export const CustomerMenu: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </AccessibleDialog>
         )}
 
       </div>
@@ -1067,7 +1058,7 @@ export const CustomerMenu: React.FC = () => {
             <div className={`relative w-full overflow-hidden rounded-2xl h-48 bg-[#F5EDE4] dark:bg-[#1e1e1e]`}>
               <div 
                 className="flex h-full transition-transform duration-500 ease-out"
-                style={{ transform: `translateX(-${activeSlideIndex * 100}%)` }}
+                style={{ transform: `translateX(-${currentSlideIndex * 100}%)` }}
               >
                 {featuredItems.map((item) => (
                   <div key={item.id} className="w-full h-full shrink-0 flex relative">
@@ -1164,7 +1155,7 @@ export const CustomerMenu: React.FC = () => {
                     key={idx}
                     onClick={() => setActiveSlideIndex(idx)}
                     className={`h-1.5 rounded-full transition-all duration-300 ${
-                      idx === activeSlideIndex ? 'w-5 bg-[#D97757]' : `w-1.5 ${isDark ? 'bg-gray-700' : 'bg-[#D97757]/30'}`
+                      idx === currentSlideIndex ? 'w-5 bg-[#D97757]' : `w-1.5 ${isDark ? 'bg-gray-700' : 'bg-[#D97757]/30'}`
                     }`}
                   />
                 ))}
@@ -1348,7 +1339,7 @@ export const CustomerMenu: React.FC = () => {
 
       {/* Sort Bottom Sheet */}
       {isSortOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <AccessibleDialog isOpen={isSortOpen} onClose={() => setIsSortOpen(false)} ariaLabel="Sort menu" className="fixed inset-0 z-50 flex flex-col justify-end">
           <div onClick={() => setIsSortOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className={`relative ${t.sheetBg} rounded-t-[28px] flex flex-col z-10 animate-in slide-in-from-bottom duration-300 border-t ${t.divider} max-w-md mx-auto w-full`}>
             <div className="flex justify-center pt-3 pb-1">
@@ -1385,12 +1376,12 @@ export const CustomerMenu: React.FC = () => {
               ))}
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* Filter Bottom Sheet */}
       {isFilterOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <AccessibleDialog isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} ariaLabel="Filter menu" className="fixed inset-0 z-50 flex flex-col justify-end">
           <div onClick={() => setIsFilterOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className={`relative ${t.sheetBg} rounded-t-[28px] flex flex-col z-10 animate-in slide-in-from-bottom duration-300 border-t ${t.divider} max-w-md mx-auto w-full`}>
             <div className="flex justify-center pt-3 pb-1">
@@ -1449,12 +1440,12 @@ export const CustomerMenu: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* Category Menu Bottom Sheet */}
       {isCategoryMenuOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <AccessibleDialog isOpen={isCategoryMenuOpen} onClose={() => setIsCategoryMenuOpen(false)} ariaLabel="Menu categories" className="fixed inset-0 z-50 flex flex-col justify-end">
           <div onClick={() => setIsCategoryMenuOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className={`relative ${isDark ? t.sheetBg : 'bg-[#FFF8F0]'} rounded-t-[28px] flex flex-col z-10 animate-in slide-in-from-bottom duration-300 border-t ${t.divider} max-w-md mx-auto w-full`}>
             <div className="flex justify-center pt-3 pb-1">
@@ -1514,7 +1505,7 @@ export const CustomerMenu: React.FC = () => {
               })}
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* Floating Cart Bar — Swiggy style */}
@@ -1540,7 +1531,7 @@ export const CustomerMenu: React.FC = () => {
 
       {/* Cart Drawer — Bottom Sheet */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <AccessibleDialog isOpen={isCartOpen} onClose={() => { setIsCartOpen(false); setIsCheckoutConfirming(false); }} ariaLabel="Shopping cart" className="fixed inset-0 z-50 flex flex-col justify-end">
           <div onClick={() => { setIsCartOpen(false); setIsCheckoutConfirming(false); }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className={`relative ${t.sheetBg} rounded-t-[28px] max-h-[88vh] flex flex-col z-10 animate-in slide-in-from-bottom duration-300 border-t ${t.divider}`}>
             {/* Handle */}
@@ -1817,12 +1808,12 @@ export const CustomerMenu: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* Assistance Modal */}
       {isAssistanceOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+        <AccessibleDialog isOpen={isAssistanceOpen} onClose={() => setIsAssistanceOpen(false)} ariaLabel="Request assistance" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
           <div onClick={() => setIsAssistanceOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className={`relative ${t.sheetBg} rounded-3xl max-w-sm w-full p-6 text-center z-10 shadow-2xl animate-in zoom-in-95 duration-200 border ${t.cardBorder}`}>
             <button onClick={() => setIsAssistanceOpen(false)} className={`absolute top-4 right-4 p-1.5 ${t.qtyBg} rounded-xl ${t.subtext}`}>
@@ -1846,7 +1837,7 @@ export const CustomerMenu: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
       {/* Floating Active Order Tracker Banner */}
       {!placedOrder && activeCookieOrder && (

@@ -17,6 +17,8 @@ import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { SOCKET_URL } from '../../config/backend';
 import { api } from '../../lib/api';
+import { useCoalescedRefresh } from '../../hooks/useCoalescedRefresh';
+import { AccessibleDialog } from '../../components/AccessibleDialog';
 
 interface Table {
   id: string;
@@ -92,33 +94,39 @@ export const BillsPage: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [printType, setPrintType] = useState<boolean>(false);
+  const dataRequestGenerationRef = useRef(0);
 
   // Fetch initial core data
   const fetchData = useCallback(async (silent = false) => {
     if (!token) return;
+    const requestGeneration = ++dataRequestGenerationRef.current;
     if (!silent) setLoading(true);
 
     try {
       // 1. Fetch unread notifications
       const notifData = await api.get('/notifications');
+      if (requestGeneration !== dataRequestGenerationRef.current) return;
       
       // Filter BILLING notifications that are unread
       const billingReqs = (notifData.notifications || []).filter(
-        (n: any) => !n.isRead && n.type === 'BILLING'
+        (n: { isRead: boolean; type: string }) => !n.isRead && n.type === 'BILLING'
       );
       setBillRequests(billingReqs);
 
       // 2. Fetch active orders
       const ordersData = await api.get('/orders?limit=100');
+      if (requestGeneration !== dataRequestGenerationRef.current) return;
       setOrders(ordersData.orders || []);
       setSelectedOrder(current => current ? ordersData.orders?.find((order: Order) => order.id === current.id) ?? null : null);
 
-    } catch (err: any) {
-      toast.error(err.message || 'Error syncing data');
+    } catch (err: unknown) {
+      if (requestGeneration !== dataRequestGenerationRef.current) return;
+      toast.error(err instanceof Error ? err.message : 'Error syncing data');
     } finally {
-      if (!silent) setLoading(false);
+      if (requestGeneration === dataRequestGenerationRef.current && !silent) setLoading(false);
     }
   }, [token]);
+  const refreshData = useCoalescedRefresh(() => fetchData(true));
 
   // Fetch settings on mount
   useEffect(() => {
@@ -133,16 +141,16 @@ export const BillsPage: React.FC = () => {
       }
     };
     fetchSettings();
-    fetchData();
-  }, [token, fetchData]);
+    void refreshData();
+  }, [token, refreshData]);
 
   useEffect(() => {
     if (socketConnected) return;
     const timer = setInterval(() => {
-      fetchData(true);
+      void refreshData();
     }, 10000);
     return () => clearInterval(timer);
-  }, [fetchData, socketConnected]);
+  }, [refreshData, socketConnected]);
 
   useEffect(() => {
     if (!token) return;
@@ -152,7 +160,7 @@ export const BillsPage: React.FC = () => {
       tryAllTransports: true,
       auth: { token },
     });
-    const refresh = () => fetchData(true);
+    const refresh = () => void refreshData();
     socket.on('connect', () => {
       setSocketConnected(true);
       if (hasConnectedRef.current) refresh();
@@ -168,7 +176,7 @@ export const BillsPage: React.FC = () => {
       setSocketConnected(false);
       socket.disconnect();
     };
-  }, [token, fetchData]);
+  }, [token, refreshData]);
 
   // Match notification table to active order
   const getOrderForRequest = (req: BillRequest): Order | undefined => {
@@ -189,9 +197,9 @@ export const BillsPage: React.FC = () => {
     try {
       await api.patch(`/notifications/${notifId}/read`);
       toast.success('Request dismissed');
-      fetchData(true);
-    } catch (err: any) {
-      toast.error(err.message || 'Error resolving request');
+      void refreshData();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error resolving request');
     }
   };
 
@@ -202,16 +210,21 @@ export const BillsPage: React.FC = () => {
     setSettlingId(orderId);
 
     try {
-      await api.post(`/orders/${orderId}/pay`, { paymentMethod: method });
+      const result = await api.post(`/orders/${orderId}/pay`, { paymentMethod: method });
+      const resultingStatus = result?.order?.status ?? result?.order?.paymentStatus;
 
-      toast.success(`Bill settled via ${method}! Order status updated to SERVED.`);
+      toast.success(
+        resultingStatus
+          ? `Bill settled via ${method}! Order status: ${resultingStatus}.`
+          : `Bill settled via ${method}.`,
+      );
       
       // Auto dismiss/read the notification
       await api.patch(`/notifications/${notifId}/read`);
 
-      fetchData(true);
-    } catch (err: any) {
-      toast.error(err.message || 'Error registering payment');
+      void refreshData();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error registering payment');
     } finally {
       setSettlingId(null);
     }
@@ -433,7 +446,7 @@ export const BillsPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => fetchData()}
+          onClick={() => void refreshData()}
           className="px-4 py-2 bg-white dark:bg-[#1f2937]/35 border border-slate-200 dark:border-[#374151]/30 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-650 dark:text-gray-300 flex items-center gap-1.5 self-start sm:self-auto transition-all"
         >
           <RefreshCw className="w-3.5 h-3.5" />
@@ -520,7 +533,7 @@ export const BillsPage: React.FC = () => {
                       <div className="flex items-center gap-2 flex-1 justify-end">
                         <select
                           value={paymentMethods[matchedOrder.id] || 'CASH'}
-                          onChange={(e) => setPaymentMethods({ ...paymentMethods, [matchedOrder.id]: e.target.value as any })}
+                          onChange={(e) => setPaymentMethods({ ...paymentMethods, [matchedOrder.id]: e.target.value as 'CASH' | 'CARD' | 'UPI' })}
                           className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-[#374151]/40 rounded-xl text-xs text-slate-800 dark:text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#FF6B35]"
                         >
                           <option value="CASH">💵 Cash</option>
@@ -557,7 +570,7 @@ export const BillsPage: React.FC = () => {
 
       {/* BILL MODAL PREVIEW */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={Boolean(selectedOrder)} onClose={() => setSelectedOrder(null)} ariaLabel="Bill preview" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setSelectedOrder(null)} className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
 
           <div className="relative bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/55 rounded-[28px] max-w-lg w-full overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
@@ -607,7 +620,7 @@ export const BillsPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* Printer Media Print Wrapper */}

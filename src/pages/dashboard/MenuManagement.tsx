@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -22,33 +22,11 @@ import {
   AlignLeft,
 } from 'lucide-react';
 import { api } from '../../lib/api';
+import { AccessibleDialog } from '../../components/AccessibleDialog';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
+import { compressMenuImage, MenuImageValidationError, validateMenuImageFile } from '../../lib/menu-image';
 
 // ─── Image Compression Helper ─────────────────────────────────────────────────
-const compressImage = (file: File, maxSize = 600, quality = 0.82): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let { width, height } = img;
-        if (width > height) {
-          if (width > maxSize) { height = Math.round((height * maxSize) / width); width = maxSize; }
-        } else {
-          if (height > maxSize) { width = Math.round((width * maxSize) / height); height = maxSize; }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = reject;
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Category {
@@ -113,17 +91,17 @@ export const MenuManagement: React.FC = () => {
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<MenuItemInputs>({
     resolver: zodResolver(MenuItemSchema),
     defaultValues: { isAvailable: true, isFeatured: false, isCompleteYourMeal: true, foodType: 'veg' },
   });
 
-  const watchedIsAvailable = watch('isAvailable');
-  const watchedIsFeatured = watch('isFeatured');
-  const watchedIsCompleteYourMeal = watch('isCompleteYourMeal');
-  const watchedFoodType = watch('foodType');
+  const watchedIsAvailable = useWatch({ control, name: 'isAvailable' });
+  const watchedIsFeatured = useWatch({ control, name: 'isFeatured' });
+  const watchedIsCompleteYourMeal = useWatch({ control, name: 'isCompleteYourMeal' });
+  const watchedFoodType = useWatch({ control, name: 'foodType' });
 
   // ─── Data fetching ─────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -135,15 +113,19 @@ export const MenuManagement: React.FC = () => {
       ]);
       setMenuItems(itemsRes.menuItems || []);
       setCategories(catsRes.categories || []);
-    } catch (err: any) {
-      toast.error('Failed to load menu data: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Failed to load menu data: ' + (err instanceof Error ? err.message : 'Unable to complete the request.'));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchData();
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchData();
+    });
+    return () => { cancelled = true; };
   }, [fetchData]);
 
   // ─── Modal open helpers ────────────────────────────────────────────────────
@@ -175,17 +157,19 @@ export const MenuManagement: React.FC = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select a valid image file.');
+    try {
+      validateMenuImageFile(file);
+    } catch (error) {
+      toast.error(error instanceof MenuImageValidationError ? error.message : 'Please select a valid image file.');
       return;
     }
     setIsCompressing(true);
     try {
-      const base64 = await compressImage(file);
+      const base64 = await compressMenuImage(file);
       setImagePreview(base64);
       setValue('imageUrl', base64);
-    } catch {
-      toast.error('Failed to process image. Please try another.');
+    } catch (error) {
+      toast.error(error instanceof MenuImageValidationError ? error.message : 'Failed to process image. Please try another.');
     } finally {
       setIsCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -223,8 +207,8 @@ export const MenuManagement: React.FC = () => {
       }
       setIsModalOpen(false);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save menu item');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save menu item');
     } finally {
       setActionLoading(false);
     }
@@ -237,8 +221,8 @@ export const MenuManagement: React.FC = () => {
       await api.patch(`/menu-items/${item.id}`, { isAvailable: !item.isAvailable });
       toast.success(`${item.name} marked as ${!item.isAvailable ? 'available' : 'unavailable'}`);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update availability');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update availability');
     } finally {
       setActionLoading(false);
     }
@@ -250,8 +234,8 @@ export const MenuManagement: React.FC = () => {
       await api.patch(`/menu-items/${item.id}`, { isFeatured: !item.isFeatured });
       toast.success(`${item.name} ${!item.isFeatured ? 'marked as featured' : 'removed from featured'}`);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update featured status');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update featured status');
     } finally {
       setActionLoading(false);
     }
@@ -264,8 +248,8 @@ export const MenuManagement: React.FC = () => {
       await api.patch(`/menu-items/${item.id}`, { isCompleteYourMeal: newVal });
       toast.success(`${item.name} ${newVal ? 'included in' : 'excluded from'} suggestions`);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update suggestion status');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update suggestion status');
     } finally {
       setActionLoading(false);
     }
@@ -279,8 +263,8 @@ export const MenuManagement: React.FC = () => {
       toast.success('Menu item removed');
       setDeleteConfirmId(null);
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete menu item');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete menu item');
     } finally {
       setActionLoading(false);
     }
@@ -541,7 +525,7 @@ export const MenuManagement: React.FC = () => {
 
       {/* ─── Add / Edit Modal ────────────────────────────────────────────────── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel="Menu item editor" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
             onClick={() => setIsModalOpen(false)}
@@ -844,7 +828,7 @@ export const MenuManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
+import { AccessibleDialog } from '../../components/AccessibleDialog';
 
 const getTableUrl = (url: string | null): string => {
   if (!url) return '';
@@ -81,7 +82,7 @@ const downloadQR = async (value: string, tableNumber: string) => {
     link.download = `ordio-table-${tableNumber}.png`;
     link.click();
     toast.success(`QR code for Table ${tableNumber} downloaded!`);
-  } catch (err) {
+  } catch {
     toast.error('Failed to download QR code');
   }
 };
@@ -105,14 +106,20 @@ export const TableManagement: React.FC = () => {
       setLoading(true);
       const res = await api.get('/tables');
       setTables(res.tables || []);
-    } catch (err: any) {
-      toast.error('Failed to load tables: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Failed to load tables: ' + (err instanceof Error ? err.message : 'Unable to complete the request.'));
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchTables(); }, [fetchTables]);
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchTables();
+    });
+    return () => { cancelled = true; };
+  }, [fetchTables]);
 
   // ─── Create table ──────────────────────────────────────────────────────────
   const onCreateSubmit = async (data: CreateTableInputs) => {
@@ -123,8 +130,8 @@ export const TableManagement: React.FC = () => {
       setIsAddModalOpen(false);
       addForm.reset();
       fetchTables();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create table');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create table');
     } finally {
       setActionLoading(false);
     }
@@ -144,8 +151,8 @@ export const TableManagement: React.FC = () => {
       toast.success('Table updated successfully');
       setEditingTable(null);
       fetchTables();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update table');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update table');
     } finally {
       setActionLoading(false);
     }
@@ -158,8 +165,8 @@ export const TableManagement: React.FC = () => {
       await api.patch(`/tables/${table.id}`, { isActive: !table.isActive });
       toast.success(`Table ${table.tableNumber} ${!table.isActive ? 'activated' : 'deactivated'}`);
       fetchTables();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update status');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update status');
     } finally {
       setActionLoading(false);
     }
@@ -173,8 +180,8 @@ export const TableManagement: React.FC = () => {
       toast.success('Table deactivated successfully');
       setDeleteConfirmId(null);
       fetchTables();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to deactivate table');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to deactivate table');
     } finally {
       setActionLoading(false);
     }
@@ -379,7 +386,7 @@ export const TableManagement: React.FC = () => {
 
       {/* ─── Add Table Modal ────────────────────────────────────────────────── */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} ariaLabel="Add table" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsAddModalOpen(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[24px] shadow-2xl p-5 sm:p-6 animate-in fade-in zoom-in-95 duration-200 z-10 overflow-hidden">
             <div className="absolute -top-10 -right-10 w-28 h-28 bg-[#FF6B35]/10 rounded-full blur-2xl pointer-events-none" />
@@ -425,12 +432,12 @@ export const TableManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* ─── Edit Table Modal ────────────────────────────────────────────────── */}
       {editingTable && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={Boolean(editingTable)} onClose={() => setEditingTable(null)} ariaLabel="Edit table" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setEditingTable(null)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[24px] shadow-2xl p-5 sm:p-6 animate-in fade-in zoom-in-95 duration-200 z-10">
             <div className="flex items-center justify-between pb-5 border-b border-slate-200 dark:border-[#374151]/40 mb-5">
@@ -471,12 +478,12 @@ export const TableManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* ─── QR Full View Modal ──────────────────────────────────────────────── */}
       {qrViewTable && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={Boolean(qrViewTable)} onClose={() => setQrViewTable(null)} ariaLabel="Table QR code" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setQrViewTable(null)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
           <div className="relative bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] shadow-2xl p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-200 z-10 flex flex-col items-center gap-5 max-w-sm w-full">
             <button onClick={() => setQrViewTable(null)} className="absolute top-4 right-4 p-1.5 bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-[#374151] rounded-xl text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all">
@@ -506,7 +513,7 @@ export const TableManagement: React.FC = () => {
               </button>
             )}
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

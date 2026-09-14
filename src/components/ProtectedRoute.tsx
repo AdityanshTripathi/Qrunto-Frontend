@@ -2,7 +2,6 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import {
-  defaultRouteForRole,
   hasCapability,
   type Capability,
   type UserRole,
@@ -31,8 +30,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, re
     || (requiredCapabilities.length > 0 && !requiredCapabilities.some(capability => hasCapability(user.role, capability)));
 
   if (lacksAccess) {
-    const destination = defaultRouteForRole(user?.role);
-    return <Navigate to={destination === location.pathname ? '/unauthorized' : destination} replace />;
+    return <Navigate to="/unauthorized" replace state={{ from: location.pathname }} />;
   }
 
   return children ? <>{children}</> : <Outlet />;

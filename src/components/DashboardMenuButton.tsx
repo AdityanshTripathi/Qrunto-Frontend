@@ -1,5 +1,5 @@
 import { Menu } from 'lucide-react';
-import { useSidebar } from './ui/sidebar';
+import { useSidebar } from './ui/sidebar-context';
 
 export function DashboardMenuButton() {
   const { toggleSidebar, openMobile } = useSidebar();

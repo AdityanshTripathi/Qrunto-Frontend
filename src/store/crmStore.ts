@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { api } from '../lib/api';
 import { registerSessionTeardown } from '../lib/session-lifecycle';
 
+export const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Unable to complete the request.';
+
 export interface CustomerRestaurantProfile {
   id: string;
   customerId: string;
@@ -32,6 +35,16 @@ export interface CustomerNote {
   };
 }
 
+export interface CustomerMetadata {
+  dietary?: string;
+  seating?: string;
+  allergies?: string;
+  rfm?: { segment?: string };
+}
+
+export interface TimelineOrderItem { name: string; quantity: number; price: number; }
+export interface TimelineMetadata { items?: TimelineOrderItem[]; tableNumber?: string; notes?: string; }
+
 export interface Customer {
   id: string;
   brandId: string;
@@ -39,7 +52,7 @@ export interface Customer {
   phone: string;
   email: string | null;
   acquisitionSource: string;
-  metadataJson: any;
+  metadataJson: CustomerMetadata;
   aiSummary: string | null;
   createdAt: string;
   updatedAt: string;
@@ -53,7 +66,7 @@ export interface TimelineEvent {
   title: string;
   description: string;
   timestamp: string;
-  metadata?: any;
+  metadata?: TimelineMetadata;
 }
 
 export interface LoyaltyTier {
@@ -192,6 +205,7 @@ interface CRMState {
   campaignsLoading: boolean;
   campaignsPagination: CursorPagination;
   campaignLogsPagination: CursorPagination;
+  campaignLogsCampaignId: string | null;
 
   // Ticket states
   tickets: Ticket[];
@@ -204,7 +218,7 @@ interface CRMState {
   fetchCustomers: () => Promise<void>;
   fetchCustomerById: (id: string) => Promise<void>;
   fetchTimeline: (id: string) => Promise<void>;
-  updateCustomer: (id: string, data: { name?: string; email?: string | null; phone?: string }) => Promise<void>;
+  updateCustomer: (id: string, data: { name?: string; email?: string | null; phone?: string; metadataJson?: CustomerMetadata }) => Promise<void>;
   addCustomerNote: (id: string, noteText: string) => Promise<void>;
   
   // Loyalty actions
@@ -258,6 +272,8 @@ interface CRMState {
 }
 
 let crmSessionGeneration = 0;
+let customersRequestGeneration = 0;
+let campaignLogsRequestGeneration = 0;
 const isCurrentCRMGeneration = (generation: number) => generation === crmSessionGeneration;
 
 const initialCRMState = () => ({
@@ -285,6 +301,7 @@ const initialCRMState = () => ({
   campaignsLoading: false,
   campaignsPagination: { nextCursor: null, hasMore: false } as CursorPagination,
   campaignLogsPagination: { nextCursor: null, hasMore: false } as CursorPagination,
+  campaignLogsCampaignId: null as string | null,
   tickets: [] as Ticket[],
   ticketsLoading: false,
 });
@@ -293,6 +310,7 @@ export const useCRMStore = create<CRMState>((set, get) => ({
   ...initialCRMState(),
 
   setSearch: (search) => {
+    customersRequestGeneration += 1;
     set({ search, offset: 0 });
     get().fetchCustomers();
   },
@@ -301,6 +319,8 @@ export const useCRMStore = create<CRMState>((set, get) => ({
     const state = get();
     if (state.restaurantId !== restaurantId) {
       crmSessionGeneration += 1;
+      customersRequestGeneration += 1;
+      campaignLogsRequestGeneration += 1;
       set({
         ...initialCRMState(),
         restaurantId,
@@ -316,17 +336,20 @@ export const useCRMStore = create<CRMState>((set, get) => ({
   },
 
   setSort: (sortBy, sortOrder) => {
+    customersRequestGeneration += 1;
     set({ sortBy, sortOrder });
     get().fetchCustomers();
   },
 
   setPagination: (limit, offset) => {
+    customersRequestGeneration += 1;
     set({ limit, offset });
     get().fetchCustomers();
   },
 
   fetchCustomers: async () => {
     const generation = crmSessionGeneration;
+    const requestGeneration = ++customersRequestGeneration;
     set({ loading: true, error: null });
     try {
       const { search, restaurantId, limit, offset, sortBy, sortOrder } = get();
@@ -340,11 +363,11 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       params.append('sortOrder', sortOrder);
 
       const response = await api.get(`/crm/customers?${params.toString()}`);
-      if (!isCurrentCRMGeneration(generation)) return;
+      if (!isCurrentCRMGeneration(generation) || requestGeneration !== customersRequestGeneration) return;
       set({ customers: response.customers, total: response.total, loading: false });
-    } catch (err: any) {
-      if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+    } catch (err: unknown) {
+      if (!isCurrentCRMGeneration(generation) || requestGeneration !== customersRequestGeneration) return;
+      set({ error: errorMessage(err), loading: false });
     }
   },
 
@@ -355,9 +378,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       const response = await api.get(`/crm/customers/${id}`);
       if (!isCurrentCRMGeneration(generation)) return;
       set({ currentCustomer: response.customer, currentCustomerLoading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, currentCustomerLoading: false });
+      set({ error: errorMessage(err), currentCustomerLoading: false });
     }
   },
 
@@ -368,9 +391,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       const response = await api.get(`/crm/customers/${id}/timeline`);
       if (!isCurrentCRMGeneration(generation)) return;
       set({ timeline: response.timeline, timelineLoading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, timelineLoading: false });
+      set({ error: errorMessage(err), timelineLoading: false });
     }
   },
 
@@ -389,9 +412,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       const updatedCurrent = current && current.id === id ? { ...current, ...response.customer } : current;
 
       set({ customers: updatedCustomers, currentCustomer: updatedCurrent, loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -411,9 +434,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
 
       get().fetchTimeline(id);
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -426,9 +449,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       const response = await api.get('/crm/loyalty/tiers');
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loyaltyTiers: response.tiers, loyaltyTiersLoading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loyaltyTiersLoading: false });
+      set({ error: errorMessage(err), loyaltyTiersLoading: false });
     }
   },
 
@@ -453,9 +476,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       await get().fetchLoyaltyTiers();
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -469,9 +492,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       await get().fetchLoyaltyTiers();
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -484,9 +507,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       const response = await api.get('/crm/coupons');
       if (!isCurrentCRMGeneration(generation)) return;
       set({ coupons: response.coupons, couponsLoading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, couponsLoading: false });
+      set({ error: errorMessage(err), couponsLoading: false });
     }
   },
 
@@ -499,9 +522,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       await get().fetchCoupons();
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -515,9 +538,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       await get().fetchCoupons();
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -530,9 +553,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       const response = await api.get('/crm/segments');
       if (!isCurrentCRMGeneration(generation)) return;
       set({ segments: response.segments, segmentsLoading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, segmentsLoading: false });
+      set({ error: errorMessage(err), segmentsLoading: false });
     }
   },
 
@@ -545,9 +568,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       await get().fetchSegments();
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -561,9 +584,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       await get().fetchSegments();
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -578,9 +601,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       if (!isCurrentCRMGeneration(generation)) return 0;
       set({ loading: false });
       return response.size;
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return 0;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -593,9 +616,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       if (!isCurrentCRMGeneration(generation)) return [];
       set({ loading: false });
       return response.members;
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return [];
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -630,9 +653,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
           campaignsLoading: false,
         };
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, campaignsLoading: false });
+      set({ error: errorMessage(err), campaignsLoading: false });
     }
   },
 
@@ -645,9 +668,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       await get().fetchCampaigns();
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -661,22 +684,31 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       await get().fetchCampaigns();
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
 
   fetchCampaignLogs: async (id, cursor) => {
     const generation = crmSessionGeneration;
+    const requestGeneration = ++campaignLogsRequestGeneration;
+    set({
+      campaignLogsCampaignId: id,
+      ...(cursor ? {} : { campaignLogsPagination: { nextCursor: null, hasMore: false } }),
+    });
     set({ loading: true, error: null });
     try {
       const path = cursor
         ? `/crm/campaigns/${id}/logs?cursor=${encodeURIComponent(cursor)}`
         : `/crm/campaigns/${id}/logs`;
       const response = await api.get(path);
-      if (!isCurrentCRMGeneration(generation)) return [];
+      if (
+        !isCurrentCRMGeneration(generation) ||
+        requestGeneration !== campaignLogsRequestGeneration ||
+        get().campaignLogsCampaignId !== id
+      ) return [];
       set({
         campaignLogsPagination: {
           nextCursor: response.pagination?.nextCursor ?? null,
@@ -685,9 +717,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
         loading: false,
       });
       return response.logs || [];
-    } catch (err: any) {
-      if (!isCurrentCRMGeneration(generation)) return [];
-      set({ error: err.message, loading: false });
+    } catch (err: unknown) {
+      if (!isCurrentCRMGeneration(generation) || requestGeneration !== campaignLogsRequestGeneration) return [];
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -700,9 +732,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       const response = await api.get('/crm/feedback/tickets');
       if (!isCurrentCRMGeneration(generation)) return;
       set({ tickets: response.tickets, ticketsLoading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, ticketsLoading: false });
+      set({ error: errorMessage(err), ticketsLoading: false });
     }
   },
 
@@ -715,9 +747,9 @@ export const useCRMStore = create<CRMState>((set, get) => ({
       await get().fetchTickets();
       if (!isCurrentCRMGeneration(generation)) return;
       set({ loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: err.message, loading: false });
+      set({ error: errorMessage(err), loading: false });
       throw err;
     }
   },
@@ -725,6 +757,8 @@ export const useCRMStore = create<CRMState>((set, get) => ({
   clearError: () => set({ error: null }),
   reset: () => {
     crmSessionGeneration += 1;
+    customersRequestGeneration += 1;
+    campaignLogsRequestGeneration += 1;
     set(initialCRMState());
   },
 }));

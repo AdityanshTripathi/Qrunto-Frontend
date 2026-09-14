@@ -1,6 +1,7 @@
 import { useRestaurantTimezone } from '../../lib/timezone';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { api } from '../../lib/api';
+import { AccessibleDialog } from '../../components/AccessibleDialog';
 import { toast } from 'sonner';
 import { 
   Plus, Search, Edit2, Trash2, Key, UserCheck, UserX, Loader2, X, AlertTriangle, Eye, EyeOff
@@ -40,21 +41,25 @@ export const WaitersPage: React.FC = () => {
   
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchWaiters = async () => {
+  const fetchWaiters = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/dashboard/waiters');
       setWaiters(res.waiters || []);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to fetch waiters');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to fetch waiters');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchWaiters();
-  }, []);
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchWaiters();
+    });
+    return () => { cancelled = true; };
+  }, [fetchWaiters]);
 
   const resetForm = () => {
     setFormName('');
@@ -83,8 +88,8 @@ export const WaitersPage: React.FC = () => {
       setIsCreateOpen(false);
       resetForm();
       fetchWaiters();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create account');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create account');
     } finally {
       setSubmitting(false);
     }
@@ -106,8 +111,8 @@ export const WaitersPage: React.FC = () => {
       setIsEditOpen(false);
       resetForm();
       fetchWaiters();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update account');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update account');
     } finally {
       setSubmitting(false);
     }
@@ -121,8 +126,8 @@ export const WaitersPage: React.FC = () => {
       });
       toast.success(`${waiter.role === 'WAITER' ? 'Waiter' : 'Staff'} ${newStatus ? 'enabled' : 'disabled'} successfully!`);
       fetchWaiters();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update status');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update status');
     }
   };
 
@@ -135,8 +140,8 @@ export const WaitersPage: React.FC = () => {
       setIsDeleteConfirmOpen(false);
       resetForm();
       fetchWaiters();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete account');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account');
     } finally {
       setSubmitting(false);
     }
@@ -153,8 +158,8 @@ export const WaitersPage: React.FC = () => {
       toast.success('Password reset successfully!');
       setIsResetOpen(false);
       resetForm();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to reset password');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reset password');
     } finally {
       setSubmitting(false);
     }
@@ -316,7 +321,7 @@ export const WaitersPage: React.FC = () => {
 
       {/* CREATE WAITER MODAL */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} ariaLabel="Create waiter" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsCreateOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-6">
@@ -458,12 +463,12 @@ export const WaitersPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* EDIT WAITER MODAL */}
       {isEditOpen && selectedWaiter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isEditOpen} onClose={() => { setIsEditOpen(false); resetForm(); }} ariaLabel="Edit waiter" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => { setIsEditOpen(false); resetForm(); }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-6">
@@ -584,12 +589,12 @@ export const WaitersPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* RESET PASSWORD MODAL */}
       {isResetOpen && selectedWaiter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isResetOpen} onClose={() => { setIsResetOpen(false); resetForm(); }} ariaLabel="Reset waiter password" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => { setIsResetOpen(false); resetForm(); }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-3 mb-5">
@@ -646,12 +651,12 @@ export const WaitersPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* DELETE CONFIRM MODAL */}
       {isDeleteConfirmOpen && selectedWaiter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isDeleteConfirmOpen} onClose={() => { setIsDeleteConfirmOpen(false); resetForm(); }} ariaLabel="Delete waiter confirmation" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => { setIsDeleteConfirmOpen(false); resetForm(); }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 text-center z-10 animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
@@ -680,7 +685,7 @@ export const WaitersPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

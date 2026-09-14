@@ -38,8 +38,8 @@ export const Register: React.FC = () => {
       setAuth(response.user, response.tokens.accessToken);
       toast.success('Registration successful! Setup your subscription to get started.');
       navigate(defaultRouteForRole(response.user.role));
-    } catch (err: any) {
-      toast.error(err.message || 'Registration failed. Please try again.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

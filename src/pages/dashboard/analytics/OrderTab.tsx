@@ -70,15 +70,17 @@ export const OrderTab: React.FC<OrderTabProps> = ({
     try {
       const resData = await api.get(`/analytics/orders?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
-    } catch (err: any) {
-      toast.error(err.message || 'Error fetching order analytics');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error fetching order analytics');
     } finally {
       setLoading(false);
     }
   }, [token, startDate, endDate]);
 
   useEffect(() => {
-    fetchOrderAnalytics();
+    let cancelled = false;
+    void Promise.resolve().then(() => { if (!cancelled) return fetchOrderAnalytics(); });
+    return () => { cancelled = true; };
   }, [fetchOrderAnalytics, refreshTrigger]);
 
   if (loading) {

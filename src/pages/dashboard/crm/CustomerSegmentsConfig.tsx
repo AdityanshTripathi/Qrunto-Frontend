@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useCRMStore, type Segment, type Customer } from '../../../store/crmStore';
+import { errorMessage, useCRMStore, type Segment, type Customer } from '../../../store/crmStore';
 import { Plus, Trash2, Loader2, X, AlertTriangle, Users, RefreshCw, BarChart2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AccessibleDialog } from '../../../components/AccessibleDialog';
 import { api } from '../../../lib/api';
 
 export const CustomerSegmentsConfig: React.FC = () => {
@@ -63,9 +64,13 @@ export const CustomerSegmentsConfig: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchSegments();
-    fetchRFMData();
-  }, []);
+    let cancelled = false;
+    void Promise.resolve().then(async () => {
+      if (cancelled) return;
+      await Promise.all([fetchSegments(), fetchRFMData()]);
+    });
+    return () => { cancelled = true; };
+  }, [fetchSegments]);
 
   const resetForm = () => {
     setName('');
@@ -96,7 +101,7 @@ export const CustomerSegmentsConfig: React.FC = () => {
     try {
       const data = await fetchSegmentMembers(segment.id);
       setMembers(data);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load segment members');
       setIsMembersOpen(false);
     } finally {
@@ -126,8 +131,8 @@ export const CustomerSegmentsConfig: React.FC = () => {
       setIsModalOpen(false);
       resetForm();
       fetchRFMData(); // refresh matrix counts
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create segment');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to create segment');
     } finally {
       setSubmitting(false);
     }
@@ -142,8 +147,8 @@ export const CustomerSegmentsConfig: React.FC = () => {
       setIsDeleteOpen(false);
       resetForm();
       fetchRFMData(); // refresh matrix counts
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete segment');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to delete segment');
     } finally {
       setSubmitting(false);
     }
@@ -331,7 +336,7 @@ export const CustomerSegmentsConfig: React.FC = () => {
 
       {/* CREATE MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel="Create customer segment" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-lg bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-6">
@@ -468,12 +473,12 @@ export const CustomerSegmentsConfig: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* MEMBER VIEW MODAL */}
       {isMembersOpen && selectedSegment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isMembersOpen} onClose={() => setIsMembersOpen(false)} ariaLabel="Customer segment members" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsMembersOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 text-left z-10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[70vh]">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-4">
@@ -509,12 +514,12 @@ export const CustomerSegmentsConfig: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* DELETE CONFIRM MODAL */}
       {isDeleteOpen && selectedSegment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} ariaLabel="Delete customer segment confirmation" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsDeleteOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 text-center z-10 animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
@@ -543,7 +548,7 @@ export const CustomerSegmentsConfig: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

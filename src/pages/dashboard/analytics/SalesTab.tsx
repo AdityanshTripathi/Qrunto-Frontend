@@ -86,15 +86,17 @@ export const SalesTab: React.FC<SalesTabProps> = ({
     try {
       const resData = await api.get(`/analytics/sales?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
-    } catch (err: any) {
-      toast.error(err.message || 'Error fetching sales analytics');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error fetching sales analytics');
     } finally {
       setLoading(false);
     }
   }, [token, startDate, endDate]);
 
   useEffect(() => {
-    fetchSales();
+    let cancelled = false;
+    void Promise.resolve().then(() => { if (!cancelled) return fetchSales(); });
+    return () => { cancelled = true; };
   }, [fetchSales, refreshTrigger]);
 
   if (loading) {

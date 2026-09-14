@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useCRMStore, type LoyaltyTier } from '../../../store/crmStore';
+import { errorMessage, useCRMStore, type LoyaltyTier } from '../../../store/crmStore';
 import { Plus, Edit2, Trash2, Loader2, X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { AccessibleDialog } from '../../../components/AccessibleDialog';
 
 export const LoyaltyTiersConfig: React.FC = () => {
   const {
@@ -24,7 +25,7 @@ export const LoyaltyTiersConfig: React.FC = () => {
 
   useEffect(() => {
     fetchLoyaltyTiers();
-  }, []);
+  }, [fetchLoyaltyTiers]);
 
   const resetForm = () => {
     setName('');
@@ -66,8 +67,8 @@ export const LoyaltyTiersConfig: React.FC = () => {
       toast.success(selectedTier ? 'Loyalty tier updated successfully' : 'Loyalty tier created successfully');
       setIsModalOpen(false);
       resetForm();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save loyalty tier');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to save loyalty tier');
     } finally {
       setSubmitting(false);
     }
@@ -81,8 +82,8 @@ export const LoyaltyTiersConfig: React.FC = () => {
       toast.success('Loyalty tier deleted successfully');
       setIsDeleteOpen(false);
       resetForm();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete loyalty tier');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to delete loyalty tier');
     } finally {
       setSubmitting(false);
     }
@@ -151,7 +152,7 @@ export const LoyaltyTiersConfig: React.FC = () => {
 
       {/* CREATE / EDIT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel="Loyalty tier editor" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-6">
@@ -219,12 +220,12 @@ export const LoyaltyTiersConfig: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* DELETE CONFIRM MODAL */}
       {isDeleteOpen && selectedTier && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} ariaLabel="Delete loyalty tier confirmation" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsDeleteOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 text-center z-10 animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
@@ -253,7 +254,7 @@ export const LoyaltyTiersConfig: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

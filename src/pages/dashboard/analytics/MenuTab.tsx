@@ -45,9 +45,26 @@ interface MenuTabProps {
   token: string | null;
   refreshTrigger: number;
 }
+interface ScatterTooltipData { name: string; x: number; y: number; z: number; }
+interface ScatterTooltipProps { active?: boolean; payload?: Array<{ payload: ScatterTooltipData }>; }
 
 const fmt = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+
+const CustomScatterTooltip = ({ active, payload }: ScatterTooltipProps) => {
+  if (active && payload && payload.length) {
+    const info = payload[0].payload;
+    return (
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl shadow-xl text-xs">
+        <p className="font-bold text-slate-800 dark:text-white mb-1.5">{info.name}</p>
+        <p className="text-slate-500 dark:text-gray-400">Unit Profit: <span className="font-bold text-emerald-500">{fmt(info.x)}</span></p>
+        <p className="text-slate-500 dark:text-gray-400">Qty Sold: <span className="font-bold text-[#FF6B35]">{info.y}</span></p>
+        <p className="text-slate-500 dark:text-gray-400">Total Rev: <span className="font-bold text-blue-500">{fmt(info.z)}</span></p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export const MenuTab: React.FC<MenuTabProps> = ({
   startDate,
@@ -65,15 +82,17 @@ export const MenuTab: React.FC<MenuTabProps> = ({
     try {
       const resData = await api.get(`/analytics/menu?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
-    } catch (err: any) {
-      toast.error(err.message || 'Error fetching menu analytics');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error fetching menu analytics');
     } finally {
       setLoading(false);
     }
   }, [token, startDate, endDate]);
 
   useEffect(() => {
-    fetchMenuAnalytics();
+    let cancelled = false;
+    void Promise.resolve().then(() => { if (!cancelled) return fetchMenuAnalytics(); });
+    return () => { cancelled = true; };
   }, [fetchMenuAnalytics, refreshTrigger]);
 
   if (loading) {
@@ -110,22 +129,6 @@ export const MenuTab: React.FC<MenuTabProps> = ({
     name: item.name,
     z: item.revenue,
   }));
-
-  // Custom tool-tip for scatter chart
-  const CustomScatterTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const info = payload[0].payload;
-      return (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl shadow-xl text-xs">
-          <p className="font-bold text-slate-800 dark:text-white mb-1.5">{info.name}</p>
-          <p className="text-slate-500 dark:text-gray-400">Unit Profit: <span className="font-bold text-emerald-500">{fmt(info.x)}</span></p>
-          <p className="text-slate-500 dark:text-gray-400">Qty Sold: <span className="font-bold text-[#FF6B35]">{info.y}</span></p>
-          <p className="text-slate-500 dark:text-gray-400">Total Rev: <span className="font-bold text-blue-500">{fmt(info.z)}</span></p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="space-y-6">

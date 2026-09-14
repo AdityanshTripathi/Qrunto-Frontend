@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
+import { AccessibleDialog } from '../../components/AccessibleDialog';
 
 interface Category {
   id: string;
@@ -54,22 +55,26 @@ export const CategoryManagement: React.FC = () => {
     resolver: zodResolver(CategorySchema),
   });
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get('/categories');
       // Categories are already ordered by displayOrder asc from backend
       setCategories(res.categories || []);
-    } catch (err: any) {
-      toast.error('Failed to load categories: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Failed to load categories: ' + (err instanceof Error ? err.message : 'Unable to complete the request.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchCategories();
+    });
+    return () => { cancelled = true; };
+  }, [fetchCategories]);
 
   const handleOpenAddModal = () => {
     setEditingCategory(null);
@@ -105,8 +110,8 @@ export const CategoryManagement: React.FC = () => {
       setIsModalOpen(false);
       reset();
       fetchCategories();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save category');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save category');
     } finally {
       setActionLoading(false);
     }
@@ -119,8 +124,8 @@ export const CategoryManagement: React.FC = () => {
       toast.success('Category soft-deleted successfully');
       setDeleteConfirmId(null);
       fetchCategories();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete category');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete category');
     } finally {
       setActionLoading(false);
     }
@@ -133,8 +138,8 @@ export const CategoryManagement: React.FC = () => {
       await api.patch(`/categories/${cat.id}`, { isActive: nextActive });
       toast.success(`Category ${nextActive ? 'activated' : 'deactivated'} successfully`);
       fetchCategories();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update category status');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update category status');
     } finally {
       setActionLoading(false);
     }
@@ -164,8 +169,8 @@ export const CategoryManagement: React.FC = () => {
         api.patch(`/categories/${catB.id}`, { displayOrder: catB.displayOrder })
       ]);
       toast.success('Category order updated');
-    } catch (err: any) {
-      toast.error('Failed to update category order: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Failed to update category order: ' + (err instanceof Error ? err.message : 'Unable to complete the request.'));
       // Revert in case of API failure
       fetchCategories();
     } finally {
@@ -197,8 +202,8 @@ export const CategoryManagement: React.FC = () => {
         api.patch(`/categories/${catB.id}`, { displayOrder: catB.displayOrder })
       ]);
       toast.success('Category order updated');
-    } catch (err: any) {
-      toast.error('Failed to update category order: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Failed to update category order: ' + (err instanceof Error ? err.message : 'Unable to complete the request.'));
       // Revert in case of API failure
       fetchCategories();
     } finally {
@@ -371,7 +376,7 @@ export const CategoryManagement: React.FC = () => {
 
       {/* Slide-over / Centered Modal for Add & Edit Category */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel="Category editor" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Overlay backdrop */}
           <div 
             onClick={() => setIsModalOpen(false)}
@@ -462,7 +467,7 @@ export const CategoryManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

@@ -1,8 +1,9 @@
 import { useRestaurantTimezone } from '../../../lib/timezone';
 import React, { useEffect, useState } from 'react';
-import { useCRMStore, type Coupon } from '../../../store/crmStore';
+import { errorMessage, useCRMStore, type Coupon } from '../../../store/crmStore';
 import { Plus, Trash2, Loader2, X, AlertTriangle, Calendar, Percent, Tag } from 'lucide-react';
 import { toast } from 'sonner';
+import { AccessibleDialog } from '../../../components/AccessibleDialog';
 
 export const CouponCampaignsConfig: React.FC = () => {
   const restaurantTimeZone = useRestaurantTimezone();
@@ -30,7 +31,7 @@ export const CouponCampaignsConfig: React.FC = () => {
 
   useEffect(() => {
     fetchCoupons();
-  }, []);
+  }, [fetchCoupons]);
 
   const resetForm = () => {
     setCode('');
@@ -71,8 +72,8 @@ export const CouponCampaignsConfig: React.FC = () => {
       toast.success('Coupon campaign created successfully!');
       setIsModalOpen(false);
       resetForm();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create coupon campaign');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to create coupon campaign');
     } finally {
       setSubmitting(false);
     }
@@ -86,8 +87,8 @@ export const CouponCampaignsConfig: React.FC = () => {
       toast.success('Coupon campaign deleted successfully');
       setIsDeleteOpen(false);
       resetForm();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete coupon campaign');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to delete coupon campaign');
     } finally {
       setSubmitting(false);
     }
@@ -171,7 +172,7 @@ export const CouponCampaignsConfig: React.FC = () => {
 
       {/* CREATE MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} ariaLabel="Create coupon campaign" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-6">
@@ -199,7 +200,9 @@ export const CouponCampaignsConfig: React.FC = () => {
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Discount Type</label>
                   <select
                     value={discountType}
-                    onChange={(e) => setDiscountType(e.target.value as any)}
+                    onChange={(e) => {
+                      if (e.target.value === 'PERCENTAGE' || e.target.value === 'FIXED') setDiscountType(e.target.value);
+                    }}
                     className="w-full px-4 py-3 bg-[#f8fafc] dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151] rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#FF6B35] transition-all text-slate-705 dark:text-gray-200"
                   >
                     <option value="PERCENTAGE">Percentage (%)</option>
@@ -287,12 +290,12 @@ export const CouponCampaignsConfig: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* DELETE CONFIRM MODAL */}
       {isDeleteOpen && selectedCoupon && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} ariaLabel="Delete coupon campaign confirmation" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsDeleteOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 text-center z-10 animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
@@ -321,7 +324,7 @@ export const CouponCampaignsConfig: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

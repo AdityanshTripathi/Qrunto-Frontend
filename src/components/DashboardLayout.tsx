@@ -67,6 +67,9 @@ export const DashboardLayout: React.FC = () => {
     isRead: boolean;
     createdAt: string;
   }
+  interface NotificationsResponse { notifications?: Notification[]; }
+  interface WindowWithWebkitAudioContext extends Window { webkitAudioContext?: typeof AudioContext; }
+  const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'Unknown error';
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -99,8 +102,8 @@ export const DashboardLayout: React.FC = () => {
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
       toast.success('All notifications marked as read');
-    } catch (err: any) {
-      toast.error('Failed to mark all as read: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Failed to mark all as read: ' + errorMessage(err));
     }
   };
 
@@ -109,7 +112,7 @@ export const DashboardLayout: React.FC = () => {
       await api.patch(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err: any) {
+    } catch {
       toast.error('Failed to mark notification as read');
     }
   };
@@ -117,13 +120,15 @@ export const DashboardLayout: React.FC = () => {
   useEffect(() => {
     const fetchNotifications = async (silent = false) => {
       try {
-        const res = await api.get('/notifications');
-        const newNotifications = res.notifications || [];
-        const newUnread = newNotifications.filter((n: any) => !n.isRead).length;
+        const res: NotificationsResponse = await api.get('/notifications');
+        const newNotifications = res.notifications ?? [];
+        const newUnread = newNotifications.filter((n) => !n.isRead).length;
         
         if (!silent && newUnread > unreadCountRef.current) {
           try {
-            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const audioConstructor = window.AudioContext ?? (window as WindowWithWebkitAudioContext).webkitAudioContext;
+            if (!audioConstructor) throw new Error('Web Audio API unavailable');
+            const audioCtx = new audioConstructor();
             const playTone = (freq: number, duration: number, delay: number) => {
               const osc = audioCtx.createOscillator();
               const gain = audioCtx.createGain();
@@ -143,9 +148,9 @@ export const DashboardLayout: React.FC = () => {
           }
 
           const currentIds = new Set(notificationsRef.current.map(n => n.id));
-          const addedNotifs = newNotifications.filter((n: any) => !n.isRead && !currentIds.has(n.id));
+          const addedNotifs = newNotifications.filter((n) => !n.isRead && !currentIds.has(n.id));
           
-          addedNotifs.forEach((n: any) => {
+          addedNotifs.forEach((n) => {
             toast.info(n.title, {
               description: n.message,
               duration: 5000,
@@ -170,10 +175,15 @@ export const DashboardLayout: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     if (user?.role === 'SUPER_ADMIN') {
-      setHasSub(true);
-      setCheckingSub(false);
-      return;
+      void Promise.resolve().then(() => {
+        if (!cancelled) {
+          setHasSub(true);
+          setCheckingSub(false);
+        }
+      });
+      return () => { cancelled = true; };
     }
     const checkSubscription = async () => {
       try {
@@ -183,9 +193,9 @@ export const DashboardLayout: React.FC = () => {
         } else {
           navigate('/subscription', { replace: true });
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Subscription check failed:', err);
-        const errMsg = err.message?.toLowerCase() || '';
+        const errMsg = errorMessage(err).toLowerCase();
         if (errMsg.includes('token') || errMsg.includes('unauthorized') || errMsg.includes('auth')) {
           clearAuth();
           navigate('/login', { replace: true });
@@ -196,8 +206,11 @@ export const DashboardLayout: React.FC = () => {
         setCheckingSub(false);
       }
     };
-    checkSubscription();
-  }, [navigate, user]);
+    void Promise.resolve().then(() => {
+      if (!cancelled) return checkSubscription();
+    });
+    return () => { cancelled = true; };
+  }, [clearAuth, navigate, user]);
 
   if (checkingSub) {
     return (

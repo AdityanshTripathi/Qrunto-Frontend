@@ -3,6 +3,7 @@ import { Check, ArrowRight, Sparkles, Percent, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
+import { AccessibleDialog } from '../components/AccessibleDialog';
 
 interface Plan {
   id: string;
@@ -33,8 +34,8 @@ export const Subscription: React.FC = () => {
       try {
         const res = await api.get('/plans');
         setPlans(res.plans);
-      } catch (err: any) {
-        toast.error('Failed to load subscription plans: ' + err.message);
+      } catch (err: unknown) {
+        toast.error('Failed to load subscription plans: ' + (err instanceof Error ? err.message : 'Unable to complete the request.'));
       } finally {
         setLoading(false);
       }
@@ -58,8 +59,8 @@ export const Subscription: React.FC = () => {
       setPromoApplied(true);
       toast.success(response.message || 'Subscription activated successfully!');
       navigate('/dashboard', { replace: true });
-    } catch (err: any) {
-      toast.error(err.message || 'License activation failed. Please check the code and try again.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'License activation failed. Please check the code and try again.');
     } finally {
       setRedeemingCode(false);
     }
@@ -267,13 +268,13 @@ export const Subscription: React.FC = () => {
 
       {/* PAYMENT MODAL OVERLAY */}
       {isCheckoutOpen && selectingPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75">
+        <AccessibleDialog isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} ariaLabel="Subscription purchase unavailable" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75">
           <div role="dialog" aria-label="Subscription purchase unavailable" className="max-w-md rounded-2xl bg-[#1f2937] p-6 space-y-4">
             <button aria-label="Close" onClick={() => setIsCheckoutOpen(false)} className="float-right"><X /></button>
             <h3 className="font-bold">{selectingPlan.name}</h3>
             <p>Online subscription purchases are unavailable. Contact support for activation, or redeem an existing license in dashboard billing.</p>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

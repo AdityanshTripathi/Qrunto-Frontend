@@ -1,7 +1,7 @@
 import { useRestaurantTimezone } from '../../../lib/timezone';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useCRMStore } from '../../../store/crmStore';
+import { errorMessage, useCRMStore } from '../../../store/crmStore';
 import { 
   ArrowLeft, User, Mail, Phone, Calendar, Loader2, DollarSign, ShoppingBag, TrendingUp, Sparkles,
   FileText, ChevronDown, ChevronUp, UserPlus, Award
@@ -45,9 +45,11 @@ export const CustomerDetail: React.FC = () => {
   useEffect(() => {
     if (currentCustomer) {
       const meta = currentCustomer.metadataJson || {};
-      setDietary(meta.dietary || 'None');
-      setSeating(meta.seating || 'None');
-      setAllergies(meta.allergies || '');
+      void Promise.resolve().then(() => {
+        setDietary(meta.dietary || 'None');
+        setSeating(meta.seating || 'None');
+        setAllergies(meta.allergies || '');
+      });
     }
   }, [currentCustomer]);
 
@@ -67,8 +69,8 @@ export const CustomerDetail: React.FC = () => {
       await addCustomerNote(id, newNoteText);
       setNewNoteText('');
       toast.success('Staff note added successfully!');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to add staff note');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to add staff note');
     } finally {
       setNoteSubmitting(false);
     }
@@ -87,13 +89,11 @@ export const CustomerDetail: React.FC = () => {
         allergies: allergies.trim(),
       };
       
-      await updateCustomer(id, {
-        metadataJson: updatedMeta
-      } as any);
+      await updateCustomer(id, { metadataJson: updatedMeta });
       
       toast.success('Dining preferences updated successfully!');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save preferences');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to save preferences');
     } finally {
       setSavingPrefs(false);
     }
@@ -428,7 +428,9 @@ export const CustomerDetail: React.FC = () => {
               <div className="relative border-l-2 border-slate-100 dark:border-[#374151]/45 ml-4 pl-0 space-y-6">
                 {timeline.map((event) => {
                   const isExpanded = !!expandedEvents[event.id];
-                  const hasMetaItems = event.type === 'ORDER' && event.metadata?.items?.length > 0;
+                  const metadata = event.metadata;
+                  const orderItems = event.type === 'ORDER' ? metadata?.items ?? [] : [];
+                  const hasMetaItems = orderItems.length > 0;
 
                   return (
                     <div key={event.id} className="relative pl-8 pb-2">
@@ -461,22 +463,22 @@ export const CustomerDetail: React.FC = () => {
                               {isExpanded ? (
                                 <>Hide items <ChevronUp className="w-3 h-3" /></>
                               ) : (
-                                <>View items ({event.metadata.items.length}) <ChevronDown className="w-3 h-3" /></>
+                                <>View items ({orderItems.length}) <ChevronDown className="w-3 h-3" /></>
                               )}
                             </button>
                             
                             {isExpanded && (
                               <div className="mt-2.5 p-3 bg-white dark:bg-[#111827]/40 border border-slate-100 dark:border-[#374151]/40 rounded-xl space-y-1.5 text-xs text-slate-650 dark:text-gray-300 shadow-inner">
-                                {event.metadata.items.map((item: any, idx: number) => (
+                                {orderItems.map((item, idx: number) => (
                                   <div key={idx} className="flex justify-between">
                                     <span>{item.name} <strong className="text-slate-400">x{item.quantity}</strong></span>
                                     <span className="font-semibold text-slate-800 dark:text-white">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
                                   </div>
                                 ))}
-                                {event.metadata.tableNumber && (
+                                {metadata?.tableNumber && (
                                   <div className="pt-2 border-t border-slate-100 dark:border-[#374151]/30 text-[10px] text-slate-400 flex justify-between">
-                                    <span>Table: {event.metadata.tableNumber}</span>
-                                    {event.metadata.notes && <span>Notes: {event.metadata.notes}</span>}
+                                    <span>Table: {metadata.tableNumber}</span>
+                                    {metadata.notes && <span>Notes: {metadata.notes}</span>}
                                   </div>
                                 )}
                               </div>

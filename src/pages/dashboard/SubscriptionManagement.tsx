@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, Calendar, ShieldCheck, ArrowRight, Loader2, Sparkles, Check } from 'lucide-react';
 import { api } from '../../lib/api';
+import { AccessibleDialog } from '../../components/AccessibleDialog';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { toast } from 'sonner';
 
@@ -10,6 +11,8 @@ import { toast } from 'sonner';
 interface Plan {
   name: string;
   price: number;
+  price6Month?: number;
+  price1Year?: number;
   maxTables: number;
   maxMenuItems: number;
   featuresJson: string[];
@@ -51,8 +54,8 @@ const SubscriptionManagementContent: React.FC = () => {
       // Reload subscription
       const subRes = await api.get('/subscriptions/current');
       setSubscription(subRes.subscription || null);
-    } catch (err: any) {
-      toast.error(err.message || 'Redemption failed. Please check your license code.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Redemption failed. Please check your license code.');
     } finally {
       setRedeeming(false);
     }
@@ -65,8 +68,8 @@ const SubscriptionManagementContent: React.FC = () => {
         setLoading(true);
         const res = await api.get('/subscriptions/current');
         setSubscription(res.subscription || null);
-      } catch (err: any) {
-        toast.error('Failed to load subscription details: ' + err.message);
+      } catch (err: unknown) {
+        toast.error('Failed to load subscription details: ' + (err instanceof Error ? err.message : 'Unable to complete the request.'));
       } finally {
         setLoading(false);
       }
@@ -152,10 +155,10 @@ const SubscriptionManagementContent: React.FC = () => {
                 let displayPrice = subscription.plan.price;
                 let displayDurationLabel = `${diffDays} Days`;
                 if (diffDays >= 170 && diffDays <= 190) {
-                  displayPrice = (subscription.plan as any).price6Month || (subscription.plan.price * 6);
+                  displayPrice = subscription.plan.price6Month || (subscription.plan.price * 6);
                   displayDurationLabel = '6 Months';
                 } else if (diffDays >= 360 && diffDays <= 370) {
-                  displayPrice = (subscription.plan as any).price1Year || (subscription.plan.price * 12);
+                  displayPrice = subscription.plan.price1Year || (subscription.plan.price * 12);
                   displayDurationLabel = '1 Year';
                 } else if (diffDays === 30) {
                   displayDurationLabel = '30 Days';
@@ -292,7 +295,7 @@ const SubscriptionManagementContent: React.FC = () => {
 
       {/* REDEEM CODE POPUP MODAL */}
       {isRedeemModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isRedeemModalOpen} onClose={() => setIsRedeemModalOpen(false)} ariaLabel="Redeem license code" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsRedeemModalOpen(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[24px] shadow-2xl p-6 z-10 animate-in zoom-in-95 duration-200">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Redeem License Code</h2>
@@ -329,7 +332,7 @@ const SubscriptionManagementContent: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

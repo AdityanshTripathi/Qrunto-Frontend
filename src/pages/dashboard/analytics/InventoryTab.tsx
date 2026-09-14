@@ -72,15 +72,17 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
     try {
       const resData = await api.get(`/analytics/inventory?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
-    } catch (err: any) {
-      toast.error(err.message || 'Error fetching inventory analytics');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error fetching inventory analytics');
     } finally {
       setLoading(false);
     }
   }, [token, startDate, endDate]);
 
   useEffect(() => {
-    fetchInventoryAnalytics();
+    let cancelled = false;
+    void Promise.resolve().then(() => { if (!cancelled) return fetchInventoryAnalytics(); });
+    return () => { cancelled = true; };
   }, [fetchInventoryAnalytics, refreshTrigger]);
 
   if (loading) {

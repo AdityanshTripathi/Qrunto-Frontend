@@ -21,6 +21,8 @@ import { useAuthStore } from '../../store/authStore';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 import { SOCKET_URL } from '../../config/backend';
 import { api } from '../../lib/api';
+import { useCoalescedRefresh } from '../../hooks/useCoalescedRefresh';
+import { AccessibleDialog } from '../../components/AccessibleDialog';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type OrderStatus = 'NEW' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED' | 'PAID';
@@ -68,7 +70,7 @@ interface OrderStats {
 }
 
 // ─── Format Currency ──────────────────────────────────────────────────────────
-const fmt = (amount: number, _currency = 'INR') =>
+const fmt = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
 
 
@@ -88,7 +90,8 @@ export const OrderManagement: React.FC = () => {
   const [pollInterval, setPollInterval] = useState<number>(10000);
   const [socketConnected, setSocketConnected] = useState(false);
   const hasConnectedRef = useRef(false);
-  const fetchOrdersRef = useRef<(silent?: boolean) => void>(() => undefined);
+  const fetchOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const ordersRequestGenerationRef = useRef(0);
 
   const [dateFilter, setDateFilter] = useState<'TODAY' | '7_DAYS' | '1_MONTH' | '1_YEAR' | 'CUSTOM'>('TODAY');
   const [customDate, setCustomDate] = useState<string>('');
@@ -106,10 +109,15 @@ export const OrderManagement: React.FC = () => {
 
   // Fetch customer loyalty status inside POS Detail Modal
   useEffect(() => {
+    let cancelled = false;
     if (!selectedOrder || !selectedOrder.customerPhone || !token) {
-      setCustomerLoyalty(null);
-      setRedeemPointsAmount(0);
-      return;
+      void Promise.resolve().then(() => {
+        if (!cancelled) {
+          setCustomerLoyalty(null);
+          setRedeemPointsAmount(0);
+        }
+      });
+      return () => { cancelled = true; };
     }
 
     const fetchLoyaltyBalance = async () => {
@@ -125,7 +133,10 @@ export const OrderManagement: React.FC = () => {
       }
     };
 
-    fetchLoyaltyBalance();
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchLoyaltyBalance();
+    });
+    return () => { cancelled = true; };
   }, [selectedOrder, token]);
 
   const handleApplyLoyaltyDiscount = async () => {
@@ -144,8 +155,8 @@ export const OrderManagement: React.FC = () => {
       const balanceData = await api.get(`/crm/loyalty/balance?phone=${encodeURIComponent(selectedOrder.customerPhone!)}`);
       setCustomerLoyalty(balanceData);
       setRedeemPointsAmount(0);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to apply discount');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to apply discount');
     } finally {
       setRedeemSubmitting(false);
     }
@@ -173,6 +184,7 @@ export const OrderManagement: React.FC = () => {
     cursor?: string,
   ) => {
     if (!token) return;
+    const requestGeneration = ++ordersRequestGenerationRef.current;
     if (cursor) setLoadingMore(true);
     else if (!silent) setLoading(true);
 
@@ -198,6 +210,7 @@ export const OrderManagement: React.FC = () => {
         : api.get('/orders/stats');
 
       const [ordersData, statsData] = await Promise.all([ordersRequest, statsRequest]);
+      if (requestGeneration !== ordersRequestGenerationRef.current) return;
 
       const preserveLoadedPages = !cursor && silent && loadedMoreRef.current;
       setOrders((previous) => {
@@ -208,7 +221,10 @@ export const OrderManagement: React.FC = () => {
           if (hasNew) {
             toast.success('🔔 New Order Received!', { duration: 5000 });
             try {
-              const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+              const browserWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
+              const audioContextConstructor = window.AudioContext || browserWindow.webkitAudioContext;
+              if (!audioContextConstructor) throw new Error('Audio is unavailable');
+              const audioCtx = new audioContextConstructor();
               const playTone = (freq: number, duration: number, delay: number) => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
@@ -245,26 +261,29 @@ export const OrderManagement: React.FC = () => {
       if (statsData) {
         setStats(statsData.stats);
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Error syncing data');
+    } catch (err: unknown) {
+      if (requestGeneration !== ordersRequestGenerationRef.current) return;
+      toast.error(err instanceof Error ? err.message : 'Error syncing data');
     } finally {
-      if (cursor) setLoadingMore(false);
+      if (requestGeneration === ordersRequestGenerationRef.current && cursor) setLoadingMore(false);
       else if (!silent) setLoading(false);
     }
   }, [token, activeTab, dateFilter, customDate, restaurantTimeZone]);
 
-  useEffect(() => {
-    void fetchOrdersAndStats();
-  }, [fetchOrdersAndStats]);
+  const refreshOrders = useCoalescedRefresh(() => fetchOrdersAndStats(true));
 
   useEffect(() => {
-    fetchOrdersRef.current = fetchOrdersAndStats;
-  }, [fetchOrdersAndStats]);
+    void refreshOrders();
+  }, [refreshOrders]);
+
+  useEffect(() => {
+    fetchOrdersRef.current = refreshOrders;
+  }, [refreshOrders]);
 
   useEffect(() => {
     if (socketConnected) return;
     const timer = setInterval(() => {
-      fetchOrdersRef.current(true);
+      void fetchOrdersRef.current();
     }, pollInterval);
     return () => clearInterval(timer);
   }, [pollInterval, socketConnected]);
@@ -277,7 +296,7 @@ export const OrderManagement: React.FC = () => {
       tryAllTransports: true,
       auth: { token },
     });
-    const refresh = () => fetchOrdersRef.current(true);
+    const refresh = () => void fetchOrdersRef.current();
     socket.on('connect', () => {
       setSocketConnected(true);
       if (hasConnectedRef.current) refresh();
@@ -309,8 +328,8 @@ export const OrderManagement: React.FC = () => {
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(data.order);
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update order status');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update order status');
     } finally {
       setUpdatingId(null);
     }
@@ -422,7 +441,7 @@ export const OrderManagement: React.FC = () => {
             <option value={30000}>30s</option>
           </select>
           <button
-            onClick={() => fetchOrdersAndStats()}
+            onClick={() => void refreshOrders()}
             className="p-1.5 hover:bg-slate-100 dark:hover:bg-[#374151]/50 rounded-lg text-slate-505 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all"
             title="Manual sync"
           >
@@ -434,28 +453,22 @@ export const OrderManagement: React.FC = () => {
       {/* Stats Counter Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {(['NEW', 'PREPARING', 'READY', 'SERVED', 'CANCELLED'] as OrderStatus[]).map((status) => {
-          let label: string = status;
+          const label = status === 'PREPARING' ? 'Preparing' : status === 'READY' ? 'Ready' : status === 'SERVED' ? 'Served' : status === 'CANCELLED' ? 'Cancelled' : 'New';
           let iconColor = 'text-blue-600 dark:text-blue-400';
           let bgColor = 'from-blue-500/10 to-transparent border-blue-500/20';
 
           if (status === 'PREPARING') {
-            label = 'Preparing';
             iconColor = 'text-amber-600 dark:text-amber-400';
             bgColor = 'from-amber-500/10 to-transparent border-amber-500/20';
           } else if (status === 'READY') {
-            label = 'Ready';
             iconColor = 'text-emerald-600 dark:text-emerald-400';
             bgColor = 'from-emerald-500/10 to-transparent border-emerald-500/20';
           } else if (status === 'SERVED') {
-            label = 'Served';
             iconColor = 'text-slate-505 dark:text-gray-400';
             bgColor = 'from-slate-500/10 to-transparent border-slate-500/20';
           } else if (status === 'CANCELLED') {
-            label = 'Cancelled';
             iconColor = 'text-rose-600 dark:text-rose-400';
             bgColor = 'from-rose-500/10 to-transparent border-rose-500/20';
-          } else {
-            label = 'New';
           }
 
           return (
@@ -520,7 +533,7 @@ export const OrderManagement: React.FC = () => {
             <button
               key={filter.id}
               onClick={() => {
-                setDateFilter(filter.id as any);
+                setDateFilter(filter.id as 'TODAY' | '7_DAYS' | '1_MONTH' | '1_YEAR' | 'CUSTOM');
                 if (filter.id !== 'CUSTOM') setCustomDate('');
               }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${dateFilter === filter.id
@@ -650,7 +663,7 @@ export const OrderManagement: React.FC = () => {
       )}
 
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={Boolean(selectedOrder)} onClose={() => setSelectedOrder(null)} ariaLabel="Order details" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setSelectedOrder(null)} className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
 
           <div className="relative bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/55 rounded-[28px] max-w-lg w-full overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200">
@@ -852,7 +865,7 @@ export const OrderManagement: React.FC = () => {
               {renderActionButtons(selectedOrder)}
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
   LayoutDashboard,
@@ -23,6 +23,7 @@ import {
 import { useAuthStore, type User } from '../../store/authStore';
 import { saveSupportSession } from '../../lib/session-lifecycle';
 import { api } from '../../lib/api';
+import { AccessibleDialog } from '../../components/AccessibleDialog';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { SkeletonLoader } from '../../components/SkeletonLoader';
 
@@ -43,12 +44,22 @@ interface SuperAdminPayment {
   paymentMethod: string | null;
   createdAt: string;
 }
+type AdminTab = 'overview' | 'restaurants' | 'plans' | 'licenses' | 'transactions' | 'settings' | 'whatsapp';
+interface SuperAdminKpis { totalRestaurants: number; activeRestaurants: number; trialRestaurants: number; expiredRestaurants: number; monthlyRevenue: number; totalOrders: number; todayOrders: number; averageRevenuePerRest: number; }
+interface PlanDistribution { name: string; price: number; count: number; }
+interface RecentRestaurant { name: string; ownerName: string; ownerEmail: string; createdAt: string; }
+interface SuperAdminPlan { id: string; name: string; price: number; price6Month?: number; price1Year?: number; durationDays: number; maxTables: number; maxMenuItems: number; featuresJson?: string[]; isActive: boolean; }
+interface SuperAdminRestaurant { id: string; name: string; ownerName: string; ownerEmail: string; phone?: string; isActive: boolean; planName: string; expiryDate?: string; stats: { menuItemsCount: number; tablesCount: number }; }
+interface LicenseCode { id: string; code: string; planName: string; durationDays: number; usageCount: number; usageLimit: number; expiresAt?: string; isActive: boolean; }
+interface WhatsAppLog { id: string; recipient: string; message: string; status: string; time: string; }
+const getErrorMessage = (error: unknown): string => error instanceof Error ? error.message : 'Unable to complete the request.';
+const isAdminTab = (value: string): value is AdminTab => ['overview', 'restaurants', 'plans', 'licenses', 'transactions', 'settings', 'whatsapp'].includes(value);
 
 export const SuperAdminDashboard: React.FC = () => {
   const { setAuth } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'overview' | 'restaurants' | 'plans' | 'licenses' | 'transactions' | 'settings' | 'whatsapp'>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [loading, setLoading] = useState(true);
-  const [kpis, setKpis] = useState<any>({
+  const [kpis, setKpis] = useState<SuperAdminKpis>({
     totalRestaurants: 0,
     activeRestaurants: 0,
     trialRestaurants: 0,
@@ -58,11 +69,11 @@ export const SuperAdminDashboard: React.FC = () => {
     todayOrders: 0,
     averageRevenuePerRest: 0,
   });
-  const [planDistribution, setPlanDistribution] = useState<any[]>([]);
-  const [recentRestaurants, setRecentRestaurants] = useState<any[]>([]);
-  const [restaurantsList, setRestaurantsList] = useState<any[]>([]);
-  const [plansList, setPlansList] = useState<any[]>([]);
-  const [licensesList, setLicensesList] = useState<any[]>([]);
+  const [planDistribution, setPlanDistribution] = useState<PlanDistribution[]>([]);
+  const [recentRestaurants, setRecentRestaurants] = useState<RecentRestaurant[]>([]);
+  const [restaurantsList, setRestaurantsList] = useState<SuperAdminRestaurant[]>([]);
+  const [plansList, setPlansList] = useState<SuperAdminPlan[]>([]);
+  const [licensesList, setLicensesList] = useState<LicenseCode[]>([]);
   const [paymentsList, setPaymentsList] = useState<SuperAdminPayment[]>([]);
   const [transactionPagination, setTransactionPagination] = useState<CursorPagination>({ nextCursor: null, hasMore: false });
   const [transactionsLoadingMore, setTransactionsLoadingMore] = useState(false);
@@ -70,7 +81,7 @@ export const SuperAdminDashboard: React.FC = () => {
   // Modals / Forms States
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<any | null>(null);
+  const [editingPlan, setEditingPlan] = useState<SuperAdminPlan | null>(null);
   
   // Plan form fields
   const [planName, setPlanName] = useState('');
@@ -91,7 +102,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
   // Restaurant Subscription edit fields
   const [isSubEditModalOpen, setIsSubEditModalOpen] = useState(false);
-  const [editingRestaurant, setEditingRestaurant] = useState<any | null>(null);
+  const [editingRestaurant, setEditingRestaurant] = useState<SuperAdminRestaurant | null>(null);
   const [subPlanId, setSubPlanId] = useState('');
   const [subStatus, setSubStatus] = useState('');
   const [subEndDate, setSubEndDate] = useState('');
@@ -100,7 +111,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const [waPhone, setWaPhone] = useState('');
   const [waMessage, setWaMessage] = useState('');
   const [waSending, setWaSending] = useState(false);
-  const [sentLogs, setSentLogs] = useState<any[]>([
+  const [sentLogs, setSentLogs] = useState<WhatsAppLog[]>([
     {
       id: 'wamid.HBgMOTE3NDg5ODQ0MDg5FQIAERgSRTYzQjk2RjVFMzM3QUJCN0U0AA==',
       recipient: '+91 74898 44089',
@@ -134,15 +145,15 @@ export const SuperAdminDashboard: React.FC = () => {
         ...prev
       ]);
       setWaMessage('');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to send WhatsApp message');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setWaSending(false);
     }
   };
 
   // Fetch data depending on activeTab
-  const loadTabData = async (cursor?: string) => {
+  const loadTabData = useCallback(async (cursor?: string) => {
     try {
       if (activeTab === 'transactions' && cursor) setTransactionsLoadingMore(true);
       else setLoading(true);
@@ -184,17 +195,21 @@ export const SuperAdminDashboard: React.FC = () => {
           hasMore: res.pagination?.hasMore ?? false,
         });
       }
-    } catch (err: any) {
-      toast.error('Failed to load data: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Failed to load data: ' + getErrorMessage(err));
     } finally {
       if (activeTab === 'transactions' && cursor) setTransactionsLoadingMore(false);
       else setLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
-    loadTabData();
-  }, [activeTab]);
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return loadTabData();
+    });
+    return () => { cancelled = true; };
+  }, [loadTabData]);
 
   // Toggle Restaurant Activation
   const handleToggleStatus = async (restId: string) => {
@@ -202,8 +217,8 @@ export const SuperAdminDashboard: React.FC = () => {
       const res = await api.patch(`/superadmin/restaurants/${restId}/toggle-status`, {});
       toast.success(res.message);
       loadTabData();
-    } catch (err: any) {
-      toast.error(err.message || 'Status toggle failed');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -246,8 +261,8 @@ export const SuperAdminDashboard: React.FC = () => {
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 800);
-    } catch (err: any) {
-      toast.error(err.message || 'Login-as failed');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -284,8 +299,8 @@ export const SuperAdminDashboard: React.FC = () => {
       setPlanMaxMenuItems(50);
       setPlanFeatures('');
       loadTabData();
-    } catch (err: any) {
-      toast.error(err.message || 'Plan save failed');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -306,8 +321,8 @@ export const SuperAdminDashboard: React.FC = () => {
       setSubStatus('');
       setSubEndDate('');
       loadTabData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update subscription');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -320,8 +335,8 @@ export const SuperAdminDashboard: React.FC = () => {
       const res = await api.delete(`/superadmin/restaurants/${id}`);
       toast.success(res.message);
       loadTabData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete restaurant');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -334,8 +349,8 @@ export const SuperAdminDashboard: React.FC = () => {
       const res = await api.delete(`/superadmin/plans/${id}`);
       toast.success(res.message || 'Plan deleted successfully');
       loadTabData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete plan');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -348,8 +363,8 @@ export const SuperAdminDashboard: React.FC = () => {
       const res = await api.delete(`/superadmin/license-codes/${id}`);
       toast.success(res.message || 'License code deleted successfully');
       loadTabData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete license code');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -369,8 +384,8 @@ export const SuperAdminDashboard: React.FC = () => {
       setLicenseCodeInput('');
       setLicenseExpiresAt('');
       loadTabData();
-    } catch (err: any) {
-      toast.error(err.message || 'License code generation failed');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -409,7 +424,7 @@ export const SuperAdminDashboard: React.FC = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => { if (isAdminTab(tab.id)) setActiveTab(tab.id); }}
                   className={`w-full flex items-center gap-4 py-3 px-4 rounded-xl transition-all text-left ${
                     activeTab === tab.id
                       ? 'bg-[#FF6B35] text-white font-semibold shadow-lg shadow-[#FF6B35]/15'
@@ -1069,7 +1084,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
       {/* PLAN CREATION MODAL */}
       {isPlanModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isPlanModalOpen} onClose={() => setIsPlanModalOpen(false)} ariaLabel="Subscription plan editor" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
             onClick={() => {
               setIsPlanModalOpen(false);
@@ -1205,12 +1220,12 @@ export const SuperAdminDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* LICENSE GENERATOR MODAL */}
       {isLicenseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isLicenseModalOpen} onClose={() => setIsLicenseModalOpen(false)} ariaLabel="Generate license code" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsLicenseModalOpen(false)} className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/80 rounded-[24px] shadow-2xl p-6 z-10 animate-in zoom-in-95 duration-200">
             <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Generate License Code</h2>
@@ -1292,12 +1307,12 @@ export const SuperAdminDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* RESTAURANT SUBSCRIPTION EDIT MODAL */}
       {isSubEditModalOpen && editingRestaurant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isSubEditModalOpen} onClose={() => setIsSubEditModalOpen(false)} ariaLabel="Edit restaurant subscription" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
             onClick={() => {
               setIsSubEditModalOpen(false);
@@ -1378,7 +1393,7 @@ export const SuperAdminDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </div>
   );

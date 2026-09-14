@@ -11,7 +11,8 @@ import { CouponCampaignsConfig } from './CouponCampaignsConfig';
 import { CustomerSegmentsConfig } from './CustomerSegmentsConfig';
 import { CampaignsConfig } from './CampaignsConfig';
 import { TicketsBoard } from './TicketsBoard';
-import { toast } from 'sonner';
+
+interface UpcomingOccasion { customerId: string; type: 'BIRTHDAY' | 'ANNIVERSARY'; name: string; date: string; daysRemaining: number; }
 
 export const CustomersDirectory: React.FC = () => {
   const restaurantTimeZone = useRestaurantTimezone();
@@ -35,7 +36,7 @@ export const CustomersDirectory: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'directory' | 'loyalty' | 'coupons' | 'segments' | 'campaigns' | 'tickets'>('directory');
 
   // Occasions state
-  const [upcomingOccasions, setUpcomingOccasions] = useState<any[]>([]);
+  const [upcomingOccasions, setUpcomingOccasions] = useState<UpcomingOccasion[]>([]);
   const [loadingOccasions, setLoadingOccasions] = useState(false);
 
   // Debounce search input
@@ -66,7 +67,7 @@ export const CustomersDirectory: React.FC = () => {
       }
     };
     fetchOccasions();
-  }, []);
+  }, [fetchCustomers]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalSearch(e.target.value);
@@ -92,10 +93,6 @@ export const CustomersDirectory: React.FC = () => {
     if (offset + limit < total) {
       setPagination(limit, offset + limit);
     }
-  };
-
-  const sendManualGreeting = (name: string, phone: string, type: string) => {
-    toast.success(`Sent manual ${type.toLowerCase()} greeting with a discount code to ${name} (${phone})!`);
   };
 
   const getStatusBadge = (status: string) => {
@@ -299,9 +296,10 @@ export const CustomersDirectory: React.FC = () => {
                           </span>
                           
                           <button
-                            onClick={() => sendManualGreeting(occ.name, occ.phone, occ.type)}
-                            className="p-1.5 bg-[#FF6B35]/15 hover:bg-[#FF6B35]/25 text-[#FF6B35] rounded-xl transition-all"
-                            title="Send Discount Code"
+                            disabled
+                            aria-label="Manual greetings are not enabled"
+                            className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-xl cursor-not-allowed"
+                            title="Manual greetings are not enabled"
                           >
                             <Send className="w-3.5 h-3.5" />
                           </button>

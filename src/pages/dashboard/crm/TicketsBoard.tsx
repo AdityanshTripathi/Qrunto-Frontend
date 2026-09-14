@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useCRMStore } from '../../../store/crmStore';
+import { errorMessage, useCRMStore } from '../../../store/crmStore';
 import { CheckCircle, Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,14 +13,14 @@ export const TicketsBoard: React.FC = () => {
 
   useEffect(() => {
     fetchTickets();
-  }, []);
+  }, [fetchTickets]);
 
   const handleUpdateStatus = async (id: string, nextStatus: 'IN_PROGRESS' | 'RESOLVED') => {
     try {
       await updateTicketStatus(id, nextStatus);
       toast.success(`Ticket marked as ${nextStatus.replace('_', ' ').toLowerCase()}`);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update ticket status');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to update ticket status');
     }
   };
 

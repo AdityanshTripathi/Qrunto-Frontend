@@ -1,9 +1,10 @@
 import { useRestaurantTimezone } from '../../../lib/timezone';
-import React, { useEffect, useState } from 'react';
-import { useCRMStore, type Campaign, type CampaignLog } from '../../../store/crmStore';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { errorMessage, useCRMStore, type Campaign, type CampaignLog } from '../../../store/crmStore';
 import { Plus, Trash2, Loader2, X, Calendar, Mail, MessageSquare, Megaphone, Eye, BarChart } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../../lib/api';
+import { useAccessibleDialog } from '../../../hooks/useAccessibleDialog';
 
 export const CampaignsConfig: React.FC = () => {
   const restaurantTimeZone = useRestaurantTimezone();
@@ -28,6 +29,17 @@ export const CampaignsConfig: React.FC = () => {
   const [logs, setLogs] = useState<CampaignLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [loadingMoreLogs, setLoadingMoreLogs] = useState(false);
+  const logsRequestGenerationRef = useRef(0);
+  const createDialogRef = useRef<HTMLDivElement>(null);
+  const logsDialogRef = useRef<HTMLDivElement>(null);
+  const closeCreateDialog = useCallback(() => setIsModalOpen(false), []);
+  const closeLogsDialog = useCallback(() => setIsLogsOpen(false), []);
+  useAccessibleDialog(isModalOpen, createDialogRef, closeCreateDialog);
+  useAccessibleDialog(isLogsOpen, logsDialogRef, closeLogsDialog);
+
+  useEffect(() => () => {
+    logsRequestGenerationRef.current += 1;
+  }, []);
 
   // Stats state
   const [stats, setStats] = useState({
@@ -65,10 +77,13 @@ export const CampaignsConfig: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCampaigns();
-    fetchSegments();
-    fetchStatsData();
-  }, []);
+    let cancelled = false;
+    void Promise.resolve().then(async () => {
+      if (cancelled) return;
+      await Promise.all([fetchCampaigns(), fetchSegments(), fetchStatsData()]);
+    });
+    return () => { cancelled = true; };
+  }, [fetchCampaigns, fetchSegments]);
 
   const resetForm = () => {
     setName('');
@@ -91,40 +106,47 @@ export const CampaignsConfig: React.FC = () => {
       await deleteCampaign(campaignId);
       toast.success('Campaign deleted successfully');
       fetchStatsData(); // refresh stats
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete campaign');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to delete campaign');
     }
   };
 
   const openLogsModal = async (campaign: Campaign) => {
+    const requestGeneration = ++logsRequestGenerationRef.current;
     setSelectedCampaign(campaign);
     setIsLogsOpen(true);
     setLogs([]);
     setLoadingLogs(true);
     try {
       const data = await fetchCampaignLogs(campaign.id);
+      if (requestGeneration !== logsRequestGenerationRef.current) return;
       setLogs(data);
     } catch {
+      if (requestGeneration !== logsRequestGenerationRef.current) return;
       toast.error('Failed to load campaign logs');
       setIsLogsOpen(false);
     } finally {
-      setLoadingLogs(false);
+      if (requestGeneration === logsRequestGenerationRef.current) setLoadingLogs(false);
     }
   };
 
   const loadMoreLogs = async () => {
     if (!selectedCampaign || !campaignLogsPagination.nextCursor) return;
+    const campaignId = selectedCampaign.id;
+    const requestGeneration = ++logsRequestGenerationRef.current;
     setLoadingMoreLogs(true);
     try {
-      const data = await fetchCampaignLogs(selectedCampaign.id, campaignLogsPagination.nextCursor);
+      const data = await fetchCampaignLogs(campaignId, campaignLogsPagination.nextCursor);
+      if (requestGeneration !== logsRequestGenerationRef.current) return;
       setLogs((previous) => {
         const existingIds = new Set(previous.map((log) => log.id));
         return [...previous, ...data.filter((log) => !existingIds.has(log.id))];
       });
     } catch {
+      if (requestGeneration !== logsRequestGenerationRef.current) return;
       toast.error('Failed to load campaign logs');
     } finally {
-      setLoadingMoreLogs(false);
+      if (requestGeneration === logsRequestGenerationRef.current) setLoadingMoreLogs(false);
     }
   };
 
@@ -150,8 +172,8 @@ export const CampaignsConfig: React.FC = () => {
       setIsModalOpen(false);
       resetForm();
       fetchStatsData(); // refresh stats
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create campaign');
+    } catch (err: unknown) {
+      toast.error(errorMessage(err) || 'Failed to create campaign');
     } finally {
       setSubmitting(false);
     }
@@ -339,13 +361,13 @@ export const CampaignsConfig: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative w-full max-w-lg bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
+          <div ref={createDialogRef} role="dialog" aria-modal="true" aria-labelledby="campaign-dialog-title" tabIndex={-1} className="relative w-full max-w-lg bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 md:p-8 animate-in zoom-in-95 duration-200 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-6">
-              <h3 className="text-md font-black text-slate-800 dark:text-white flex items-center gap-2">
+              <h3 id="campaign-dialog-title" className="text-md font-black text-slate-800 dark:text-white flex items-center gap-2">
                 <Megaphone className="w-5 h-5 text-[#FF6B35]" />
                 Schedule Campaign
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="p-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-[#374151] rounded-xl text-slate-505 dark:text-gray-400 transition-all focus:outline-none">
+              <button data-dialog-initial-focus onClick={closeCreateDialog} aria-label="Close campaign dialog" className="p-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-[#374151] rounded-xl text-slate-505 dark:text-gray-400 transition-all focus:outline-none">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -368,7 +390,9 @@ export const CampaignsConfig: React.FC = () => {
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Channel Type</label>
                   <select
                     value={channel}
-                    onChange={(e) => setChannel(e.target.value as any)}
+                    onChange={(e) => {
+                      if (e.target.value === 'SMS' || e.target.value === 'EMAIL') setChannel(e.target.value);
+                    }}
                     className="w-full px-4 py-3 bg-[#f8fafc] dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151] rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#FF6B35] transition-all text-slate-705 dark:text-gray-250"
                   >
                     <option value="EMAIL">Email Address</option>
@@ -473,13 +497,13 @@ export const CampaignsConfig: React.FC = () => {
       {isLogsOpen && selectedCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsLogsOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 text-left z-10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[70vh]">
+          <div ref={logsDialogRef} role="dialog" aria-modal="true" aria-labelledby="campaign-logs-dialog-title" tabIndex={-1} className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl p-6 text-left z-10 animate-in zoom-in-95 duration-200 flex flex-col max-h-[70vh]">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#374151]/35 pb-4 mb-4">
               <div>
-                <h3 className="text-md font-black text-slate-850 dark:text-white">Delivery Log Metrics</h3>
+                <h3 id="campaign-logs-dialog-title" className="text-md font-black text-slate-850 dark:text-white">Delivery Log Metrics</h3>
                 <p className="text-[10px] text-slate-400">Execution audits for campaign: <strong>{selectedCampaign.name}</strong></p>
               </div>
-              <button onClick={() => setIsLogsOpen(false)} className="p-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-[#374151] rounded-xl text-slate-500 dark:text-gray-400 transition-all focus:outline-none">
+              <button data-dialog-initial-focus onClick={closeLogsDialog} aria-label="Close campaign logs dialog" className="p-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-[#374151] rounded-xl text-slate-500 dark:text-gray-400 transition-all focus:outline-none">
                 <X className="w-4 h-4" />
               </button>
             </div>

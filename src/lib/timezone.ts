@@ -8,7 +8,10 @@ export function timezone(value: unknown): string {
   }
   return 'Asia/Kolkata';
 }
-const pending = new Map<string, Promise<any>>();
+interface CurrentUserResponse {
+  user?: { restaurantTimezone?: unknown };
+}
+const pending = new Map<string, Promise<CurrentUserResponse>>();
 // Refresh persisted tenant metadata without adding public menu analytics events.
 export function useRestaurantTimezone(): string {
   const userId = useAuthStore(state => state.user?.id);

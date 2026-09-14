@@ -1,8 +1,9 @@
 import { useRestaurantTimezone } from '../../../lib/timezone';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../../../lib/api';
 import { useAuthStore } from '../../../store/authStore';
 import { parseFiniteNumber, withActionLock } from '../../../lib/inventory-safety';
+import { AccessibleDialog } from '../../../components/AccessibleDialog';
 import { toast } from 'sonner';
 import { 
   Package, 
@@ -23,6 +24,30 @@ import {
 } from 'lucide-react';
 
 type Tab = 'overview' | 'items' | 'recipes' | 'purchases' | 'suppliers' | 'wastage' | 'audits' | 'transfers';
+
+interface InventoryMetrics {
+  totalValue: number; totalItems: number; lowStockItems: number; outOfStockItems: number;
+  todayConsumption: number; todayPurchases: number; todayWastage: number; stockHealthScore: number;
+}
+interface InventorySupplier { id: string; name: string; contactName?: string; phone: string; email?: string; gstNumber?: string; address?: string; creditDays: number; outstandingBalance: number; }
+interface RawMaterial { id: string; name: string; category: string; sku: string; unit: string; openingStock: number; currentStock: number; minimumStockLevel: number; maximumStockLevel: number; reorderQuantity: number; purchasePrice: number; averageCost: number; storageLocation?: string; supplierId?: string; notes?: string; supplier?: Pick<InventorySupplier, 'name'>; }
+interface RecipeIngredient { id: string; quantity: number; rawMaterial?: Pick<RawMaterial, 'name' | 'unit' | 'averageCost'>; }
+interface InventoryRecipe { id: string; menuItem?: { name: string; price: number }; ingredients?: RecipeIngredient[]; metrics: { foodCost: number; grossProfit: number; marginPercentage: number; foodCostPercentage: number }; }
+interface MenuItemOption { id: string; name: string; price?: number; }
+interface PurchaseOrder { id: string; poNumber: string; status: string; orderDate: string; grandTotal: number; invoiceNumber?: string; supplier?: Pick<InventorySupplier, 'name'>; }
+interface WastageRecord { id: string; wasteDate: string; quantity: number; cost: number; reason: string; notes?: string; rawMaterial?: Pick<RawMaterial, 'name' | 'unit'>; user?: { name: string }; }
+interface AuditItem { id: string; variance: number; rawMaterial?: Pick<RawMaterial, 'name' | 'unit'>; }
+interface AuditRecord { id: string; auditDate: string; items?: AuditItem[]; notes?: string; user?: { name: string }; }
+interface TransferItem { id: string; quantity: number; rawMaterial?: Pick<RawMaterial, 'name' | 'unit'>; }
+interface TransferRecord { id: string; transferNumber: string; destBranchId: string; status: string; sentDate?: string; createdAt: string; sourceBranch?: { name: string }; destBranch?: { name: string }; items?: TransferItem[]; }
+interface RestaurantOption { id: string; name: string; }
+interface InventoryError { message: string; }
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as InventoryError).message === 'string') return (error as InventoryError).message;
+  return 'An unexpected error occurred';
+};
 
 const getRecipeUnitLabel = (materialUnit: string): string => {
   const unit = (materialUnit || '').toUpperCase().trim();
@@ -57,7 +82,7 @@ export const InventoryDashboard: React.FC = () => {
     });
 
   // Core Data State
-  const [metrics, setMetrics] = useState<any>({
+  const [metrics, setMetrics] = useState<InventoryMetrics>({
     totalValue: 0,
     totalItems: 0,
     lowStockItems: 0,
@@ -67,15 +92,15 @@ export const InventoryDashboard: React.FC = () => {
     todayWastage: 0,
     stockHealthScore: 100
   });
-  const [rawMaterials, setRawMaterials] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [recipes, setRecipes] = useState<any[]>([]);
-  const [menuItems, setMenuItems] = useState<any[]>([]);
-  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
-  const [wastageRecords, setWastageRecords] = useState<any[]>([]);
-  const [auditRecords, setAuditRecords] = useState<any[]>([]);
-  const [transferRecords, setTransferRecords] = useState<any[]>([]);
-  const [restaurants, setRestaurants] = useState<any[]>([]); // For transfers
+  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
+  const [suppliers, setSuppliers] = useState<InventorySupplier[]>([]);
+  const [recipes, setRecipes] = useState<InventoryRecipe[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItemOption[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [wastageRecords, setWastageRecords] = useState<WastageRecord[]>([]);
+  const [auditRecords, setAuditRecords] = useState<AuditRecord[]>([]);
+  const [transferRecords, setTransferRecords] = useState<TransferRecord[]>([]);
+  const [restaurants, setRestaurants] = useState<RestaurantOption[]>([]); // For transfers
 
   // Filter & Search State
   const [itemSearch, setItemSearch] = useState('');
@@ -84,7 +109,7 @@ export const InventoryDashboard: React.FC = () => {
 
   // Modals & Forms State
   const [showItemModal, setShowItemModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [editingItem, setEditingItem] = useState<RawMaterial | null>(null);
   const [itemForm, setItemForm] = useState({
     name: '',
     category: '',
@@ -103,7 +128,7 @@ export const InventoryDashboard: React.FC = () => {
   });
 
   const [showAdjustModal, setShowAdjustModal] = useState(false);
-  const [adjustingItem, setAdjustingItem] = useState<any | null>(null);
+  const [adjustingItem, setAdjustingItem] = useState<RawMaterial | null>(null);
   const [adjustForm, setAdjustForm] = useState({
     quantityChange: 0,
     actionType: 'MANUAL_ADJUSTMENT',
@@ -111,7 +136,7 @@ export const InventoryDashboard: React.FC = () => {
   });
 
   const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<any | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<InventorySupplier | null>(null);
   const [supplierForm, setSupplierForm] = useState({
     name: '',
     contactName: '',
@@ -138,7 +163,7 @@ export const InventoryDashboard: React.FC = () => {
   });
 
   const [showReceiveModal, setShowReceiveModal] = useState(false);
-  const [receivingPO, setReceivingPO] = useState<any | null>(null);
+  const [receivingPO, setReceivingPO] = useState<PurchaseOrder | null>(null);
   const [receiveForm, setReceiveForm] = useState({
     invoiceNumber: '',
     invoiceAttachmentUrl: '',
@@ -166,11 +191,7 @@ export const InventoryDashboard: React.FC = () => {
     items: [{ rawMaterialId: '', quantity: 0 }]
   });
 
-  useEffect(() => {
-    fetchCoreData();
-  }, [activeTab, user?.id, currentRestaurantId]);
-
-  const fetchCoreData = async () => {
+  const fetchCoreData = useCallback(async () => {
     setLoading(true);
     try {
       if (activeTab === 'overview') {
@@ -224,12 +245,20 @@ export const InventoryDashboard: React.FC = () => {
         // Let's use user restaurants first.
         setRestaurants(user?.restaurants || []);
       }
-    } catch (err: any) {
-      toast.error('Failed to load inventory data: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Failed to load inventory data: ' + getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (!cancelled) return fetchCoreData();
+    });
+    return () => { cancelled = true; };
+  }, [fetchCoreData]);
 
   // Raw Material Submit Handler
   const handleItemSubmit = async (e: React.FormEvent) => {
@@ -258,13 +287,13 @@ export const InventoryDashboard: React.FC = () => {
         setShowItemModal(false);
         setEditingItem(null);
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
 
-  const handleEditItem = (item: any) => {
+  const handleEditItem = (item: RawMaterial) => {
     setEditingItem(item);
     setItemForm({
       name: item.name,
@@ -305,13 +334,13 @@ export const InventoryDashboard: React.FC = () => {
         setShowSupplierModal(false);
         setEditingSupplier(null);
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
 
-  const handleEditSupplier = (supplier: any) => {
+  const handleEditSupplier = (supplier: InventorySupplier) => {
     setEditingSupplier(supplier);
     setSupplierForm({
       name: supplier.name,
@@ -338,8 +367,8 @@ export const InventoryDashboard: React.FC = () => {
         toast.success('Recipe configured successfully');
         setShowRecipeModal(false);
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
@@ -371,8 +400,8 @@ export const InventoryDashboard: React.FC = () => {
         toast.success('Purchase Order created successfully');
         setShowPOModal(false);
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
@@ -386,8 +415,8 @@ export const InventoryDashboard: React.FC = () => {
         toast.success('Purchase received, stock added, average costs updated');
         setShowReceiveModal(false);
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
@@ -405,8 +434,8 @@ export const InventoryDashboard: React.FC = () => {
         toast.success('Wastage event recorded successfully');
         setShowWastageModal(false);
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
@@ -428,8 +457,8 @@ export const InventoryDashboard: React.FC = () => {
         toast.success('Physical count audit recorded successfully');
         setShowAuditModal(false);
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
@@ -453,8 +482,8 @@ export const InventoryDashboard: React.FC = () => {
         toast.success('Stock transfer request initiated successfully');
         setShowTransferModal(false);
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
@@ -465,8 +494,8 @@ export const InventoryDashboard: React.FC = () => {
         await api.post(`/inventory/transfers/${id}/approve`);
         toast.success('Transfer approved and stocks transferred successfully');
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
@@ -477,8 +506,8 @@ export const InventoryDashboard: React.FC = () => {
         await api.post(`/inventory/transfers/${id}/reject`);
         toast.success('Transfer rejected, stocks returned successfully');
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
@@ -499,8 +528,8 @@ export const InventoryDashboard: React.FC = () => {
         setShowAdjustModal(false);
         setAdjustingItem(null);
         fetchCoreData();
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
       }
     });
   };
@@ -892,10 +921,10 @@ export const InventoryDashboard: React.FC = () => {
                         <div className="border-t border-slate-100 dark:border-[#374151]/20 pt-4">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Ingredients List</p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {recipe.ingredients?.map((ing: any) => {
-                              const factor = getConversionFactor(ing.rawMaterial?.unit);
+                            {recipe.ingredients?.map((ing) => {
+                              const factor = getConversionFactor(ing.rawMaterial?.unit ?? '');
                               const cost = (ing.quantity / factor) * (ing.rawMaterial?.averageCost || 0);
-                              const label = getRecipeUnitLabel(ing.rawMaterial?.unit);
+                              const label = getRecipeUnitLabel(ing.rawMaterial?.unit ?? '');
                               return (
                                 <div key={ing.id} className="bg-slate-50 dark:bg-[#111827]/40 border border-slate-200 dark:border-[#374151]/30 rounded-xl p-3 flex justify-between items-center text-xs">
                                   <div>
@@ -1105,7 +1134,7 @@ export const InventoryDashboard: React.FC = () => {
                             <td className="p-4 font-bold text-slate-700 dark:text-gray-200">{a.user?.name}</td>
                             <td className="p-4 font-semibold">{a.items?.length || 0} items</td>
                             <td className="p-4 space-y-1">
-                              {a.items?.slice(0, 3).map((it: any) => {
+                              {a.items?.slice(0, 3).map((it) => {
                                 const isPos = it.variance > 0;
                                 return (
                                   <div key={it.id} className="text-[10px] flex items-center gap-2">
@@ -1116,7 +1145,7 @@ export const InventoryDashboard: React.FC = () => {
                                   </div>
                                 );
                               })}
-                              {a.items?.length > 3 && <span className="text-[9px] text-slate-400">+{a.items.length - 3} more items</span>}
+                              {(a.items?.length ?? 0) > 3 && <span className="text-[9px] text-slate-400">+{(a.items?.length ?? 0) - 3} more items</span>}
                             </td>
                             <td className="p-4 text-slate-500 truncate max-w-xs">{a.notes || '-'}</td>
                           </tr>
@@ -1168,7 +1197,7 @@ export const InventoryDashboard: React.FC = () => {
                               </td>
                               <td className="p-4 text-slate-500">{tr.sentDate ? new Date(tr.sentDate).toLocaleDateString(undefined, { timeZone: restaurantTimeZone }) : new Date(tr.createdAt).toLocaleDateString(undefined, { timeZone: restaurantTimeZone })}</td>
                               <td className="p-4">
-                                {tr.items?.map((it: any) => (
+                                {tr.items?.map((it) => (
                                   <div key={it.id} className="text-[10px] font-medium text-slate-600 dark:text-gray-400">
                                     {it.rawMaterial?.name} ({it.quantity} {it.rawMaterial?.unit})
                                   </div>
@@ -1210,7 +1239,7 @@ export const InventoryDashboard: React.FC = () => {
       {/* 3. MODAL DIALOGS */}
       {/* 3a. Add/Edit Raw Material Modal */}
       {showItemModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={showItemModal} onClose={() => setShowItemModal(false)} ariaLabel="Raw material editor" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-[#374151]/50 flex justify-between items-center bg-slate-50 dark:bg-[#111827]/30">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-widest">
@@ -1330,12 +1359,12 @@ export const InventoryDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* 3b. Add/Edit Supplier Modal */}
       {showSupplierModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={showSupplierModal} onClose={() => setShowSupplierModal(false)} ariaLabel="Supplier editor" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-[#374151]/50 flex justify-between items-center bg-slate-50 dark:bg-[#111827]/30">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-widest">
@@ -1396,12 +1425,12 @@ export const InventoryDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* 3c. Quick Stock Adjust Modal */}
       {showAdjustModal && adjustingItem && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={showAdjustModal} onClose={() => setShowAdjustModal(false)} ariaLabel="Stock adjustment" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-[#374151]/50 flex justify-between items-center bg-slate-50 dark:bg-[#111827]/30">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-widest">
@@ -1456,12 +1485,12 @@ export const InventoryDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* 3d. Configure Recipe Modal */}
       {showRecipeModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={showRecipeModal} onClose={() => setShowRecipeModal(false)} ariaLabel="Recipe editor" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-[#374151]/50 flex justify-between items-center bg-slate-50 dark:bg-[#111827]/30">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-widest">
@@ -1572,12 +1601,12 @@ export const InventoryDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* 3e. Create PO Modal */}
       {showPOModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={showPOModal} onClose={() => setShowPOModal(false)} ariaLabel="Create purchase order" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-[#374151]/50 flex justify-between items-center bg-slate-50 dark:bg-[#111827]/30">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-widest">
@@ -1700,12 +1729,12 @@ export const InventoryDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* 3f. Receive PO Modal */}
       {showReceiveModal && receivingPO && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={showReceiveModal} onClose={() => setShowReceiveModal(false)} ariaLabel="Receive purchase order" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-[#374151]/50 flex justify-between items-center bg-slate-50 dark:bg-[#111827]/30">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-widest">
@@ -1754,12 +1783,12 @@ export const InventoryDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* 3g. Wastage Incident Modal */}
       {showWastageModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={showWastageModal} onClose={() => setShowWastageModal(false)} ariaLabel="Log wastage incident" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 dark:border-[#374151]/50 flex justify-between items-center bg-slate-50 dark:bg-[#111827]/30">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-widest">
@@ -1841,12 +1870,12 @@ export const InventoryDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* 3h. Physical Count Audit Modal */}
       {showAuditModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={showAuditModal} onClose={() => setShowAuditModal(false)} ariaLabel="Physical inventory audit" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-[#374151]/50 flex justify-between items-center bg-slate-50 dark:bg-[#111827]/30">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-widest">
@@ -1926,12 +1955,12 @@ export const InventoryDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* 3i. Outlet Transfer Modal */}
       {showTransferModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={showTransferModal} onClose={() => setShowTransferModal(false)} ariaLabel="Transfer stock" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-[#374151]/50 flex justify-between items-center bg-slate-50 dark:bg-[#111827]/30">
               <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-widest">
@@ -2049,7 +2078,7 @@ export const InventoryDashboard: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
     </div>

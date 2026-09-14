@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { useTheme } from './context/ThemeContext';
+import { useTheme } from './context/theme-context';
 import './components/notifications.css';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
@@ -36,6 +36,7 @@ const Refund = React.lazy(() => import('./pages/Refund').then(m => ({ default: m
 const Contact = React.lazy(() => import('./pages/Contact').then(m => ({ default: m.Contact })));
 const Help = React.lazy(() => import('./pages/Help').then(m => ({ default: m.Help })));
 const Unauthorized = React.lazy(() => import('./pages/Unauthorized').then(m => ({ default: m.Unauthorized })));
+const NotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 
 const LoadingFallback = () => (
   <div className="min-h-screen bg-[#111827] flex flex-col items-center justify-center gap-4">
@@ -112,6 +113,7 @@ function App() {
               <Route path="crm/customers/:id" element={<ProtectedRoute requiredCapability="crm.manage"><CustomerDetail /></ProtectedRoute>} />
               <Route path="subscription" element={<ProtectedRoute requiredCapability="subscription.manage"><SubscriptionManagement /></ProtectedRoute>} />
               <Route path="settings" element={<ProtectedRoute requiredCapability="settings.manage"><Settings /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
             </Route>
           </Route>
 
@@ -123,11 +125,7 @@ function App() {
           <Route path="/order/:slug/:tableNumber" element={<CustomerMenu />} />
           <Route path="/unauthorized" element={isAuthenticated ? <Unauthorized /> : <Navigate to="/login" replace />} />
 
-          {/* Catch-all redirect */}
-          <Route 
-            path="*" 
-            element={<Navigate to={isAuthenticated ? defaultRouteForRole(user?.role) : "/"} replace />}
-          />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

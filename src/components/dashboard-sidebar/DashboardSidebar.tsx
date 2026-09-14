@@ -11,7 +11,8 @@ import {
   AvatarImage,
 } from '@/components/ui/avatar'
 import { SidebarCollapseIcon } from './icons'
-import { DashboardLink, useDashboardNavigation } from './navigation'
+import { DashboardLink } from './navigation'
+import { useDashboardNavigation } from './navigation-hook'
 import { useTheme } from './theme-provider'
 import { Button } from '@/components/ui/button'
 import {
@@ -41,8 +42,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  useSidebar,
 } from '@/components/ui/sidebar'
+import { useSidebar } from '@/components/ui/sidebar-context'
 import { currentUser, navigationGroups, type NavigationItem } from '../../data'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/authStore'

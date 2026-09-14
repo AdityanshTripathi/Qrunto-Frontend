@@ -68,15 +68,17 @@ export const FinancialTab: React.FC<FinancialTabProps> = ({
     try {
       const resData = await api.get(`/analytics/financials?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
-    } catch (err: any) {
-      toast.error(err.message || 'Error fetching financial analytics');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error fetching financial analytics');
     } finally {
       setLoading(false);
     }
   }, [token, startDate, endDate]);
 
   useEffect(() => {
-    fetchFinancialAnalytics();
+    let cancelled = false;
+    void Promise.resolve().then(() => { if (!cancelled) return fetchFinancialAnalytics(); });
+    return () => { cancelled = true; };
   }, [fetchFinancialAnalytics, refreshTrigger]);
 
   if (loading) {

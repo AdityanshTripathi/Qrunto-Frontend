@@ -4,9 +4,96 @@ import { API_BASE_URL as BASE_URL } from '../config/backend';
 import { getValidSupportSession } from './session-lifecycle';
 
 
-interface RequestOptions extends RequestInit {
-  body?: any;
+type ApiRequestBody = BodyInit | object | null;
+
+interface RequestOptions extends Omit<RequestInit, 'body'> {
+  body?: ApiRequestBody;
 }
+
+export type ApiErrorKind = 'http' | 'auth' | 'network' | 'timeout' | 'aborted';
+
+export interface ApiErrorDetails {
+  status?: number;
+  kind: ApiErrorKind;
+  code?: string;
+  requestId?: string;
+  retryAfter?: string;
+  fieldErrors?: Record<string, string[]>;
+}
+
+/** A safe, transport-independent error shape for all central API requests. */
+export class ApiError extends Error {
+  readonly status?: number;
+  readonly kind: ApiErrorKind;
+  readonly code?: string;
+  readonly requestId?: string;
+  readonly retryAfter?: string;
+  readonly fieldErrors?: Record<string, string[]>;
+
+  constructor(message: string, details: ApiErrorDetails) {
+    super(message);
+    this.name = 'ApiError';
+    Object.setPrototypeOf(this, ApiError.prototype);
+    this.status = details.status;
+    this.kind = details.kind;
+    this.code = details.code;
+    this.requestId = details.requestId;
+    this.retryAfter = details.retryAfter;
+    this.fieldErrors = details.fieldErrors;
+  }
+}
+
+const safeText = (value: unknown, fallback: string) =>
+  typeof value === 'string' && value.trim() ? value.trim().slice(0, 500) : fallback;
+
+const safeFieldErrors = (value: unknown): Record<string, string[]> | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const result: Record<string, string[]> = {};
+  for (const [field, messages] of Object.entries(value)) {
+    if (typeof messages === 'string') result[field] = [messages.slice(0, 500)];
+    else if (Array.isArray(messages)) {
+      const safeMessages = messages
+        .filter((message): message is string => typeof message === 'string')
+        .map(message => message.slice(0, 500));
+      if (safeMessages.length) result[field] = safeMessages;
+    }
+  }
+  return Object.keys(result).length ? result : undefined;
+};
+
+const apiErrorFromResponse = async (response: Response): Promise<ApiError> => {
+  const payload: Record<string, unknown> = await response.json().catch(() => ({}));
+  const status = response.status;
+  const message = safeText(payload.error ?? payload.message, `Request failed with status ${status}`);
+  const fieldErrors = safeFieldErrors(payload.fieldErrors ?? payload.errors ?? payload.validation);
+  return new ApiError(message, {
+    status,
+    kind: status === 401 ? 'auth' : 'http',
+    code: typeof payload.code === 'string' ? payload.code.slice(0, 100) : undefined,
+    requestId: response.headers?.get('x-request-id') ?? response.headers?.get('x-correlation-id') ?? undefined,
+    retryAfter: response.headers?.get('retry-after') ?? undefined,
+    fieldErrors,
+  });
+};
+
+const normalizeRequestError = (error: unknown): ApiError => {
+  if (error instanceof ApiError) return error;
+  if (error instanceof Error && error.name === 'TimeoutError') {
+    return new ApiError('Request timed out. Please try again.', { kind: 'timeout' });
+  }
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return new ApiError('Request was cancelled.', { kind: 'aborted' });
+  }
+  if (error instanceof TypeError) {
+    return new ApiError('Unable to connect. Check your internet connection and try again.', { kind: 'network' });
+  }
+  if (error instanceof Error) {
+    return new ApiError(error.message || 'Unable to complete the request. Please try again.', {
+      kind: /session|sign in/i.test(error.message) ? 'auth' : 'network',
+    });
+  }
+  return new ApiError('Unable to complete the request. Please try again.', { kind: 'network' });
+};
 
 function request(path: string, options: RequestOptions = {}) {
   return withRequestTimeout(
@@ -117,9 +204,12 @@ async function performRequest(path: string, options: RequestOptions) {
     headers.set('Authorization', `Bearer ${initialStore.accessToken}`);
   }
 
-  let bodyData = options.body;
-  if (bodyData && typeof bodyData === 'object' && !(bodyData instanceof FormData)) {
-    bodyData = JSON.stringify(bodyData);
+  let bodyData: BodyInit | undefined;
+  const requestBody = options.body;
+  if (requestBody && typeof requestBody === 'object' && !(requestBody instanceof FormData)) {
+    bodyData = JSON.stringify(requestBody);
+  } else {
+    bodyData = requestBody ?? undefined;
   }
 
   const fetchOptions: RequestInit = {
@@ -163,18 +253,12 @@ async function performRequest(path: string, options: RequestOptions) {
       response = await fetch(url, { ...fetchOptions, headers });
     }
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || `Request failed with status ${response.status}`);
-    }
+    if (!response.ok) throw await apiErrorFromResponse(response);
 
     return await response.json();
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('API Request failed:', err);
-    if (err instanceof TypeError && (err.message.toLowerCase().includes('fetch') || err.message.toLowerCase().includes('networkerror'))) {
-      throw new Error('Unable to connect to the server. Please ensure the backend is running on port 5000.');
-    }
-    throw err;
+    throw normalizeRequestError(err);
   }
 }
 
@@ -203,13 +287,13 @@ export const api = {
   get: (path: string, options?: Omit<RequestOptions, 'method'>) => 
     request(path, { ...options, method: 'GET' }),
     
-  post: (path: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) => 
+  post: (path: string, body?: ApiRequestBody, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request(path, { ...options, method: 'POST', body }),
 
-  put: (path: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) => 
+  put: (path: string, body?: ApiRequestBody, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request(path, { ...options, method: 'PUT', body }),
     
-  patch: (path: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) => 
+  patch: (path: string, body?: ApiRequestBody, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request(path, { ...options, method: 'PATCH', body }),
     
   delete: (path: string, options?: Omit<RequestOptions, 'method'>) => 

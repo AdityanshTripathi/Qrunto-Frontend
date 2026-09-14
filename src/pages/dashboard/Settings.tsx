@@ -1,6 +1,6 @@
 import { timezone } from '../../lib/timezone';
 import React, { useEffect, useState, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import type { SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
@@ -108,7 +108,7 @@ const SettingsContent: React.FC = () => {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<SettingsInputs>({
     defaultValues: {
@@ -123,6 +123,7 @@ const SettingsContent: React.FC = () => {
       logoUrl: '',
     },
   });
+  const watchedTaxPercentage = useWatch({ control, name: 'taxPercentage' });
 
 
   // Load Settings
@@ -148,8 +149,8 @@ const SettingsContent: React.FC = () => {
         if (data.settings.businessHours && typeof data.settings.businessHours === 'object') {
           setBusinessHours({ ...defaultBusinessHours(), ...data.settings.businessHours });
         }
-      } catch (err: any) {
-        toast.error(err.message || 'Error loading settings');
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Error loading settings');
       } finally {
         setLoading(false);
       }
@@ -200,8 +201,8 @@ const SettingsContent: React.FC = () => {
       const currentUser = useAuthStore.getState().user;
       if (currentUser) useAuthStore.setState({ user: { ...currentUser, restaurantTimezone: data.restaurant.timezone, restaurants: currentUser.restaurants.map(r => r.id === data.restaurant.id ? { ...r, timezone: data.restaurant.timezone } : r) } });
       toast.success('Restaurant settings saved successfully!');
-    } catch (err: any) {
-      toast.error(err.message || 'Error saving settings');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error saving settings');
     } finally {
       setSaving(false);
     }
@@ -413,11 +414,11 @@ const SettingsContent: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
                   <div className="flex justify-between border-r border-slate-200 dark:border-[#374151]/20 pr-4">
                     <span className="text-slate-500">CGST (Central Tax)</span>
-                    <span className="text-slate-900 dark:text-white">{(Number(watch('taxPercentage') || 0) / 2).toFixed(2)}%</span>
+                    <span className="text-slate-900 dark:text-white">{(Number(watchedTaxPercentage || 0) / 2).toFixed(2)}%</span>
                   </div>
                   <div className="flex justify-between pl-2">
                     <span className="text-slate-500">SGST (State Tax)</span>
-                    <span className="text-slate-900 dark:text-white">{(Number(watch('taxPercentage') || 0) / 2).toFixed(2)}%</span>
+                    <span className="text-slate-900 dark:text-white">{(Number(watchedTaxPercentage || 0) / 2).toFixed(2)}%</span>
                   </div>
                 </div>
               </div>

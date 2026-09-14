@@ -1,5 +1,5 @@
 import { useRestaurantTimezone } from '../../lib/timezone';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import { api } from '../../lib/api';
@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { OrderManagement } from '../dashboard/OrderManagement';
 import { API_BASE_URL, SOCKET_URL } from '../../config/backend';
+import { useCoalescedRefresh } from '../../hooks/useCoalescedRefresh';
+import { AccessibleDialog } from '../../components/AccessibleDialog';
 
 // Interfaces
 interface Table {
@@ -65,6 +67,9 @@ interface Category {
   id: string;
   name: string;
 }
+interface ApiOrderItem { id: string; itemName: string; quantity: number; unitPrice: number; totalPrice: number; }
+interface ApiOrder { id: string; orderNumber: string; status: Order['status']; subtotal: number; taxAmount: number; totalAmount: number; table?: { tableNumber: string }; createdAt: string; paymentStatus?: string; customerName?: string | null; customerPhone?: string | null; orderItems?: ApiOrderItem[]; }
+interface WindowWithWebkitAudioContext extends Window { webkitAudioContext?: typeof AudioContext; }
 
 const fmt = (amount: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
@@ -111,6 +116,7 @@ export const WaiterDashboard: React.FC = () => {
   const requestsRef = useRef<CustomerRequest[]>([]);
   const ordersRef = useRef<Order[]>([]);
   const hasConnectedRef = useRef(false);
+  const dataRequestGenerationRef = useRef(0);
 
   useEffect(() => {
     requestsRef.current = [...requests, ...billRequests];
@@ -121,9 +127,12 @@ export const WaiterDashboard: React.FC = () => {
   }, [orders]);
 
   // Tone synthesis for alerts
-  const playAlertSound = (type: 'order' | 'request') => {
+  const playAlertSound = useCallback((type: 'order' | 'request') => {
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const browserWindow = window as WindowWithWebkitAudioContext;
+      const audioContextConstructor = window.AudioContext || browserWindow.webkitAudioContext;
+      if (!audioContextConstructor) throw new Error('Audio is unavailable');
+      const audioCtx = new audioContextConstructor();
       const playTone = (freq: number, duration: number, delay: number) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -143,22 +152,25 @@ export const WaiterDashboard: React.FC = () => {
         playTone(880.00, 0.1, 0); // A5
         playTone(880.00, 0.1, 0.15); // A5
       }
-    } catch (err) {
+    } catch {
       console.log('Audio playback blocked');
     }
-  };
+  }, []);
 
   // 1. Fetch Core Data
-  const fetchData = async (silent = false) => {
+  const fetchData = useCallback(async (silent = false) => {
+    const requestGeneration = ++dataRequestGenerationRef.current;
     if (!silent) setLoading(true);
     try {
       // Fetch Tables
       const tablesRes = await api.get('/tables');
+      if (requestGeneration !== dataRequestGenerationRef.current) return;
       setTables(tablesRes.tables || []);
 
       // Fetch Active Orders
       const ordersRes = await api.get('/orders?limit=100');
-      const mappedOrders: Order[] = (ordersRes.orders || []).map((order: any) => ({
+      if (requestGeneration !== dataRequestGenerationRef.current) return;
+      const mappedOrders: Order[] = (ordersRes.orders || []).map((order: ApiOrder) => ({
         id: order.id,
         orderNumber: order.orderNumber,
         status: order.status,
@@ -170,7 +182,7 @@ export const WaiterDashboard: React.FC = () => {
         paymentStatus: order.paymentStatus || 'PENDING',
         customerName: order.customerName,
         customerPhone: order.customerPhone,
-        items: (order.orderItems || []).map((item: any) => ({
+        items: (order.orderItems || []).map((item) => ({
           id: item.id,
           name: item.itemName,
           quantity: item.quantity,
@@ -181,6 +193,7 @@ export const WaiterDashboard: React.FC = () => {
 
       // Fetch Requests (Unread Notifications)
       const notifRes = await api.get('/notifications');
+      if (requestGeneration !== dataRequestGenerationRef.current) return;
       const allNotifs: CustomerRequest[] = notifRes.notifications || [];
       const unreadHelpRequests = allNotifs.filter(n => !n.isRead && n.type === 'HELP_REQUEST');
       const unreadBillRequests = allNotifs.filter(n => !n.isRead && n.type === 'BILLING');
@@ -225,18 +238,20 @@ export const WaiterDashboard: React.FC = () => {
       setRequests(unreadHelpRequests);
       setBillRequests(unreadBillRequests);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (requestGeneration !== dataRequestGenerationRef.current) return;
       console.error(err);
       if (!silent) {
         toast.error('Failed to load server data');
       }
     } finally {
-      if (!silent) setLoading(false);
+      if (requestGeneration === dataRequestGenerationRef.current && !silent) setLoading(false);
     }
-  };
+  }, [playAlertSound]);
+  const refreshData = useCoalescedRefresh(() => fetchData(true));
 
   // 2. Fetch Restaurant Menu
-  const fetchMenu = async () => {
+  const fetchMenu = useCallback(async () => {
     if (!restaurantSlug) return;
     try {
       const res = await fetch(`${API_BASE_URL}/public/${restaurantSlug}`);
@@ -248,23 +263,26 @@ export const WaiterDashboard: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch menu:', err);
     }
-  };
+  }, [restaurantSlug]);
 
   useEffect(() => {
-    fetchData();
-    fetchMenu();
-  }, [restaurantSlug]);
+    const initializationTimer = window.setTimeout(() => {
+      void fetchData(false);
+      void fetchMenu();
+    }, 0);
+    return () => window.clearTimeout(initializationTimer);
+  }, [fetchData, fetchMenu]);
 
   useEffect(() => {
     if (socketConnected) return;
 
     // Keep polling protection while the socket is disconnected or reconnecting.
     const interval = setInterval(() => {
-      fetchData(true);
+      void refreshData();
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [restaurantSlug, socketConnected]);
+  }, [refreshData, restaurantSlug, socketConnected]);
 
   // 3. Socket.io Real-time Setup
   useEffect(() => {
@@ -279,32 +297,32 @@ export const WaiterDashboard: React.FC = () => {
 
     socket.on('connect', () => {
       setSocketConnected(true);
-      if (hasConnectedRef.current) fetchData(true);
+      if (hasConnectedRef.current) void refreshData();
       else hasConnectedRef.current = true;
     });
     socket.on('disconnect', () => setSocketConnected(false));
     socket.on('connect_error', () => setSocketConnected(false));
 
     // Socket events (delegated to delta-aware fetchData)
-    socket.on('NEW_ORDER', () => fetchData(true));
-    socket.on('ITEM_ADDED', () => fetchData(true));
-    socket.on('CALL_WAITER', () => fetchData(true));
-    socket.on('REQUEST_BILL', () => fetchData(true));
-    socket.on('ORDER_UPDATED', () => fetchData(true));
+    socket.on('NEW_ORDER', () => void refreshData());
+    socket.on('ITEM_ADDED', () => void refreshData());
+    socket.on('CALL_WAITER', () => void refreshData());
+    socket.on('REQUEST_BILL', () => void refreshData());
+    socket.on('ORDER_UPDATED', () => void refreshData());
 
     return () => {
       setSocketConnected(false);
       socket.disconnect();
     };
-  }, [restaurantId, accessToken]);
+  }, [accessToken, refreshData, restaurantId]);
 
   // 4. Attend/Resolve Assistance Request
   const handleResolveRequest = async (id: string) => {
     try {
       await api.patch(`/notifications/${id}/read`);
       toast.success('Request marked as attended');
-      fetchData(true);
-    } catch (err: any) {
+      void refreshData();
+    } catch {
       toast.error('Failed to resolve request');
     }
   };
@@ -329,9 +347,9 @@ export const WaiterDashboard: React.FC = () => {
       await api.post(`/orders/${orderId}/pay`, { paymentMethod: method });
       toast.success(`Bill settled via ${method}! Order status updated to PAID.`);
       await api.patch(`/notifications/${notifId}/read`);
-      fetchData(true);
-    } catch (err: any) {
-      toast.error(err.message || 'Error registering payment');
+      void refreshData();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error registering payment');
     } finally {
       setSettlingId(null);
     }
@@ -342,9 +360,9 @@ export const WaiterDashboard: React.FC = () => {
     try {
       await api.patch(`/orders/${orderId}/status`, { status: newStatus });
       toast.success(`Order status updated to ${newStatus}`);
-      fetchData(true);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update status');
+      void refreshData();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update status');
     }
   };
 
@@ -393,9 +411,9 @@ export const WaiterDashboard: React.FC = () => {
       setIsAddItemsOpen(false);
       setIsDetailOpen(false);
       setWaiterCart({});
-      fetchData(true);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to add items');
+      void refreshData();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to add items');
     } finally {
       setSubmittingItems(false);
     }
@@ -430,9 +448,9 @@ export const WaiterDashboard: React.FC = () => {
       toast.success('Order placed successfully for Table ' + tableNumber);
       setIsCreateOrderOpen(false);
       setWaiterCart({});
-      fetchData(true);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to place order');
+      void refreshData();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to place order');
     } finally {
       setSubmittingItems(false);
     }
@@ -763,7 +781,7 @@ export const WaiterDashboard: React.FC = () => {
                           <>
                             <select
                               value={paymentMethods[matchedOrder.id] || 'CASH'}
-                              onChange={(e) => setPaymentMethods({ ...paymentMethods, [matchedOrder.id]: e.target.value as any })}
+                              onChange={(e) => setPaymentMethods({ ...paymentMethods, [matchedOrder.id]: e.target.value as 'CASH' | 'CARD' | 'UPI' })}
                               className="bg-slate-100 dark:bg-[#111827] border border-slate-200 dark:border-[#374151]/40 rounded-xl text-xs text-slate-800 dark:text-white px-2 py-1.5 focus:outline-none"
                             >
                               <option value="CASH">💵 Cash</option>
@@ -847,7 +865,7 @@ export const WaiterDashboard: React.FC = () => {
 
       {/* TABLE DETAILS MODAL */}
       {isDetailOpen && selectedTable && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} ariaLabel="Table details" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsDetailOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200 text-left flex flex-col max-h-[85vh]">
             {/* Header */}
@@ -984,12 +1002,12 @@ export const WaiterDashboard: React.FC = () => {
               )}
             </div>
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* SEARCH AND ADD ITEMS DIALOG (MERGE FLOW) */}
       {isAddItemsOpen && selectedTable && tableOrderMap[selectedTable.id] && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isAddItemsOpen} onClose={() => setIsAddItemsOpen(false)} ariaLabel="Add items to order" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsAddItemsOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200 text-left flex flex-col max-h-[85vh]">
             
@@ -1098,12 +1116,12 @@ export const WaiterDashboard: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </AccessibleDialog>
       )}
 
       {/* CREATE NEW ORDER DIALOG */}
       {isCreateOrderOpen && selectedTable && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <AccessibleDialog isOpen={isCreateOrderOpen} onClose={() => setIsCreateOrderOpen(false)} ariaLabel="Create order" className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsCreateOrderOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/75 rounded-[28px] overflow-hidden shadow-2xl z-10 animate-in zoom-in-95 duration-200 text-left flex flex-col max-h-[85vh]">
             
@@ -1212,7 +1230,7 @@ export const WaiterDashboard: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </AccessibleDialog>
       )}
     </WaiterDashboardLayout>
   );

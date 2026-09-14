@@ -38,8 +38,8 @@ export const Login: React.FC = () => {
       
       // Redirect based on role
       navigate(defaultRouteForRole(response.user.role));
-    } catch (err: any) {
-      toast.error(err.message || 'Login failed. Please check your credentials.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }

@@ -240,3 +240,25 @@ test('RBAC-001: STAFF has no unsupported owner dashboard capability', () => {
   assert.equal(hasCapability('WAITER', 'waiter.dashboard'), true);
   assert.equal(defaultRouteForRole('STAFF'), '/unauthorized');
 });
+
+test('RBAC-001: capability policy denies every owner route before layout and filters owner navigation', () => {
+  const { hasCapability } = loadTypeScriptModule('src/lib/capabilities.ts');
+  const ownerCapabilities = [
+    'owner.dashboard', 'orders.manage', 'menu.manage', 'categories.manage', 'tables.manage',
+    'inventory.manage', 'waiters.manage', 'crm.manage', 'analytics.view', 'billing.manage',
+    'settings.manage', 'subscription.manage',
+  ];
+  assert.ok(ownerCapabilities.every((capability) => !hasCapability('STAFF', capability)));
+  assert.ok(ownerCapabilities.every((capability) => hasCapability('RESTAURANT_OWNER', capability)));
+  assert.ok(ownerCapabilities.every((capability) => hasCapability('SUPER_ADMIN', capability)));
+
+  const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
+  const sidebar = fs.readFileSync(path.join(root, 'src/components/dashboard-sidebar/DashboardSidebar.tsx'), 'utf8');
+  const protectedRoute = fs.readFileSync(path.join(root, 'src/components/ProtectedRoute.tsx'), 'utf8');
+  assert.match(app, /<Route element=\{<ProtectedRoute requiredCapability=\{\['superadmin\.dashboard', 'owner\.dashboard'\]\} \/>\}>/);
+  for (const route of ['analytics', 'settings', 'inventory', 'crm', 'subscription']) {
+    assert.match(app, new RegExp(`<Route path="${route}" element=\{<ProtectedRoute requiredCapability=`));
+  }
+  assert.match(protectedRoute, /Navigate to="\/unauthorized" replace state=\{\{ from: location\.pathname \}\}/);
+  assert.match(sidebar, /items\.filter\(item => hasCapability\(user\?\.role, item\.capability\)\)/);
+});

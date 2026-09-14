@@ -78,15 +78,17 @@ export const ExecutiveTab: React.FC<ExecutiveTabProps> = ({
     try {
       const resData = await api.get(`/analytics/executive?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
-    } catch (err: any) {
-      toast.error(err.message || 'Error fetching executive analytics');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error fetching executive analytics');
     } finally {
       setLoading(false);
     }
   }, [token, startDate, endDate]);
 
   useEffect(() => {
-    fetchExecutive();
+    let cancelled = false;
+    void Promise.resolve().then(() => { if (!cancelled) return fetchExecutive(); });
+    return () => { cancelled = true; };
   }, [fetchExecutive, refreshTrigger]);
 
   if (loading) {

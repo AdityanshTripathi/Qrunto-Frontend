@@ -66,15 +66,17 @@ export const LoyaltyTab: React.FC<LoyaltyTabProps> = ({
     try {
       const resData = await api.get(`/analytics/loyalty?startDate=${startDate}&endDate=${endDate}`);
       setData(resData);
-    } catch (err: any) {
-      toast.error(err.message || 'Error fetching loyalty analytics');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error fetching loyalty analytics');
     } finally {
       setLoading(false);
     }
   }, [token, startDate, endDate]);
 
   useEffect(() => {
-    fetchLoyaltyAnalytics();
+    let cancelled = false;
+    void Promise.resolve().then(() => { if (!cancelled) return fetchLoyaltyAnalytics(); });
+    return () => { cancelled = true; };
   }, [fetchLoyaltyAnalytics, refreshTrigger]);
 
   if (loading) {
