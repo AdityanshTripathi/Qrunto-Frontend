@@ -14,6 +14,11 @@ export function useAccessibleDialog(
   onClose: () => void,
 ) {
   const openerRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -31,7 +36,7 @@ export function useAccessibleDialog(
       if (activeDialogs.at(-1) !== dialog) return;
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -60,5 +65,5 @@ export function useAccessibleDialog(
       if (index >= 0) activeDialogs.splice(index, 1);
       openerRef.current?.focus();
     };
-  }, [dialogRef, isOpen, onClose]);
+  }, [dialogRef, isOpen]);
 }

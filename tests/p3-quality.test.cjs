@@ -36,6 +36,15 @@ test('A11Y-001: campaign dialogs expose dialog semantics and shared keyboard foc
   assert.match(campaigns, /useAccessibleDialog\(isLogsOpen/);
 });
 
+test('A11Y-001: dialog focus setup remains stable while controlled fields rerender', () => {
+  const hook = read('src/hooks/useAccessibleDialog.ts');
+  assert.match(hook, /const onCloseRef = useRef\(onClose\)/);
+  assert.match(hook, /onCloseRef\.current = onClose/);
+  assert.match(hook, /onCloseRef\.current\(\)/);
+  assert.match(hook, /\[dialogRef, isOpen\]/);
+  assert.doesNotMatch(hook, /\[dialogRef, isOpen, onClose\]/);
+});
+
 test('A11Y-001: CRM form, member, and destructive dialogs use the shared dialog wrapper', () => {
   for (const relativePath of [
     'src/pages/dashboard/crm/CouponCampaignsConfig.tsx',

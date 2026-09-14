@@ -169,7 +169,7 @@ export function OverviewContent({
       <div className="overview-heading">
         <div>
           <p className="overview-eyebrow">RESTAURANT OVERVIEW</p>
-          <h1>A good day starts here.</h1>
+          <h1>𝑨 𝑮𝒐𝒐𝒅 𝑫𝒂𝒚 𝑺𝒕𝒂𝒓𝒕𝒔 𝒉𝒆𝒓𝒆</h1>
           <p>
             Welcome back{name ? `, ${name.split(' ')[0]}` : ''}. Here’s your
             restaurant at a glance.

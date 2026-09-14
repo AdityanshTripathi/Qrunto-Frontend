@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { BarChart3, BookOpen, Boxes, ClipboardList, Package, ShoppingCart } from 'lucide-react';
+import inventoryHeaderLight from '../../../assets/inventory-header-light.png';
+import inventoryHeaderDark from '../../../assets/inventory-header-dark.png';
 import { useRestaurantTimezone } from '../../../lib/timezone';
 import type { InventoryDialog, InventoryTab } from './inventory-types';
 import { InventoryDialogs } from './InventoryDialogs';
@@ -28,11 +30,28 @@ export const InventoryDashboard = () => {
   const { data, loading, error, refreshInventory } = useInventoryWorkspace();
 
   return (
-    <div className="space-y-6 pb-10">
-      <header className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center dark:border-slate-800">
+    <div className="-mt-1 space-y-5 pb-10 sm:-mt-2">
+      <header className="flex flex-col justify-between gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FF6B35] text-white shadow-sm shadow-orange-500/20"><Package className="h-5 w-5" /></span>
-          <div><h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Inventory</h1><p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Know what you have, what it costs, and what needs attention.</p></div>
+          <span className="relative h-16 w-16 shrink-0" aria-hidden="true">
+            <img
+              src={inventoryHeaderLight}
+              alt=""
+              width={64}
+              height={64}
+              draggable={false}
+              className="h-full w-full object-contain drop-shadow-[0_5px_10px_rgba(255,107,53,0.14)] dark:hidden"
+            />
+            <img
+              src={inventoryHeaderDark}
+              alt=""
+              width={64}
+              height={64}
+              draggable={false}
+              className="hidden h-full w-full object-contain drop-shadow-[0_5px_10px_rgba(15,23,42,0.3)] dark:block"
+            />
+          </span>
+          <div><h1 className="text-xl font-black tracking-tight text-slate-900 sm:text-[22px] dark:text-white">Inventory</h1><p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">Know what you have, what it costs, and what needs attention.</p></div>
         </div>
         {!loading && !error && <p className="text-xs font-medium text-slate-400">{data.metrics.totalItems} active items</p>}
       </header>
