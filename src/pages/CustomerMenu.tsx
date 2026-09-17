@@ -112,6 +112,12 @@ export const CustomerMenu: React.FC = () => {
   const [sendingAssistance, setSendingAssistance] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [whatsappMarketingOptIn, setWhatsappMarketingOptIn] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
+  const [verificationPhone, setVerificationPhone] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpBusy, setOtpBusy] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [isSettleBillRequested, setIsSettleBillRequested] = useState(false);
@@ -336,7 +342,7 @@ export const CustomerMenu: React.FC = () => {
   // CRM Loyalty Balance Check Debouncer
   useEffect(() => {
     let cancelled = false;
-    if (!customerPhone || customerPhone.trim().length < 10 || !slug) {
+    if (!customerPhone || customerPhone !== verificationPhone || !verificationToken || !slug) {
       void Promise.resolve().then(() => {
         if (!cancelled) {
           setLoyaltyPoints(0);
@@ -351,7 +357,9 @@ export const CustomerMenu: React.FC = () => {
     const fetchBalance = async () => {
       setFetchingLoyalty(true);
       try {
-        const res = await fetch(`${BASE_URL}/public/${slug}/loyalty/balance?phone=${encodeURIComponent(customerPhone)}`);
+        const res = await fetch(`${BASE_URL}/public/${slug}/loyalty/balance?phone=${encodeURIComponent(customerPhone)}`, {
+          headers: { 'x-crm-verification-token': verificationToken },
+        });
         if (res.ok) {
           const data = await res.json();
           setLoyaltyPoints(data.pointsBalance || 0);
@@ -369,7 +377,40 @@ export const CustomerMenu: React.FC = () => {
       cancelled = true;
       clearTimeout(debounceTimer);
     };
-  }, [customerPhone, slug]);
+  }, [customerPhone, verificationPhone, verificationToken, slug]);
+
+  const requestLoyaltyCode = async () => {
+    if (!slug || customerPhone.trim().length < 10) return;
+    setOtpBusy(true);
+    try {
+      const response = await fetch(`${BASE_URL}/public/${slug}/loyalty/verification/start`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: customerPhone }),
+      });
+      if (!response.ok) throw new Error('Verification is unavailable right now');
+      setOtpRequested(true);
+      toast.success('Verification code sent on WhatsApp');
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not send code'); }
+    finally { setOtpBusy(false); }
+  };
+
+  const confirmLoyaltyCode = async () => {
+    if (!slug || !/^\d{6}$/.test(otpCode)) return;
+    setOtpBusy(true);
+    try {
+      const response = await fetch(`${BASE_URL}/public/${slug}/loyalty/verification/confirm`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: customerPhone, code: otpCode }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Code could not be verified');
+      setVerificationToken(data.token);
+      setVerificationPhone(customerPhone);
+      setOtpRequested(false);
+      setOtpCode('');
+      toast.success('Mobile verified');
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Code could not be verified'); }
+    finally { setOtpBusy(false); }
+  };
 
   const handlePlaceOrder = async () => {
     if (!slug || !tableNumber || cart.length === 0) return;
@@ -382,6 +423,8 @@ export const CustomerMenu: React.FC = () => {
           items: cart.map((c) => ({ menuItemId: c.menuItemId, quantity: c.quantity })),
           customerName: customerName || undefined,
           customerPhone: customerPhone || undefined,
+          whatsappMarketingOptIn: customerPhone ? whatsappMarketingOptIn : false,
+          loyaltyVerificationToken: verificationToken || undefined,
           existingOrderId: activeCookieOrder?.id || undefined,
           redeemPoints: redeemPointsChecked ? pointsToRedeemInput : undefined,
         }),
@@ -394,6 +437,9 @@ export const CustomerMenu: React.FC = () => {
       setCart([]);
       setCustomerName('');
       setCustomerPhone('');
+      setWhatsappMarketingOptIn(false);
+      setVerificationToken('');
+      setVerificationPhone('');
       setRedeemPointsChecked(false);
       setPointsToRedeemInput(0);
       setIsCartOpen(false);
@@ -1702,10 +1748,39 @@ export const CustomerMenu: React.FC = () => {
                         type="tel"
                         placeholder="Mobile Number (Optional)"
                         value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        onChange={(e) => {
+                          setCustomerPhone(e.target.value);
+                          setVerificationToken('');
+                          setOtpRequested(false);
+                          setRedeemPointsChecked(false);
+                          setWhatsappMarketingOptIn(false);
+                        }}
                         maxLength={15}
                         className={`w-full ${t.input} border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#D97757] transition-all`}
                       />
+                      {customerPhone.trim().length >= 10 && (
+                        <div className="space-y-2 text-xs">
+                          {verificationToken && verificationPhone === customerPhone ? (
+                            <p className="text-emerald-600 font-semibold">Mobile verified for loyalty</p>
+                          ) : otpRequested ? (
+                            <div className="flex gap-2">
+                              <input aria-label="WhatsApp verification code" inputMode="numeric" maxLength={6}
+                                placeholder="6-digit code" value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                className={`min-w-0 flex-1 border rounded-xl px-3 py-2 ${t.input}`} />
+                              <button type="button" disabled={otpBusy || otpCode.length !== 6} onClick={confirmLoyaltyCode}
+                                className="rounded-xl bg-[#D97757] px-3 py-2 font-semibold text-white disabled:opacity-50">Verify</button>
+                            </div>
+                          ) : (
+                            <button type="button" disabled={otpBusy} onClick={requestLoyaltyCode}
+                              className="font-semibold text-[#D97757] disabled:opacity-50">Verify on WhatsApp to view or use points</button>
+                          )}
+                          <label className="flex items-start gap-2 leading-snug">
+                            <input type="checkbox" checked={whatsappMarketingOptIn} disabled={!verificationToken || verificationPhone !== customerPhone}
+                              onChange={(e) => setWhatsappMarketingOptIn(e.target.checked)} className="mt-0.5" />
+                            <span>I agree to receive offers from this restaurant on WhatsApp. Verify my mobile first; I can opt out later.</span>
+                          </label>
+                        </div>
+                      )}
                     </div>
 
                     {fetchingLoyalty && (
@@ -1714,7 +1789,7 @@ export const CustomerMenu: React.FC = () => {
                       </div>
                     )}
 
-                    {!fetchingLoyalty && customerPhone && customerPhone.trim().length >= 10 && (
+                    {!fetchingLoyalty && verificationToken && verificationPhone === customerPhone && (
                       <div className={`p-3 rounded-xl border ${loyaltyPoints > 0 ? 'bg-orange-500/5 border-[#D97757]/30' : 'bg-slate-50 dark:bg-[#1e1e1e] border-slate-100 dark:border-[#2a2a2a]'} text-left text-xs space-y-2`}>
                         <div className="flex justify-between items-center">
                           <div>
