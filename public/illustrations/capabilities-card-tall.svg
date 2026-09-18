@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="234" height="247" viewBox="0 0 234 247" fill="none">
+  <rect width="234" height="247" rx="16" fill="#FFFFFF" fill-opacity="0.98"/>
+  <rect x="0.5" y="0.5" width="233" height="246" rx="15.5" stroke="#EAE4DE"/>
+
+  <!-- Header -->
+  <g transform="translate(16, 18)">
+    <circle cx="5" cy="5" r="4" fill="#10B981"/>
+    <text x="16" y="9" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#1A1513">Live Kitchen Queue</text>
+    <rect x="156" y="-3" width="46" height="18" rx="9" fill="#FFF2EB"/>
+    <text x="163" y="10" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="700" fill="#C95A32">3 Active</text>
+  </g>
+
+  <line x1="16" y1="44" x2="218" y2="44" stroke="#F0EBE5" stroke-width="1"/>
+
+  <!-- Item 1: Cooking -->
+  <rect x="14" y="54" width="206" height="54" rx="10" fill="#FFFDFB" stroke="#F5EFEA"/>
+  <text x="24" y="73" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill="#1A1513">Order #1042 • Table 4</text>
+  <text x="24" y="92" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#786C62">2 Items • ₹460</text>
+  <rect x="148" y="68" width="62" height="22" rx="11" fill="#FFF2EB"/>
+  <text x="157" y="83" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="700" fill="#C95A32">Cooking</text>
+
+  <!-- Item 2: Ready -->
+  <rect x="14" y="116" width="206" height="54" rx="10" fill="#FFFDFB" stroke="#F5EFEA"/>
+  <text x="24" y="135" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill="#1A1513">Order #1041 • Table 7</text>
+  <text x="24" y="154" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#786C62">4 Items • ₹1,120</text>
+  <rect x="156" y="130" width="54" height="22" rx="11" fill="#ECFDF5"/>
+  <text x="168" y="145" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="700" fill="#10B981">Ready</text>
+
+  <!-- Item 3: Served -->
+  <rect x="14" y="178" width="206" height="54" rx="10" fill="#FAFAF9" stroke="#F5EFEA"/>
+  <text x="24" y="197" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700" fill="#8C7E74">Order #1040 • Table 2</text>
+  <text x="24" y="216" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#A89B90">1 Item • ₹180</text>
+  <rect x="156" y="192" width="54" height="22" rx="11" fill="#F0EBE5"/>
+  <text x="167" y="207" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="700" fill="#6E6259">Served</text>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="234" height="44" viewBox="0 0 234 44" fill="none">
+  <rect width="234" height="44" rx="22" fill="#FFFFFF" fill-opacity="0.95"/>
+  <rect x="0.5" y="0.5" width="233" height="43" rx="21.5" stroke="#EAE4DE"/>
+  <!-- Status badge -->
+  <rect x="8" y="8" width="28" height="28" rx="14" fill="#FFF2EB"/>
+  <circle cx="22" cy="22" r="4" fill="#C95A32"/>
+  <!-- Text -->
+  <text x="44" y="27" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#1A1513">Table 7 Active</text>
+  <text x="145" y="27" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" fill="#786C62">• ₹890 (Dine-In)</text>
+</svg>

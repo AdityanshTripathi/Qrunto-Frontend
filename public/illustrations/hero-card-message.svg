@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="279" height="111" viewBox="0 0 279 111" fill="none">
+  <rect width="279" height="111" rx="16" fill="#FFFFFF" fill-opacity="0.97"/>
+  <rect x="0.5" y="0.5" width="278" height="110" rx="15.5" stroke="#EAE4DE"/>
+  <!-- Bell badge -->
+  <rect x="14" y="14" width="28" height="28" rx="8" fill="#FFF2EB"/>
+  <path d="M28 20a4 4 0 0 0-4 4v3l-1.5 2h11L32 27v-3a4 4 0 0 0-4-4zm-1.5 10a1.5 1.5 0 0 0 3 0h-3z" fill="#C95A32"/>
+  <!-- Title & timestamp -->
+  <text x="50" y="27" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#1A1513">New Order • Table 4</text>
+  <text x="218" y="26" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#8C7E74">Just now</text>
+  <line x1="14" y1="50" x2="265" y2="50" stroke="#F0EBE5" stroke-width="1"/>
+  <!-- Order preview -->
+  <text x="14" y="70" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" fill="#5C5148">2x Paneer Tikka, 1x Butter Naan</text>
+  <!-- Footer: Total & Status pill -->
+  <text x="14" y="96" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="800" fill="#1A1513">₹640.00</text>
+  <rect x="195" y="80" width="70" height="22" rx="11" fill="#FFF2EB"/>
+  <circle cx="206" cy="91" r="3" fill="#C95A32"/>
+  <text x="214" y="95" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" fill="#C95A32">Cooking</text>
+</svg>
