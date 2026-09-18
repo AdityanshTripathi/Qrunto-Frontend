@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="216" height="63" viewBox="0 0 216 63" fill="none">
+  <rect width="216" height="63" rx="12" fill="#FFFFFF" fill-opacity="0.97"/>
+  <rect x="0.5" y="0.5" width="215" height="62" rx="11.5" stroke="#EAE4DE"/>
+  <!-- Green Check Circle -->
+  <circle cx="26" cy="31" r="14" fill="#ECFDF5"/>
+  <circle cx="26" cy="31" r="11" fill="#10B981"/>
+  <path d="M22 31.5l3 3 6-6" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Text -->
+  <text x="49" y="28" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#1A1513">Order Ready to Serve</text>
+  <text x="49" y="44" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#786C62">Table 10 • Chef counter</text>
+</svg>

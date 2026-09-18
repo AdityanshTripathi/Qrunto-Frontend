@@ -17,6 +17,10 @@ module.exports = {
       },
     },
     extend: {
+      screens: {
+        tb: "810px",
+        dk: "1320px",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -51,11 +55,44 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        /* ── Ordio Landing Page Tokens ── */
+        hero: "#fff8f0",
+        surface: {
+          50: "#fdf7f3",
+          100: "#f5ede4",
+          200: "#efdfce",
+          300: "#e8d5c4",
+          400: "#dfc9b4",
+        },
+        line: "#e8dcd1",
+        ink: {
+          900: "#3a2118",
+          800: "#4a2d1e",
+          700: "#5a3828",
+          600: "#6b4a3a",
+          500: "#7d5c4c",
+          400: "#9b7b6b",
+          300: "#b09585",
+        },
+        brand: {
+          DEFAULT: "#c95a32",
+          dark: "#8f3f25",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        pill: "100px",
+        card: "20px",
+        panel: "16px",
+        tile: "12px",
+        device: "30px",
+      },
+      fontFamily: {
+        display: ["Urbanist", "sans-serif"],
+        body: ["Inter", "sans-serif"],
+        ui: ["Instrument Sans", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
@@ -65,6 +102,14 @@ module.exports = {
         "accordion-up": {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
+        },
+        "marquee-left": {
+          from: { transform: "translate3d(0, 0, 0)" },
+          to: { transform: "translate3d(calc(-100% / var(--marquee-copies)), 0, 0)" },
+        },
+        "marquee-right": {
+          from: { transform: "translate3d(calc(-100% / var(--marquee-copies)), 0, 0)" },
+          to: { transform: "translate3d(0, 0, 0)" },
         },
       },
       animation: {
