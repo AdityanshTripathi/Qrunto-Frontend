@@ -128,14 +128,24 @@ function refreshAccessToken(): Promise<string> {
       signal,
     });
 
+    if (response.status === 401 || response.status === 403) {
+      throw new ApiError('Your session has expired. Please sign in again.', {
+        status: response.status,
+        kind: 'auth',
+      });
+    }
+
     if (!response.ok) {
-      throw new Error('Your session has expired. Please sign in again.');
+      throw await apiErrorFromResponse(response);
     }
 
     const data = await response.json();
 
     if (!data.accessToken) {
-      throw new Error('The refresh response did not include an access token.');
+      throw new ApiError('Unable to refresh your session. Please try again.', {
+        status: response.status,
+        kind: 'http',
+      });
     }
 
     const latestSession = useAuthStore.getState();
@@ -149,17 +159,19 @@ function refreshAccessToken(): Promise<string> {
 
     latestSession.updateAccessToken(data.accessToken);
     return data.accessToken as string;
-  }).catch((error) => {
+  }).catch((error: unknown) => {
+    const normalizedError = normalizeRequestError(error);
     const latestSession = useAuthStore.getState();
 
     if (
+      normalizedError.kind === 'auth' &&
       latestSession.user?.id === userId &&
       latestSession.accessToken === accessToken
     ) {
       latestSession.clearAuth();
     }
 
-    throw error;
+    throw normalizedError;
   }).finally(() => {
     refreshPromise = null;
     refreshIdentity = null;

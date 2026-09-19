@@ -18,7 +18,7 @@ import {
   Package
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import {
   clearInvalidSupportSession,
   clearSupportSession,
@@ -42,7 +42,8 @@ export const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
   const [checkingSub, setCheckingSub] = useState(true);
   const [hasSub, setHasSub] = useState(false);
-  const [connectionError, setConnectionError] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState<'connection' | 'server' | null>(null);
+  const [subscriptionCheckAttempt, setSubscriptionCheckAttempt] = useState(0);
   const supportSession = (() => {
     try {
       return getValidSupportSession(localStorage, user);
@@ -187,6 +188,7 @@ export const DashboardLayout: React.FC = () => {
     }
     const checkSubscription = async () => {
       try {
+        setSubscriptionError(null);
         const res = await api.get('/subscriptions/current');
         if (res.subscription) {
           setHasSub(true);
@@ -195,12 +197,13 @@ export const DashboardLayout: React.FC = () => {
         }
       } catch (err: unknown) {
         console.error('Subscription check failed:', err);
-        const errMsg = errorMessage(err).toLowerCase();
-        if (errMsg.includes('token') || errMsg.includes('unauthorized') || errMsg.includes('auth')) {
+        if (err instanceof ApiError && err.kind === 'auth') {
           clearAuth();
           navigate('/login', { replace: true });
+        } else if (err instanceof ApiError && (err.kind === 'network' || err.kind === 'timeout')) {
+          setSubscriptionError('connection');
         } else {
-          setConnectionError(true);
+          setSubscriptionError('server');
         }
       } finally {
         setCheckingSub(false);
@@ -210,7 +213,7 @@ export const DashboardLayout: React.FC = () => {
       if (!cancelled) return checkSubscription();
     });
     return () => { cancelled = true; };
-  }, [clearAuth, navigate, user]);
+  }, [clearAuth, navigate, subscriptionCheckAttempt, user]);
 
   if (checkingSub) {
     return (
@@ -223,19 +226,28 @@ export const DashboardLayout: React.FC = () => {
     );
   }
 
-  if (connectionError) {
+  if (subscriptionError) {
+    const isConnectionError = subscriptionError === 'connection';
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-[#111827] flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white dark:bg-[#1f2937] border border-slate-200 dark:border-[#374151]/50 rounded-[24px] shadow-2xl p-8 text-center relative z-50">
           <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mx-auto mb-6">
             <X className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-3">Connection Failed</h2>
+          <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-3">
+            {isConnectionError ? 'Connection Failed' : 'Unable to Verify Subscription'}
+          </h2>
           <p className="text-sm text-slate-500 dark:text-gray-400 mb-6 leading-relaxed">
-            Unable to connect to the backend server. Please make sure the backend server is running on port 5000.
+            {isConnectionError
+              ? 'Unable to reach the server. Check your internet connection and try again.'
+              : 'The server could not verify your subscription right now. Please try again shortly.'}
           </p>
           <button 
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              setCheckingSub(true);
+              setSubscriptionError(null);
+              setSubscriptionCheckAttempt(attempt => attempt + 1);
+            }}
             className="w-full bg-[#FF6B35] hover:bg-orange-600 text-white font-semibold rounded-[12px] py-3.5 transition-all active:scale-[0.98]"
           >
             Retry Connection

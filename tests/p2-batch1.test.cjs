@@ -19,14 +19,18 @@ function load(relativePath, mocks = {}) {
 function apiHarness(fetchImpl) {
   const previousFetch = global.fetch;
   global.fetch = fetchImpl;
-  const state = { user: { id: 'owner' }, accessToken: 'token', updateAccessToken() {}, clearAuth() {} };
+  const state = {
+    user: { id: 'owner' }, accessToken: 'token', clearAuthCalls: 0,
+    updateAccessToken() {},
+    clearAuth() { this.clearAuthCalls += 1; this.user = null; this.accessToken = null; },
+  };
   const apiModule = load('src/lib/api.ts', {
     './request-timeout': { withRequestTimeout: (run) => run(new AbortController().signal) },
     '../store/authStore': { useAuthStore: { getState: () => state } },
     '../config/backend': { API_BASE_URL: 'https://api.ordio.test/api' },
     './session-lifecycle': { getValidSupportSession: () => null },
   });
-  return { api: apiModule.api, restore: () => { global.fetch = previousFetch; } };
+  return { api: apiModule.api, state, restore: () => { global.fetch = previousFetch; } };
 }
 
 test('API-002: typed errors retain HTTP status, safe validation details, and retry guidance', async () => {
@@ -65,6 +69,48 @@ test('API-002: timeout and network failures are distinguishable and no productio
     timeout = false;
     await assert.rejects(harness.api.get('/offline'), (error) => error.kind === 'network');
     assert.doesNotMatch(fs.readFileSync(path.join(root, 'src/lib/api.ts'), 'utf8'), /port 5000/i);
+    assert.doesNotMatch(fs.readFileSync(path.join(root, 'src/components/DashboardLayout.tsx'), 'utf8'), /port 5000/i);
+  } finally { harness.restore(); }
+});
+
+test('API-002: a missing refresh cookie expires the local session as an auth error', async () => {
+  let requestCount = 0;
+  const harness = apiHarness(async () => {
+    requestCount += 1;
+    return {
+      ok: false,
+      status: 401,
+      headers: new Headers(),
+      json: async () => ({ error: 'Invalid or expired refresh token' }),
+    };
+  });
+  try {
+    await assert.rejects(harness.api.get('/subscriptions/current'), (error) => {
+      assert.equal(error.name, 'ApiError');
+      assert.equal(error.kind, 'auth');
+      assert.equal(error.status, 401);
+      assert.match(error.message, /session has expired/i);
+      return true;
+    });
+    assert.equal(requestCount, 2);
+    assert.equal(harness.state.clearAuthCalls, 1);
+    assert.equal(harness.state.accessToken, null);
+  } finally { harness.restore(); }
+});
+
+test('API-002: refresh transport failures keep local state for a later retry', async () => {
+  let requestCount = 0;
+  const harness = apiHarness(async () => {
+    requestCount += 1;
+    if (requestCount === 1) {
+      return { ok: false, status: 401, headers: new Headers(), json: async () => ({ error: 'Unauthorized' }) };
+    }
+    throw new TypeError('Failed to fetch');
+  });
+  try {
+    await assert.rejects(harness.api.get('/subscriptions/current'), (error) => error.kind === 'network');
+    assert.equal(harness.state.clearAuthCalls, 0);
+    assert.equal(harness.state.accessToken, 'token');
   } finally { harness.restore(); }
 });
 
