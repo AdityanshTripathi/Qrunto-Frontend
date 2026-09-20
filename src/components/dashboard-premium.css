@@ -267,9 +267,10 @@
 }
 .overview-heading h1 {
   max-width: 720px;
-  font-family: 'Inter Tight', 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: clamp(27px, 2.8vw, 38px);
   line-height: 1.12;
+  font-style: normal;
   font-weight: 700;
   letter-spacing: -0.025em;
   font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
