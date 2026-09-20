@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { ArrowRight, Gift, Megaphone, Search, Users, UserRoundCheck, UserRoundX, RefreshCw } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { useRestaurantTimezone, localDate } from '../../../lib/timezone';
+import { WhatsAppEmbeddedSignup } from './WhatsAppEmbeddedSignup';
 
 type Tab = 'guests' | 'segments' | 'campaigns' | 'loyalty';
 type Segment = 'all' | 'first' | 'regular' | 'vip' | 'lapsed';
@@ -15,6 +16,15 @@ type Campaign = { id: string; name: string; templateBody: string; status: string
   sentCount: number; failedCount: number; segment?: { name: string } | null };
 type CampaignLog = { id: string; status: string; customer?: { name: string; phone: string } | null; errorDetails?: string | null };
 type Policy = { pointsPerHundredRupees: number; maxRedemptionPercent: number };
+type WhatsAppStatus = {
+  configured: boolean;
+  phoneNumberId: string | null;
+  languageCode: string | null;
+  source: 'MANUAL' | 'EMBEDDED_SIGNUP' | null;
+  displayPhoneNumber: string | null;
+  displayName: string | null;
+  authTemplateConfigured: boolean;
+};
 const money = (value: string | number) => `₹${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const card = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/[0.025] dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-none';
 const input = 'min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors outline-none hover:border-slate-300 focus-visible:border-[#FF6B35] focus-visible:ring-2 focus-visible:ring-orange-500/15 dark:border-slate-700 dark:bg-slate-950/40 dark:text-white dark:hover:border-slate-600 dark:focus-visible:border-orange-500';
@@ -40,6 +50,7 @@ export default function CRMHub() {
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
   const [policy, setPolicy] = useState<Policy>({ pointsPerHundredRupees: 1, maxRedemptionPercent: 20 });
   const [whatsappConfigured, setWhatsappConfigured] = useState(false);
+  const [whatsappStatus, setWhatsappStatus] = useState<WhatsAppStatus | null>(null);
   const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState('');
   const [whatsappAccessToken, setWhatsappAccessToken] = useState('');
   const [whatsappLanguage, setWhatsappLanguage] = useState('en_US');
@@ -78,6 +89,14 @@ export default function CRMHub() {
     const data = await api.get('/crm/campaigns') as { campaigns: Campaign[] };
     setCampaigns(data.campaigns);
   }, []);
+  const refreshWhatsAppStatus = useCallback(async () => {
+    const data = await api.get('/crm/v2/whatsapp-status') as WhatsAppStatus;
+    setWhatsappStatus(data);
+    setWhatsappConfigured(data.configured);
+    setWhatsappPhoneNumberId(data.phoneNumberId || '');
+    setWhatsappLanguage(data.languageCode || 'en_US');
+    setAuthTemplateConfigured(data.authTemplateConfigured);
+  }, []);
 
   useEffect(() => { void refreshOverview().catch(() => setError('Could not load CRM overview')); }, [refreshOverview]);
   useEffect(() => { void refreshGuests(); }, [refreshGuests]);
@@ -85,15 +104,10 @@ export default function CRMHub() {
     if (tab === 'segments' || tab === 'campaigns') void refreshSegments().catch(() => setError('Could not load segments'));
     if (tab === 'campaigns') {
       void refreshCampaigns().catch(() => setError('Could not load campaigns'));
-      void api.get('/crm/v2/whatsapp-status').then((data: { configured: boolean; phoneNumberId: string | null; languageCode: string | null; authTemplateConfigured: boolean }) => {
-        setWhatsappConfigured(data.configured);
-        setWhatsappPhoneNumberId(data.phoneNumberId || '');
-        setWhatsappLanguage(data.languageCode || 'en_US');
-        setAuthTemplateConfigured(data.authTemplateConfigured);
-      });
+      void refreshWhatsAppStatus().catch(() => setError('Could not load WhatsApp connection status'));
     }
     if (tab === 'loyalty') void api.get('/crm/v2/loyalty-policy').then((data: Policy) => setPolicy(data));
-  }, [tab, refreshSegments, refreshCampaigns]);
+  }, [tab, refreshSegments, refreshCampaigns, refreshWhatsAppStatus]);
 
   const createSegment = async () => {
     if (!segmentName.trim()) return;
@@ -138,10 +152,14 @@ export default function CRMHub() {
     try {
       await api.put('/crm/v2/whatsapp-connection', { phoneNumberId: whatsappPhoneNumberId.trim(),
         accessToken: whatsappAccessToken.trim(), languageCode: whatsappLanguage.trim() });
-      setWhatsappAccessToken(''); setWhatsappConfigured(true); toast.success('WhatsApp connection saved');
+      setWhatsappAccessToken(''); await refreshWhatsAppStatus(); toast.success('WhatsApp connection saved');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not save WhatsApp connection'); }
     finally { setSaving(false); }
   };
+
+  const whatsappConnectionLabel = whatsappStatus?.displayName
+    ? `${whatsappStatus.displayName}${whatsappStatus.displayPhoneNumber ? ` · ${whatsappStatus.displayPhoneNumber}` : ''}`
+    : whatsappStatus?.displayPhoneNumber || (whatsappConfigured ? 'WhatsApp is connected' : null);
 
   return <div className="mx-auto max-w-7xl space-y-5 pb-10">
     <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-4 dark:border-slate-800">
@@ -200,7 +218,10 @@ export default function CRMHub() {
     </div>}
 
     {tab === 'campaigns' && <div className="space-y-5">
-      <div className={card}><h2 className={heading}>Meta WhatsApp connection</h2><p className={`mt-1 ${muted}`}>{whatsappConfigured ? `Connected to phone number ID ${whatsappPhoneNumberId}. Enter a new token only to replace the connection.` : 'Connect this brand’s own Meta Cloud API sender. Campaigns remain drafts until connected.'}</p>
+      <div className={card}><h2 className={heading}>Meta WhatsApp connection</h2><p className={`mt-1 ${muted}`}>{whatsappConfigured ? `${whatsappConnectionLabel}. Campaigns can use this connection.` : 'Connect this brand’s own Meta Cloud API sender. Campaigns remain drafts until connected.'}</p>
+        <WhatsAppEmbeddedSignup connected={whatsappConfigured} connectionLabel={whatsappConnectionLabel} onConnected={refreshWhatsAppStatus}/>
+        <div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-slate-200 dark:bg-slate-800"/><span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-slate-400">Manual connection</span><span className="h-px flex-1 bg-slate-200 dark:bg-slate-800"/></div>
+        <p className={`mb-3 ${muted}`}>Existing manual setup remains available for legacy connections. Saving it can replace a manual connection.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1.6fr_0.7fr_auto]"><input className={input} aria-label="Meta phone number ID" placeholder="Phone number ID" value={whatsappPhoneNumberId} onChange={e => setWhatsappPhoneNumberId(e.target.value)}/><input className={input} aria-label="Meta access token" type="password" autoComplete="new-password" placeholder="Access token" value={whatsappAccessToken} onChange={e => setWhatsappAccessToken(e.target.value)}/><input className={input} aria-label="Template language" placeholder="en_US" value={whatsappLanguage} onChange={e => setWhatsappLanguage(e.target.value)}/><button className={primary} disabled={saving || !whatsappPhoneNumberId || !whatsappAccessToken} onClick={saveWhatsAppConnection}>Save connection</button></div>
         {!authTemplateConfigured && <p className="mt-3 text-xs leading-5 text-amber-700 dark:text-amber-300">Phone verification also needs the server-side approved authentication template name configured.</p>}
       </div>
