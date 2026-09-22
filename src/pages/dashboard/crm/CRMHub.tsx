@@ -5,6 +5,14 @@ import { ArrowRight, Gift, Megaphone, Search, Users, UserRoundCheck, UserRoundX,
 import { api } from '../../../lib/api';
 import { useRestaurantTimezone, localDate } from '../../../lib/timezone';
 import { WhatsAppEmbeddedSignup } from './WhatsAppEmbeddedSignup';
+import {
+  areTemplateParametersComplete,
+  parameterFields,
+  reconcileTemplateDraft,
+  shapeCachedTemplates,
+  shapeEligibleTemplates,
+} from './whatsapp-campaign-templates';
+import type { TemplateDraft, WhatsAppTemplate } from './whatsapp-campaign-templates';
 
 type Tab = 'guests' | 'segments' | 'campaigns' | 'loyalty';
 type Segment = 'all' | 'first' | 'regular' | 'vip' | 'lapsed';
@@ -55,6 +63,12 @@ export default function CRMHub() {
   const [whatsappAccessToken, setWhatsappAccessToken] = useState('');
   const [whatsappLanguage, setWhatsappLanguage] = useState('en_US');
   const [authTemplateConfigured, setAuthTemplateConfigured] = useState(false);
+  const [templates, setTemplates] = useState<WhatsAppTemplate[]>([]);
+  const [cachedTemplates, setCachedTemplates] = useState<WhatsAppTemplate[]>([]);
+  const [templateDraft, setTemplateDraft] = useState<TemplateDraft>({ selectedTemplateId: '', templateParameters: {} });
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templatesSyncing, setTemplatesSyncing] = useState(false);
+  const [templatesError, setTemplatesError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -63,7 +77,6 @@ export default function CRMHub() {
   const [minimumSpend, setMinimumSpend] = useState(0);
   const [lapsedDays, setLapsedDays] = useState(0);
   const [campaignName, setCampaignName] = useState('');
-  const [templateName, setTemplateName] = useState('');
   const [campaignSegmentId, setCampaignSegmentId] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
 
@@ -89,6 +102,23 @@ export default function CRMHub() {
     const data = await api.get('/crm/campaigns') as { campaigns: Campaign[] };
     setCampaigns(data.campaigns);
   }, []);
+  const refreshTemplates = useCallback(async () => {
+    setTemplatesLoading(true); setTemplatesError('');
+    try {
+      const [cacheResponse, eligibleResponse] = await Promise.all([
+        api.get('/crm/v2/whatsapp/templates'),
+        api.get('/crm/v2/whatsapp/templates/eligible'),
+      ]);
+      const nextTemplates = shapeEligibleTemplates(eligibleResponse);
+      setCachedTemplates(shapeCachedTemplates(cacheResponse));
+      setTemplates(nextTemplates);
+      setTemplateDraft(current => reconcileTemplateDraft(current, nextTemplates));
+      return true;
+    } catch (err) {
+      setTemplatesError(err instanceof Error ? err.message : 'Could not load WhatsApp templates');
+      return false;
+    } finally { setTemplatesLoading(false); }
+  }, []);
   const refreshWhatsAppStatus = useCallback(async () => {
     const data = await api.get('/crm/v2/whatsapp-status') as WhatsAppStatus;
     setWhatsappStatus(data);
@@ -96,18 +126,24 @@ export default function CRMHub() {
     setWhatsappPhoneNumberId(data.phoneNumberId || '');
     setWhatsappLanguage(data.languageCode || 'en_US');
     setAuthTemplateConfigured(data.authTemplateConfigured);
-  }, []);
+    await refreshTemplates();
+  }, [refreshTemplates]);
 
-  useEffect(() => { void refreshOverview().catch(() => setError('Could not load CRM overview')); }, [refreshOverview]);
-  useEffect(() => { void refreshGuests(); }, [refreshGuests]);
+  useEffect(() => { void Promise.resolve().then(refreshOverview).catch(() => setError('Could not load CRM overview')); }, [refreshOverview]);
+  useEffect(() => { void Promise.resolve().then(refreshGuests); }, [refreshGuests]);
   useEffect(() => {
-    if (tab === 'segments' || tab === 'campaigns') void refreshSegments().catch(() => setError('Could not load segments'));
+    if (tab === 'segments' || tab === 'campaigns') void Promise.resolve().then(refreshSegments).catch(() => setError('Could not load segments'));
     if (tab === 'campaigns') {
-      void refreshCampaigns().catch(() => setError('Could not load campaigns'));
-      void refreshWhatsAppStatus().catch(() => setError('Could not load WhatsApp connection status'));
+      void Promise.resolve().then(refreshCampaigns).catch(() => setError('Could not load campaigns'));
+      void Promise.resolve().then(refreshWhatsAppStatus).catch(() => setError('Could not load WhatsApp connection status'));
     }
     if (tab === 'loyalty') void api.get('/crm/v2/loyalty-policy').then((data: Policy) => setPolicy(data));
   }, [tab, refreshSegments, refreshCampaigns, refreshWhatsAppStatus]);
+
+  const selectedTemplate = templates.find(template => template.id === templateDraft.selectedTemplateId);
+  const templateParameterFields = parameterFields(selectedTemplate);
+  const campaignCanSave = whatsappConfigured && Boolean(campaignName.trim()) && Boolean(scheduledAt) &&
+    Boolean(selectedTemplate) && areTemplateParametersComplete(selectedTemplate, templateDraft.templateParameters);
 
   const createSegment = async () => {
     if (!segmentName.trim()) return;
@@ -121,14 +157,28 @@ export default function CRMHub() {
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not create segment'); }
     finally { setSaving(false); }
   };
+  const syncTemplates = async () => {
+    if (!whatsappConfigured) return;
+    setTemplatesSyncing(true); setTemplatesError('');
+    try {
+      await api.post('/crm/v2/whatsapp/templates/sync');
+      if (await refreshTemplates()) toast.success('WhatsApp templates synced');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not sync WhatsApp templates';
+      setTemplatesError(message); toast.error(message);
+    } finally { setTemplatesSyncing(false); }
+  };
   const createCampaign = async () => {
-    if (!campaignName.trim() || !templateName.trim() || !scheduledAt) return;
+    if (!campaignCanSave || !selectedTemplate) return;
     setSaving(true);
     try {
       await api.post('/crm/campaigns', { name: campaignName.trim(), channel: 'WHATSAPP',
-        segmentId: campaignSegmentId || null, templateSubject: null, templateBody: templateName.trim(), scheduledAt });
-      setCampaignName(''); setTemplateName(''); setScheduledAt(''); await refreshCampaigns();
-      toast.success(whatsappConfigured ? 'Campaign queued' : 'Campaign saved as draft');
+        segmentId: campaignSegmentId || null, templateSubject: null, scheduledAt,
+        selectedTemplateId: selectedTemplate.id, templateLanguage: selectedTemplate.languageCode,
+        templateCategory: selectedTemplate.category, templateParameters: templateDraft.templateParameters });
+      setCampaignName(''); setTemplateDraft({ selectedTemplateId: '', templateParameters: {} });
+      setScheduledAt(''); await refreshCampaigns();
+      toast.success('Campaign queued');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not create campaign'); }
     finally { setSaving(false); }
   };
@@ -225,9 +275,25 @@ export default function CRMHub() {
         <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1.6fr_0.7fr_auto]"><input className={input} aria-label="Meta phone number ID" placeholder="Phone number ID" value={whatsappPhoneNumberId} onChange={e => setWhatsappPhoneNumberId(e.target.value)}/><input className={input} aria-label="Meta access token" type="password" autoComplete="new-password" placeholder="Access token" value={whatsappAccessToken} onChange={e => setWhatsappAccessToken(e.target.value)}/><input className={input} aria-label="Template language" placeholder="en_US" value={whatsappLanguage} onChange={e => setWhatsappLanguage(e.target.value)}/><button className={primary} disabled={saving || !whatsappPhoneNumberId || !whatsappAccessToken} onClick={saveWhatsAppConnection}>Save connection</button></div>
         {!authTemplateConfigured && <p className="mt-3 text-xs leading-5 text-amber-700 dark:text-amber-300">Phone verification also needs the server-side approved authentication template name configured.</p>}
       </div>
-      <div className={`grid gap-4 ${card} lg:grid-cols-[1.2fr_1fr_1fr]`}><div><h2 className={heading}>Schedule a campaign</h2><p className={`mt-1 ${muted}`}>Only verified guests with active WhatsApp marketing consent are eligible. Use an approved Meta template name.</p></div>
-        <div className="space-y-3"><input className={input} placeholder="Campaign name" value={campaignName} onChange={e => setCampaignName(e.target.value)}/><input className={input} placeholder="Approved template name" value={templateName} onChange={e => setTemplateName(e.target.value)}/></div>
-        <div className="space-y-3"><select className={input} value={campaignSegmentId} onChange={e => setCampaignSegmentId(e.target.value)}><option value="">All eligible guests</option>{segments.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select><input type="datetime-local" aria-label="Schedule date and time" className={input} value={scheduledAt} onChange={e => setScheduledAt(e.target.value)}/><button className={primary} disabled={saving || !campaignName || !templateName || !scheduledAt} onClick={createCampaign}>Save campaign</button></div></div>
+      <div className={card}>
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className={heading}>Schedule a campaign</h2><p className={`mt-1 ${muted}`}>Only verified guests with active WhatsApp marketing consent are eligible. Choose an approved template from this brand's current connection.</p></div>
+          <button className={`${secondaryButton} gap-2`} disabled={!whatsappConfigured || templatesLoading || templatesSyncing} onClick={syncTemplates}><RefreshCw className={templatesSyncing ? 'animate-spin' : ''} size={14}/>{templatesSyncing ? 'Syncing templates…' : 'Manual Sync Templates'}</button></div>
+        <div className="mt-4">
+          {!whatsappConfigured && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/5 dark:text-amber-300">Connect WhatsApp before syncing or selecting templates.</p>}
+          {whatsappConfigured && templatesLoading && templates.length === 0 && <p className={muted}>Loading approved templates…</p>}
+          {whatsappConfigured && templatesError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-300">{templatesError}</p>}
+          {whatsappConfigured && !templatesLoading && !templatesError && templates.length === 0 && cachedTemplates.some(template => template.approvalStatus === 'APPROVED') && <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/5 dark:text-amber-300">Approved cached templates are stale for the current WhatsApp connection. Sync templates to refresh them.</p>}
+          {whatsappConfigured && !templatesLoading && !templatesError && templates.length === 0 && !cachedTemplates.some(template => template.approvalStatus === 'APPROVED') && <p className={muted}>No approved templates are available. Sync after Meta approves a template.</p>}
+          {templates.length > 0 && <p className={muted}>{templates.length} approved template{templates.length === 1 ? '' : 's'} available{cachedTemplates[0]?.lastSyncedAt ? ` · Cache updated ${localDate(cachedTemplates[0].lastSyncedAt, timeZone)}` : ''}.</p>}
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="space-y-3"><input aria-label="Campaign name" className={input} placeholder="Campaign name" value={campaignName} onChange={e => setCampaignName(e.target.value)}/>
+            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">Approved template<select aria-label="Approved WhatsApp template" className={`mt-1.5 ${input}`} disabled={!whatsappConfigured || templatesLoading || templatesSyncing || templates.length === 0} value={templateDraft.selectedTemplateId} onChange={e => setTemplateDraft(current => reconcileTemplateDraft({ ...current, selectedTemplateId: e.target.value }, templates))}><option value="">Select a template</option>{templates.map(template => <option value={template.id} key={template.id}>{template.templateName} · {template.languageCode} · {template.category}</option>)}</select></label>
+            {selectedTemplate && <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-800/30"><p className="text-xs font-extrabold text-slate-700 dark:text-slate-200">Template parameters</p>{templateParameterFields.length === 0 ? <p className={muted}>This template has no required parameters.</p> : templateParameterFields.map(field => <label key={field.name} className="block text-xs font-bold text-slate-600 dark:text-slate-300">{field.label}<input type={field.inputType} maxLength={1024} required aria-label={`Template parameter ${field.name}`} className={`mt-1.5 ${input}`} value={templateDraft.templateParameters[field.name] ?? ''} onChange={e => setTemplateDraft(current => ({ ...current, templateParameters: { ...current.templateParameters, [field.name]: e.target.value } }))}/></label>)}</div>}
+          </div>
+          <div className="space-y-3"><select aria-label="Campaign segment" className={input} value={campaignSegmentId} onChange={e => setCampaignSegmentId(e.target.value)}><option value="">All eligible guests</option>{segments.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select><input type="datetime-local" aria-label="Schedule date and time" className={input} value={scheduledAt} onChange={e => setScheduledAt(e.target.value)}/><button className={primary} disabled={saving || templatesLoading || templatesSyncing || !campaignCanSave} onClick={createCampaign}>Save campaign</button></div>
+        </div>
+      </div>
       <div className={card}><h2 className={heading}>Campaign activity</h2><div className="mt-4 space-y-2">{campaigns.map(item => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/40 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/30"><div><p className="text-sm font-bold text-slate-900 dark:text-white">{item.name}</p><p className={muted}>{item.templateBody} · {item.segment?.name || 'All eligible'} · {localDate(item.scheduledAt, timeZone)}</p></div><div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300"><span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">{item.status}</span><span className="tabular-nums">{item.sentCount} accepted · {item.failedCount} failed</span>{item.status === 'DRAFT' && <button onClick={() => void queueCampaign(item.id)} className="font-bold text-orange-700 hover:text-orange-600 focus-visible:outline-none focus-visible:underline dark:text-orange-400">Queue</button>}<button onClick={() => void loadCampaignLogs(item.id)} className="font-bold text-orange-700 hover:text-orange-600 focus-visible:outline-none focus-visible:underline dark:text-orange-400">Details</button></div></div>)}{campaigns.length === 0 && <p className={muted}>No campaigns yet.</p>}</div></div>
       {selectedCampaign && <div className={card}><h3 className={heading}>Delivery activity</h3><div className="mt-3 space-y-2">{campaignLogs.map(log => <div key={log.id} className="flex justify-between gap-3 border-b border-slate-100 py-2.5 text-sm text-slate-700 last:border-b-0 dark:border-slate-800 dark:text-slate-300"><span>{log.customer?.name || 'Guest'} · {log.customer?.phone || ''}</span><span className="font-medium">{log.status}{log.errorDetails ? ` · ${log.errorDetails}` : ''}</span></div>)}{campaignLogs.length === 0 && <p className={muted}>No recipients recorded yet.</p>}</div></div>}
     </div>}
