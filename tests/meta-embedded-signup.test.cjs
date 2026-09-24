@@ -142,7 +142,9 @@ test('frontend integration keeps credentials ephemeral and preserves the manual 
   assert.match(component, /\/crm\/v2\/whatsapp\/connect\/complete/);
   assert.match(component, /await onConnected\(\)/);
   assert.match(hub, /\/crm\/v2\/whatsapp-connection/);
-  assert.match(hub, /Manual connection/);
+  assert.match(hub, /Legacy manual connection/);
+  assert.match(hub, /authorization needs reconnection/);
+  assert.match(hub, /cannot authorize campaign delivery/);
   assert.match(hub, /Meta access token/);
 });
 

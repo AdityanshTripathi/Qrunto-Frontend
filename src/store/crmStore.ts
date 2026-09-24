@@ -660,35 +660,17 @@ export const useCRMStore = create<CRMState>((set, get) => ({
   },
 
   createCampaign: async (data) => {
-    const generation = crmSessionGeneration;
-    set({ loading: true, error: null });
-    try {
-      await api.post('/crm/campaigns', data);
-      if (!isCurrentCRMGeneration(generation)) return;
-      await get().fetchCampaigns();
-      if (!isCurrentCRMGeneration(generation)) return;
-      set({ loading: false });
-    } catch (err: unknown) {
-      if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: errorMessage(err), loading: false });
-      throw err;
-    }
+    void data;
+    const error = new Error('Legacy campaign creation is retired. Use the active WhatsApp campaigns workspace.');
+    set({ error: error.message, loading: false });
+    throw error;
   },
 
   deleteCampaign: async (id) => {
-    const generation = crmSessionGeneration;
-    set({ loading: true, error: null });
-    try {
-      await api.delete(`/crm/campaigns/${id}`);
-      if (!isCurrentCRMGeneration(generation)) return;
-      await get().fetchCampaigns();
-      if (!isCurrentCRMGeneration(generation)) return;
-      set({ loading: false });
-    } catch (err: unknown) {
-      if (!isCurrentCRMGeneration(generation)) return;
-      set({ error: errorMessage(err), loading: false });
-      throw err;
-    }
+    void id;
+    const error = new Error('Campaign deletion is not supported. Cancel campaigns from the active WhatsApp workspace.');
+    set({ error: error.message, loading: false });
+    throw error;
   },
 
   fetchCampaignLogs: async (id, cursor) => {

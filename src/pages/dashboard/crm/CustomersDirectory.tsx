@@ -9,7 +9,6 @@ import { api } from '../../../lib/api';
 import { LoyaltyTiersConfig } from './LoyaltyTiersConfig';
 import { CouponCampaignsConfig } from './CouponCampaignsConfig';
 import { CustomerSegmentsConfig } from './CustomerSegmentsConfig';
-import { CampaignsConfig } from './CampaignsConfig';
 import { TicketsBoard } from './TicketsBoard';
 
 interface UpcomingOccasion { customerId: string; type: 'BIRTHDAY' | 'ANNIVERSARY'; name: string; date: string; daysRemaining: number; }
@@ -33,7 +32,7 @@ export const CustomersDirectory: React.FC = () => {
   } = useCRMStore();
 
   const [localSearch, setLocalSearch] = useState(search);
-  const [activeTab, setActiveTab] = useState<'directory' | 'loyalty' | 'coupons' | 'segments' | 'campaigns' | 'tickets'>('directory');
+  const [activeTab, setActiveTab] = useState<'directory' | 'loyalty' | 'coupons' | 'segments' | 'tickets'>('directory');
 
   // Occasions state
   const [upcomingOccasions, setUpcomingOccasions] = useState<UpcomingOccasion[]>([]);
@@ -170,16 +169,6 @@ export const CustomersDirectory: React.FC = () => {
           Customer Segments
         </button>
         <button
-          onClick={() => setActiveTab('campaigns')}
-          className={`px-6 py-3.5 text-sm font-bold border-b-2 transition-all whitespace-nowrap focus:outline-none ${
-            activeTab === 'campaigns'
-              ? 'border-[#FF6B35] text-[#FF6B35] font-black'
-              : 'border-transparent text-slate-400 hover:text-slate-650 dark:hover:text-white'
-          }`}
-        >
-          Marketing Campaigns
-        </button>
-        <button
           onClick={() => setActiveTab('tickets')}
           className={`px-6 py-3.5 text-sm font-bold border-b-2 transition-all whitespace-nowrap focus:outline-none ${
             activeTab === 'tickets'
@@ -197,8 +186,6 @@ export const CustomersDirectory: React.FC = () => {
         <CouponCampaignsConfig />
       ) : activeTab === 'segments' ? (
         <CustomerSegmentsConfig />
-      ) : activeTab === 'campaigns' ? (
-        <CampaignsConfig />
       ) : activeTab === 'tickets' ? (
         <TicketsBoard />
       ) : (

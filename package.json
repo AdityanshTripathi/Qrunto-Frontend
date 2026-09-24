@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "node --test --test-concurrency=1 tests/business-data.test.cjs tests/inventory-redesign.test.cjs tests/invoice-reconciliation.test.cjs tests/meta-embedded-signup.test.cjs tests/p0-session-safety.test.cjs tests/p1-remediation.test.cjs tests/p2-batch1.test.cjs tests/p2-batch2.test.cjs tests/p2-batch3.test.cjs tests/p3-quality.test.cjs tests/timezone.test.cjs",
+    "test": "node --test --test-concurrency=1 tests/business-data.test.cjs tests/inventory-redesign.test.cjs tests/invoice-reconciliation.test.cjs tests/meta-embedded-signup.test.cjs tests/p0-session-safety.test.cjs tests/p1-remediation.test.cjs tests/p2-batch1.test.cjs tests/p2-batch2.test.cjs tests/p2-batch3.test.cjs tests/p3-quality.test.cjs tests/timezone.test.cjs tests/whatsapp-campaign-lifecycle.test.cjs tests/whatsapp-campaign-templates.test.cjs",
     "preview": "vite preview"
   },
   "dependencies": {
